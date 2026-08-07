@@ -1,0 +1,94 @@
+# ============================================================
+# UrbanCore — Development Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Enables: hot reload, exposed internal ports, verbose logging
+# ============================================================
+
+name: urbancore
+
+services:
+
+  gateway:
+    build:
+      target: development
+    volumes:
+      - ../../gateway/src:/app/src:delegated      # Hot reload via ts-node-dev
+      - ../../gateway/prisma:/app/prisma:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: npm run dev
+
+  ai-service:
+    build:
+      target: development
+    volumes:
+      - ../../services/ai/app:/app/app:delegated   # Hot reload via uvicorn --reload
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+  ai-worker:
+    build:
+      target: development
+    volumes:
+      - ../../services/ai/app:/app/app:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: watchmedo auto-restart --directory=./app --pattern="*.py" --recursive -- celery -A app.workers.celery_app worker --loglevel=debug --queues=ai --concurrency=1
+
+  gis-service:
+    build:
+      target: development
+    volumes:
+      - ../../services/gis/app:/app/app:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+  gis-worker:
+    build:
+      target: development
+    volumes:
+      - ../../services/gis/app:/app/app:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: watchmedo auto-restart --directory=./app --pattern="*.py" --recursive -- celery -A app.workers.celery_app worker --loglevel=debug --queues=gis --concurrency=1
+
+  intelligence-service:
+    build:
+      target: development
+    volumes:
+      - ../../services/intelligence/app:/app/app:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+
+  intelligence-worker:
+    build:
+      target: development
+    volumes:
+      - ../../services/intelligence/app:/app/app:delegated
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: debug
+    command: watchmedo auto-restart --directory=./app --pattern="*.py" --recursive -- celery -A app.workers.celery_app worker --loglevel=debug --queues=intelligence --concurrency=1
+
+  ui:
+    build:
+      target: development
+    volumes:
+      - ../../ui/src:/app/src:delegated
+      - ../../ui/public:/app/public:delegated
+    ports:
+      - "5173:5173"                              # Vite dev server (direct access)
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000/api/v1
+      VITE_WS_URL: ws://localhost:3000
+      VITE_TILE_SERVER_URL: http://localhost:3001
+    command: npm run dev -- --host 0.0.0.0

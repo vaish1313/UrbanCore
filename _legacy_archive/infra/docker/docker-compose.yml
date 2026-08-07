@@ -1,0 +1,420 @@
+# ============================================================
+# UrbanCore — Full Stack Docker Compose
+# Production-like configuration for all services.
+# For development with hot-reload: use docker-compose.dev.yml overlay
+# For GPU-accelerated inference: use docker-compose.gpu.yml overlay
+# ============================================================
+
+name: urbancore
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-python-common: &python-common
+  restart: unless-stopped
+  logging: *default-logging
+  networks:
+    - internal
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+
+services:
+
+  # ─── Reverse Proxy ─────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: urbancore-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - gateway
+      - ui
+    restart: unless-stopped
+    networks:
+      - public
+      - internal
+    logging: *default-logging
+
+  # ─── PostgreSQL + PostGIS + pgvector ───────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: urbancore-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-urbancore}
+      POSTGRES_USER: ${POSTGRES_USER:-urbancore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urbancore} -d ${POSTGRES_DB:-urbancore}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+
+  # ─── Redis (Cache + Celery Broker) ─────────────────────────
+  redis:
+    image: redis:7.4-alpine
+    container_name: urbancore-redis
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel notice
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+
+  # ─── MinIO (Object Storage — S3 compatible) ────────────────
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    container_name: urbancore-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9001:9001"  # Console (dev access)
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+
+  # ─── MinIO Bucket Initialization ───────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    container_name: urbancore-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: |
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY} &&
+        mc mb --ignore-existing local/$${MINIO_BUCKET_IMAGERY:-urbancore-imagery} &&
+        mc mb --ignore-existing local/$${MINIO_BUCKET_RESULTS:-urbancore-results} &&
+        mc mb --ignore-existing local/$${MINIO_BUCKET_REPORTS:-urbancore-reports} &&
+        echo 'MinIO buckets initialized.'
+      "
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_IMAGERY: ${MINIO_BUCKET_IMAGERY:-urbancore-imagery}
+      MINIO_BUCKET_RESULTS: ${MINIO_BUCKET_RESULTS:-urbancore-results}
+      MINIO_BUCKET_REPORTS: ${MINIO_BUCKET_REPORTS:-urbancore-reports}
+    networks:
+      - internal
+    restart: "no"
+
+  # ─── Martin Tile Server ────────────────────────────────────
+  martin:
+    image: ghcr.io/maplibre/martin:v0.14
+    container_name: urbancore-martin
+    environment:
+      DATABASE_URL: ${MARTIN_DATABASE_URL:-postgresql://urbancore:${POSTGRES_PASSWORD}@postgres:5432/urbancore}
+    ports:
+      - "${MARTIN_PORT:-3001}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+      - public
+    logging: *default-logging
+
+  # ─── API Gateway (Node.js / Fastify) ───────────────────────
+  gateway:
+    build:
+      context: ../../gateway
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-gateway
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      GATEWAY_PORT: 3000
+      GATEWAY_HOST: 0.0.0.0
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8001}
+      GIS_SERVICE_URL: ${GIS_SERVICE_URL:-http://gis-service:8002}
+      INTELLIGENCE_SERVICE_URL: ${INTELLIGENCE_SERVICE_URL:-http://intelligence-service:8003}
+      AI_SERVICE_INTERNAL_SECRET: ${AI_SERVICE_INTERNAL_SECRET}
+      GIS_SERVICE_INTERNAL_SECRET: ${GIS_SERVICE_INTERNAL_SECRET}
+      INTELLIGENCE_SERVICE_INTERNAL_SECRET: ${INTELLIGENCE_SERVICE_INTERNAL_SECRET}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${GATEWAY_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+      - public
+    logging: *default-logging
+
+  # ─── AI Service (Python / FastAPI) ─────────────────────────
+  ai-service:
+    build:
+      context: ../../services/ai
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-ai-service
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_IMAGERY: ${MINIO_BUCKET_IMAGERY:-urbancore-imagery}
+      MINIO_BUCKET_RESULTS: ${MINIO_BUCKET_RESULTS:-urbancore-results}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MODEL_WEIGHTS_DIR: /app/models
+      UNET_MODEL_VERSION: ${UNET_MODEL_VERSION:-v1.0.0}
+      UNET_MODEL_PATH: /app/models/unet_resnet34_v1.0.0.pth
+      SAM_MODEL_PATH: /app/models/sam_vit_h.pth
+      SAM_MODEL_TYPE: ${SAM_MODEL_TYPE:-vit_h}
+      AI_SERVICE_INTERNAL_SECRET: ${AI_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ../../models:/app/models:ro   # Model weights (read-only)
+    <<: *python-common
+    ports:
+      - "8001:8001"
+    logging: *default-logging
+
+  # ─── AI Celery Worker ──────────────────────────────────────
+  ai-worker:
+    build:
+      context: ../../services/ai
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-ai-worker
+    command: celery -A app.workers.celery_app worker --loglevel=info --queues=ai --concurrency=${CELERY_WORKER_CONCURRENCY:-2} --max-tasks-per-child=${CELERY_MAX_TASKS_PER_CHILD:-50}
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_IMAGERY: ${MINIO_BUCKET_IMAGERY:-urbancore-imagery}
+      MINIO_BUCKET_RESULTS: ${MINIO_BUCKET_RESULTS:-urbancore-results}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MODEL_WEIGHTS_DIR: /app/models
+      UNET_MODEL_PATH: /app/models/unet_resnet34_v1.0.0.pth
+      SAM_MODEL_PATH: /app/models/sam_vit_h.pth
+      SAM_MODEL_TYPE: ${SAM_MODEL_TYPE:-vit_h}
+      AI_SERVICE_INTERNAL_SECRET: ${AI_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ../../models:/app/models:ro
+    <<: *python-common
+    logging: *default-logging
+
+  # ─── GIS Service (Python / FastAPI) ────────────────────────
+  gis-service:
+    build:
+      context: ../../services/gis
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-gis-service
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_RESULTS: ${MINIO_BUCKET_RESULTS:-urbancore-results}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      GIS_SERVICE_INTERNAL_SECRET: ${GIS_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    <<: *python-common
+    ports:
+      - "8002:8002"
+    logging: *default-logging
+
+  # ─── GIS Celery Worker ─────────────────────────────────────
+  gis-worker:
+    build:
+      context: ../../services/gis
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-gis-worker
+    command: celery -A app.workers.celery_app worker --loglevel=info --queues=gis --concurrency=4
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_RESULTS: ${MINIO_BUCKET_RESULTS:-urbancore-results}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      GIS_SERVICE_INTERNAL_SECRET: ${GIS_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    <<: *python-common
+    logging: *default-logging
+
+  # ─── Intelligence Service (Python / FastAPI) ───────────────
+  intelligence-service:
+    build:
+      context: ../../services/intelligence
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-intelligence-service
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_REPORTS: ${MINIO_BUCKET_REPORTS:-urbancore-reports}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+      INTELLIGENCE_SERVICE_INTERNAL_SECRET: ${INTELLIGENCE_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    <<: *python-common
+    ports:
+      - "8003:8003"
+    logging: *default-logging
+
+  # ─── Intelligence Celery Worker ────────────────────────────
+  intelligence-worker:
+    build:
+      context: ../../services/intelligence
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-intelligence-worker
+    command: celery -A app.workers.celery_app worker --loglevel=info --queues=intelligence --concurrency=2
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_REPORTS: ${MINIO_BUCKET_REPORTS:-urbancore-reports}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-ollama}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-768}
+      INTELLIGENCE_SERVICE_INTERNAL_SECRET: ${INTELLIGENCE_SERVICE_INTERNAL_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    <<: *python-common
+    logging: *default-logging
+
+  # ─── Ollama (Local LLM — open-source friendly) ─────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: urbancore-ollama
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+    # GPU profile handled in docker-compose.gpu.yml
+
+  # ─── React Frontend ────────────────────────────────────────
+  ui:
+    build:
+      context: ../../ui
+      dockerfile: Dockerfile
+      target: production
+    container_name: urbancore-ui
+    restart: unless-stopped
+    networks:
+      - internal
+    logging: *default-logging
+
+# ─── Volumes ─────────────────────────────────────────────────
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  minio-data:
+    driver: local
+  ollama-data:
+    driver: local
+  nginx-logs:
+    driver: local
+
+# ─── Networks ────────────────────────────────────────────────
+networks:
+  public:
+    driver: bridge
+  internal:
+    driver: bridge
+    internal: true     # No external internet access from internal services

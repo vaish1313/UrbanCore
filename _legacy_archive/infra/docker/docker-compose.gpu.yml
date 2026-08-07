@@ -1,0 +1,30 @@
+# ============================================================
+# UrbanCore — GPU Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+# Requires: NVIDIA Docker runtime (nvidia-container-toolkit)
+# ============================================================
+
+name: urbancore
+
+services:
+
+  ai-worker:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      CUDA_VISIBLE_DEVICES: "0"
+      PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:512"
+
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
