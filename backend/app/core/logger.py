@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict
 
-from app.core.config import settings
+from backend.app.core.config import settings
 
 # Context variable to hold the correlation ID per request (async safe)
 request_id_context: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     VERSION: str = "0.1.0"
     ENVIRONMENT: Literal["dev", "staging", "prod"] = "dev"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    ALLOWED_ORIGINS: list[str] = ["*"]
 
     # Database Settings
     POSTGRES_USER: str
@@ -37,6 +38,11 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
+    DATABASE_ECHO: bool = False
+    DATABASE_POOL_SIZE: int = 10
+    DATABASE_MAX_OVERFLOW: int = 20
+    DATABASE_POOL_TIMEOUT: int = 30
+    DATABASE_POOL_RECYCLE: int = 1800
 
     # Redis / Celery Broker
     REDIS_URL: RedisDsn
@@ -49,6 +55,18 @@ class Settings(BaseSettings):
         overrides in different deployment environments (e.g., Docker Compose vs Kubernetes).
         """
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
+    @property
+    def sync_database_url(self) -> str:
+        """
+        Constructs the synchronous database URL for Alembic migrations.
+
+        Alembic's autogenerate runs DDL introspection synchronously, so it cannot use
+        asyncpg. We swap the driver to psycopg2 which is the standard synchronous
+        PostgreSQL adapter. This URL is ONLY used by Alembic, never by the app server.
+        """
+        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
 
     # Pydantic v2 configuration specifying how to read the .env file
     model_config = SettingsConfigDict(
