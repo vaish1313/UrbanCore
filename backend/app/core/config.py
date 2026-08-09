@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # Redis / Celery Broker
     REDIS_URL: RedisDsn
 
+    # Security
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
     @property
     def async_database_url(self) -> str:
         """

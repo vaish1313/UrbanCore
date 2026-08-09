@@ -13,8 +13,9 @@ from backend.app.db.health import check_database_health
 from backend.app.db.session import dispose_engines
 
 from backend.app.api.v1.auth.router import router as auth_router
-from backend.app.api.v1.aois.router import router as aois_router
+from backend.app.api.v1.aois.router import router as aois_router, hotspots_router
 from backend.app.api.v1.health.router import router as health_router
+from backend.app.api.v1.admin.router import router as admin_router
 
 logger = get_logger(__name__)
 
@@ -48,9 +49,13 @@ app = FastAPI(
 )
 
 # CORS Middleware
+allowed_origins = settings.ALLOWED_ORIGINS
+if settings.ENVIRONMENT == "dev":
+    allowed_origins = ["http://localhost:3000", "http://localhost:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,7 +67,9 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Register routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(aois_router, prefix="/api/v1/aois", tags=["AOIs"])
+app.include_router(hotspots_router, prefix="/api/v1/hotspots", tags=["Hotspots"])
 app.include_router(health_router, prefix="/api/v1/health", tags=["Health"])
+app.include_router(admin_router, prefix="/api/v1/admin", tags=["Admin"])
 
 @app.get("/")
 async def root():
