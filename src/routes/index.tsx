@@ -13,6 +13,8 @@ import { SelectionPanel } from "@/components/urbancore/SelectionPanel";
 import { Awakening } from "@/components/urbancore/Awakening";
 import { LogoReveal } from "@/components/urbancore/LogoReveal";
 import type { Feature } from "@/components/urbancore/MapOverlays";
+import { RoleWorkspace } from "@/components/urbancore/role/RoleWorkspace";
+import type { RoleType } from "@/types/urbancore";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/")({
@@ -68,6 +70,9 @@ function Index() {
   const [orbit, setOrbit] = useState({ yaw: 0, tilt: 0 });
   const [feature, setFeature] = useState<Feature | null>(null);
   const [focusLayer, setFocusLayer] = useState<StackId | null>(null);
+
+  /** Active role workspace state */
+  const [activeRole, setActiveRole] = useState<RoleType>(null);
   const drag = useRef<{ x: number; y: number; yaw: number; tilt: number } | null>(null);
 
   /** one calm second over Nashik before the city starts assembling the logo */
@@ -92,7 +97,6 @@ function Index() {
       document.body.style.overflow = prev;
     };
   }, [entered]);
-
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -190,6 +194,7 @@ function Index() {
             depth,
             interactive: arrived && !inStack,
             onSelect,
+            activeRole,
           }}
         />
 
@@ -255,7 +260,7 @@ function Index() {
       <motion.header
         className="fixed inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-6 sm:px-10"
         initial={{ opacity: 0 }}
-        animate={{ opacity: entered ? 1 : 0 }}
+        animate={{ opacity: entered && !activeRole ? 1 : 0 }}
         transition={{ duration: 1.6, ease }}
       >
         <span className="font-display text-[13px] font-medium tracking-[0.22em] text-foreground/80">
@@ -269,7 +274,7 @@ function Index() {
       {/* Layer rail — materialises around the map */}
       <motion.aside
         className="pointer-events-none fixed left-6 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-2.5 sm:flex"
-        animate={{ opacity: entered && !inWorkspace ? 1 : 0, x: entered ? 0 : -16 }}
+        animate={{ opacity: entered && !inWorkspace && !activeRole ? 1 : 0, x: entered ? 0 : -16 }}
         transition={{ duration: 1.4, ease }}
       >
         {CHAPTERS.map((c, i) => (
@@ -296,14 +301,14 @@ function Index() {
 
       {/* Timeline scrubber for the construction chapter */}
       <div className="pointer-events-none fixed inset-x-0 bottom-8 z-30 px-6">
-        <GrowthTimeline value={year} onChange={setYear} visible={stage === S_GROWTH} />
+        <GrowthTimeline value={year} onChange={setYear} visible={stage === S_GROWTH && !activeRole} />
       </div>
 
       {/* Orbit hint */}
       <motion.p
         className="pointer-events-none fixed bottom-8 right-8 z-30 hidden font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground/70 sm:block"
         animate={{
-          opacity: entered && stage >= S_TWIN && !inWorkspace ? 1 : 0,
+          opacity: entered && stage >= S_TWIN && !inWorkspace && !activeRole ? 1 : 0,
         }}
         transition={{ duration: 1.2, ease }}
       >
@@ -323,7 +328,7 @@ function Index() {
           className="flex w-full max-w-3xl flex-col items-center text-center"
           initial={false}
           animate={
-            inWorkspace
+            inWorkspace && !activeRole
               ? { opacity: 1, y: 0, filter: "blur(0px)" }
               : { opacity: 0, y: 34, filter: "blur(16px)" }
           }
@@ -345,16 +350,22 @@ function Index() {
             Ask the city anything — it already knows its own shape.
           </p>
 
-
           <div className="mt-10 w-full">
-            <IntelligenceSearch visible={inWorkspace} />
+            <IntelligenceSearch visible={inWorkspace && !activeRole} activeRole={activeRole} onSelectRole={setActiveRole} />
           </div>
 
           <div className="mt-12 w-full max-w-3xl">
-            <RoleCards pointer={pointer} visible={inWorkspace} />
+            <RoleCards pointer={pointer} visible={inWorkspace && !activeRole} onSelectRole={setActiveRole} />
           </div>
         </motion.div>
       </div>
+
+      {/* Interactive Role Workspace Modal overlay */}
+      <AnimatePresence>
+        {activeRole && (
+          <RoleWorkspace role={activeRole} onBack={() => setActiveRole(null)} />
+        )}
+      </AnimatePresence>
 
       {/* Descent caption while the camera falls */}
       <motion.p

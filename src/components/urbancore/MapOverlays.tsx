@@ -27,6 +27,10 @@ export type Layers = {
   depth: number;
   interactive: boolean;
   onSelect?: (f: Feature) => void;
+  activeRole?: "builder" | "municipal" | "citizen" | null;
+  activeAoiId?: string | null;
+  activeAlertId?: string | null;
+  onSelectAlert?: (alertId: string) => void;
 };
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -493,6 +497,52 @@ export function MapOverlays(layers: Layers) {
           </motion.div>
         ))}
       </div>
+
+      {/* Role-Specific Geospatial Overlays */}
+      {layers.activeRole === "builder" && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          <div className="absolute border-2 border-primary/70 bg-primary/10 rounded-xl shadow-[0_0_30px_rgba(114,180,255,0.3)] transition-all duration-700 flex flex-col items-center justify-center p-2"
+            style={{ left: "30%", top: "34%", width: "24%", height: "22%" }}
+          >
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-primary bg-background/80 px-2 py-0.5 rounded-full border border-primary/40">
+              Parcel #88 · 82/100
+            </span>
+            <span className="text-[10px] text-foreground/90 font-medium mt-1">Gangapur Road Site</span>
+          </div>
+        </motion.div>
+      )}
+
+      {layers.activeRole === "municipal" && (
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          {[
+            { id: "enc-001", x: 62, y: 39, label: "Floodplain Encroachment", severe: true },
+            { id: "enc-002", x: 16, y: 76, label: "Forest Clearing", severe: true },
+            { id: "enc-003", x: 32, y: 38, label: "Greenbelt Conversion", severe: false },
+          ].map((alt) => (
+            <div
+              key={alt.id}
+              onClick={() => layers.onSelectAlert?.(alt.id)}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group pointer-events-auto"
+              style={{ left: `${alt.x}%`, top: `${alt.y}%` }}
+            >
+              <span className={`block h-4 w-4 rounded-full breathe ${alt.severe ? 'bg-destructive shadow-[0_0_20px_var(--destructive)]' : 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.8)]'}`} />
+              <span className="glass-panel absolute left-5 top-0 whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-foreground group-hover:scale-105 transition-transform">
+                ⚠️ {alt.label}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      )}
 
       {/* Scan sweep */}
       {roads && (
