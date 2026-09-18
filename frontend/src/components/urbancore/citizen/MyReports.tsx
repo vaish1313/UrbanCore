@@ -17,15 +17,15 @@ import type { CitizenReportFull, StatusType } from "@/data/citizenMockData";
 const ease = [0.16, 1, 0.3, 1] as const;
 
 const STATUS_STYLES: Record<StatusType, { bg: string; text: string; border: string; icon: React.ElementType; label: string }> = {
-  Pending:      { bg: "rgba(250,204,21,0.1)", text: "#fbbf24", border: "rgba(250,204,21,0.25)", icon: Clock, label: "Pending" },
+  Pending: { bg: "rgba(250,204,21,0.1)", text: "#fbbf24", border: "rgba(250,204,21,0.25)", icon: Clock, label: "Pending" },
   "Under Review": { bg: "rgba(251,146,60,0.1)", text: "#fb923c", border: "rgba(251,146,60,0.25)", icon: Search, label: "Under Review" },
-  Resolved:     { bg: "rgba(52,211,153,0.1)", text: "#34d399", border: "rgba(52,211,153,0.25)", icon: CheckCircle2, label: "Resolved" },
-  Rejected:     { bg: "rgba(248,113,113,0.1)", text: "#f87171", border: "rgba(248,113,113,0.25)", icon: XCircle, label: "Rejected" },
+  Resolved: { bg: "rgba(52,211,153,0.1)", text: "#34d399", border: "rgba(52,211,153,0.25)", icon: CheckCircle2, label: "Resolved" },
+  Rejected: { bg: "rgba(248,113,113,0.1)", text: "#f87171", border: "rgba(248,113,113,0.25)", icon: XCircle, label: "Rejected" },
 };
 
 function StatusBadge({ status }: { status: StatusType }) {
   const s = STATUS_STYLES[status]!;
-  const Icon = s.icon;
+  const Icon: any = s.icon;
   const style: React.CSSProperties = { background: s.bg, color: s.text, borderColor: s.border };
   return (
     <span className="cs-report-status" style={style}>
@@ -56,7 +56,7 @@ function ReportCard({ report }: { report: CitizenReportFull }) {
     <motion.div
       layout
       className="cs-myr-card"
-      whileHover={expanded ? undefined : { y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}
+      whileHover={expanded ? {} : { y: -2, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}
       transition={{ duration: 0.3 }}
     >
       {/* Card header (always visible) */}

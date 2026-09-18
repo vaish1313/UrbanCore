@@ -193,7 +193,7 @@ function ScoreGauge({ score }: { score: number }) {
 
 // Single metric card
 function MetricCard({ metric, index }: { metric: PropertyMetric; index: number }) {
-  const Icon = ICON_MAP[metric.icon] ?? Leaf;
+  const Icon: any = ICON_MAP[metric.icon] ?? Leaf;
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const displayVal = useCounter(metric.value, 1000, visible);

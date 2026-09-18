@@ -27,6 +27,7 @@ interface HeroSearchProps {
 export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [recentSearches, setRecentSearches] = useState<Suggestion[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -78,6 +79,41 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
   const clearRecent = () => {
     setRecentSearches([]);
     localStorage.removeItem(RECENT_SEARCHES_KEY);
+  };
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    
+    setIsLocating(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        let placeName = "Your Current Location";
+        
+        try {
+          const MAPBOX_TOKEN = "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`);
+          const data = await res.json();
+          if (data.features && data.features.length > 0) {
+            placeName = data.features[0].place_name;
+          }
+        } catch (error) {
+          console.error("Geocoding failed:", error);
+        }
+        
+        setIsLocating(false);
+        handleSelect({ label: placeName, type: "GPS Location", lat: latitude, lng: longitude });
+      },
+      (error) => {
+        setIsLocating(false);
+        alert("Unable to retrieve your location. Please check browser permissions.");
+        console.error(error);
+      }
+    );
   };
 
   return (
@@ -153,11 +189,16 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               className="cs-location-btn"
-              onClick={() => handleSelect({ label: "Current Location", type: "GPS", lat: 20.0059, lng: 73.7912 })}
+              onClick={handleUseMyLocation}
+              disabled={isLocating}
               aria-label="Use current location"
             >
-              <LocateFixed className="h-4 w-4" />
-              <span className="hidden sm:inline">Use My Location</span>
+              {isLocating ? (
+                <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+              ) : (
+                <LocateFixed className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{isLocating ? "Locating..." : "Use My Location"}</span>
             </motion.button>
             {/* Search button */}
             <motion.button

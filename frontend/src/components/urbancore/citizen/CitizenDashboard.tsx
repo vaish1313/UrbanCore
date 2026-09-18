@@ -4,7 +4,6 @@ import { BarChart3 } from "lucide-react";
 
 import { HeroSearch } from "./HeroSearch";
 import { InteractiveMap } from "./InteractiveMap";
-import { PropertyAnalysis } from "./PropertyAnalysis";
 import { ConstructionTimeline } from "./ConstructionTimeline";
 import { AIReport } from "./AIReport";
 import { MyReports } from "./MyReports";
@@ -98,7 +97,7 @@ export function CitizenDashboard({
     setSelectedLocation(loc);
     setAnalysisTriggered(true);
     setTimeout(() => {
-      document.getElementById("property-analysis-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("construction-timeline-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
   }, []);
 
@@ -107,21 +106,32 @@ export function CitizenDashboard({
       {/* Scoped base styles */}
       <style>{`
         .cs-page {
+          position: relative;
           width: 100%;
           min-height: calc(100vh - 60px);
-          overflow-y: auto;
           overflow-x: hidden;
-          scroll-behavior: smooth;
           background: transparent;
           color: #e2e8f0;
           display: flex;
           flex-direction: column;
+        }
+        .cs-page-bg {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          height: 100%;
+          background-image: url("/citizen-bg-new.jpg");
+          background-size: cover;
+          background-position: center top;
+          opacity: 0.25;
+          z-index: -1;
+          pointer-events: none;
         }
         .cs-content {
           flex: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
+          padding-top: 24px;
         }
         .cs-section-divider {
           display: flex; align-items: center; gap: 16px;
@@ -137,10 +147,17 @@ export function CitizenDashboard({
       `}</style>
 
       <div className="cs-page">
+        <div className="cs-page-bg" />
         <div className="cs-content">
 
-          {/* ── 1. Hero Search ── */}
-          <HeroSearch onSearch={handleSearch} onDropPin={scrollToMap} />
+          {activeTab === "my-reports" ? (
+            <div className="w-full flex-1 pt-6 pb-24">
+              <MyReports onNewReport={() => setIsEvidenceModalOpen(true)} />
+            </div>
+          ) : (
+            <>
+              {/* ── 1. Hero Search ── */}
+              <HeroSearch onSearch={handleSearch} onDropPin={scrollToMap} />
 
           {/* ── 2. Interactive Map ── */}
           <div ref={mapSectionRef} style={{ width: "100%" }}>
@@ -150,29 +167,25 @@ export function CitizenDashboard({
             />
           </div>
 
-          {/* ── 3. AI Property Analysis (conditional) ── */}
+
+
+          {/* ── 4. Construction Timeline (conditional) ── */}
           <AnimatePresence>
             {(selectedLocation || analysisTriggered) && (
               <motion.div
-                id="property-analysis-section"
-                key="analysis"
+                id="construction-timeline-section"
+                key="timeline"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
                 style={{ width: "100%" }}
               >
-                <SectionDivider label="AI Property Analysis" />
-                <PropertyAnalysis location={selectedLocation ?? DEFAULT_LOCATION} />
+                <SectionDivider label="Construction Timeline 2021 – 2025" />
+                <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* ── 4. Construction Timeline ── */}
-          <div id="construction-timeline-section" style={{ width: "100%" }}>
-            <SectionDivider label="Construction Timeline 2021 – 2025" />
-            <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
-          </div>
 
           {/* ── 5. AI Report (conditional) ── */}
           <AnimatePresence>
@@ -191,11 +204,8 @@ export function CitizenDashboard({
             )}
           </AnimatePresence>
 
-          {/* ── 6. My Reports ── */}
-          <div style={{ width: "100%" }}>
-            <SectionDivider label="My Submitted Reports" />
-            <MyReports onNewReport={() => setIsEvidenceModalOpen(true)} />
-          </div>
+            </>
+          )}
 
         </div>
 

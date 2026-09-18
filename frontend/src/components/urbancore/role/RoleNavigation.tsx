@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
-import { ArrowLeft, Building2, Landmark, Users, Compass, SlidersHorizontal, AlertTriangle, FileText, Search, Activity, ShieldCheck, MapPin } from "lucide-react";
+import { ArrowLeft, Building2, Landmark, Users, Compass, SlidersHorizontal, AlertTriangle, FileText, Search, Activity, ShieldCheck, MapPin, User, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { RoleType } from "@/types/urbancore";
 
 type SectionTab = {
@@ -76,11 +77,16 @@ export function RoleNavigation({
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={onBack}
-            className="glass-panel group flex items-center gap-2 rounded-xl px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground transition-colors duration-300 hover:border-primary/50 hover:text-foreground"
+            onClick={() => {
+              if (activeTab === "my-reports") {
+                onTabChange("explore");
+              } else {
+                onBack();
+              }
+            }}
+            className="glass-panel group flex items-center justify-center h-8 w-8 rounded-xl text-muted-foreground transition-colors duration-300 hover:border-primary/50 hover:text-foreground"
           >
-            <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-1" />
-            <span>Back to UrbanCore</span>
+            <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
           </button>
 
           <div className="hidden h-5 w-px bg-border sm:block" />
@@ -96,7 +102,7 @@ export function RoleNavigation({
         </div>
 
         {/* Right: Section Navigation Tabs */}
-        {role !== "citizen" && (
+        {role !== "citizen" ? (
           <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
             {sections.map(({ id, label, icon: Icon }) => {
               const isActive = activeTab === id;
@@ -106,8 +112,8 @@ export function RoleNavigation({
                   type="button"
                   onClick={() => onTabChange(id)}
                   className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-300 ${isActive
-                      ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(114,180,255,0.2)]"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                    ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(114,180,255,0.2)]"
+                    : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
                     }`}
                 >
                   <Icon className="h-3 w-3" />
@@ -116,6 +122,32 @@ export function RoleNavigation({
               );
             })}
           </nav>
+        ) : (
+          <div className="flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-1.5 py-1.5 pr-4 transition-colors hover:bg-primary/10 outline-none">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <User className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-medium text-foreground">John Doe</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-[#0a0f1d]/95 backdrop-blur-xl border-white/10 mt-2">
+                <DropdownMenuItem 
+                  onClick={() => onTabChange("my-reports")} 
+                  className="gap-2 cursor-pointer text-sm text-slate-200 hover:bg-white/5"
+                >
+                  <FileText className="h-4 w-4 text-cyan-400" />
+                  My Reports
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="gap-2 cursor-pointer text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:text-red-300 focus:bg-red-500/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
     </motion.header>
