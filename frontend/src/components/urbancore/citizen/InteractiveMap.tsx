@@ -41,14 +41,98 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
     }
   }, [externalSearchLocation]);
 
-  const handleMapClick = useCallback((e: any) => {
-    // If they click the map while a popup is open, don't re-pin immediately, just close popup? 
-    // Wait, the default behavior of clicking a map is dropping a pin.
+  const getProtectionStatus = (lat: number, lng: number, placeName: string) => {
+    const name = placeName.toLowerCase();
+    
+    // Check keywords first
+    if (name.includes("river") || name.includes("godavari") || name.includes("lake") || name.includes("dam") || name.includes("water") || name.includes("nadi") || name.includes("valley")) {
+      return { protection: "⚠️ River buffer zone", protectionLevel: "danger" as const };
+    }
+    
+    if (name.includes("hill") || name.includes("forest") || name.includes("mountain") || name.includes("cave") || name.includes("pandavleni") || name.includes("pandav lene") || name.includes("leni") || name.includes("wadi") || name.includes("ghat")) {
+      return { protection: "🌿 Forest/Hilly boundary nearby", protectionLevel: "caution" as const };
+    }
+    
+    // Fallback: Distance checks to major geographic landmarks
+    // Godavari River center approx
+    const distToRiver = Math.sqrt(Math.pow(lat - 20.015, 2) + Math.pow(lng - 73.790, 2));
+    if (distToRiver < 0.012) {
+       return { protection: "⚠️ River buffer zone", protectionLevel: "danger" as const };
+    }
+    
+    // Pandavleni Hills / Pathardi area approx
+    const distToHills = Math.sqrt(Math.pow(lat - 19.945, 2) + Math.pow(lng - 73.770, 2));
+    if (distToHills < 0.035) {
+       return { protection: "🌿 Protected Hilly Zone", protectionLevel: "caution" as const };
+    }
+
+    return { protection: "✅ No protected zone constraints.", protectionLevel: "safe" as const };
+  };
+
+  const handleMapClick = useCallback(async (e: any) => {
     const lat = +(e.lngLat.lat).toFixed(4);
     const lng = +(e.lngLat.lng).toFixed(4);
-    const loc = { ...PINNED_LOCATION, lat, lng, selectedTime: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) };
+    
+    // Center the map on the new pin so the popup doesn't clip at the edges
+    setViewState(prev => ({
+      ...prev,
+      longitude: lng,
+      latitude: lat
+    }));
+
+    // Optimistic initial pin
+    const loc = { 
+      ...PINNED_LOCATION, 
+      lat, lng, 
+      village: "Locating...",
+      selectedTime: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) 
+    };
     setPinnedLoc(loc);
-    setShowPopup(false); // They can click the marker to open popup
+    setShowPopup(false);
+
+    try {
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`);
+      const data = await res.json();
+      
+      if (data.features && data.features.length > 0) {
+        // Find the most relevant feature name
+        const feature = data.features[0];
+        const placeName = feature.text;
+        
+        // Extract context details
+        let district = "Nashik";
+        let state = "Maharashtra";
+        let pincode = "";
+        
+        feature.context?.forEach((c: any) => {
+          if (c.id.startsWith("district") || c.id.startsWith("place")) district = c.text;
+          if (c.id.startsWith("region")) state = c.text;
+          if (c.id.startsWith("postcode")) pincode = c.text;
+        });
+
+        const { protection, protectionLevel } = getProtectionStatus(lat, lng, placeName);
+
+        setPinnedLoc(prev => {
+          if (!prev) return prev;
+          if (prev.lat !== lat || prev.lng !== lng) return prev; // If user clicked elsewhere, ignore
+          return {
+            ...prev,
+            village: placeName,
+            taluka: "Nashik",
+            district,
+            state,
+            pincode,
+            protection,
+            protectionLevel
+          };
+        });
+      } else {
+        setPinnedLoc(prev => prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev);
+      }
+    } catch (error) {
+      console.error("Geocoding failed:", error);
+      setPinnedLoc(prev => prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev);
+    }
   }, []);
 
   return (
@@ -91,7 +175,7 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
             <Map
               {...viewState}
               onMove={(evt: any) => setViewState(evt.viewState)}
-              mapStyle="mapbox://styles/mapbox/satellite-v9"
+              mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
               mapboxAccessToken={MAPBOX_TOKEN}
               onClick={handleMapClick}
               cursor="crosshair"
@@ -115,7 +199,6 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
                 <Popup
                   longitude={pinnedLoc.lng}
                   latitude={pinnedLoc.lat}
-                  anchor="bottom"
                   offset={30}
                   onClose={() => setShowPopup(false)}
                   closeButton={true}
@@ -131,20 +214,8 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
                     <h3 className="cs-loc-name">{pinnedLoc.village}</h3>
 
                     <div className="cs-loc-fields">
-                      <LocationField label="Taluka" value={pinnedLoc.taluka} />
-                      <LocationField label="District" value={pinnedLoc.district} />
-                      <LocationField label="Latitude" value={`${pinnedLoc.lat}° N`} mono />
-                      <LocationField label="Longitude" value={`${pinnedLoc.lng}° E`} mono />
-                      <LocationField label="Elevation" value={`${pinnedLoc.elevation} m ASL`} mono />
-                      <LocationField label="Captured" value={pinnedLoc.selectedTime} />
-                    </div>
-
-                    <div className="cs-loc-thumbnail">
-                      <img src="/src/assets/city-nashik.jpg" alt="Location thumbnail" className="cs-loc-thumb-img" />
-                      <div className="cs-loc-thumb-label">Nashik, Maharashtra</div>
-                      <div className="cs-loc-thumb-pin">
-                        <MapPin className="h-4 w-4 text-red-400" />
-                      </div>
+                      {pinnedLoc.pincode && <LocationField label="PIN Code" value={pinnedLoc.pincode} />}
+                      <LocationField label="Coordinates" value={`${pinnedLoc.lat}°, ${pinnedLoc.lng}°`} mono />
                     </div>
 
                     <motion.button
@@ -189,18 +260,19 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
         
         /* Mapbox Popup Overrides */
         .mapboxgl-popup-content {
-          background: rgba(10, 15, 30, 0.95) !important;
+          background: rgba(13, 20, 40, 0.6) !important;
           border: 1px solid rgba(34, 211, 238, 0.2) !important;
           border-radius: 16px !important;
           padding: 16px !important;
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
-          backdrop-filter: blur(12px) !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
           color: white !important;
           width: 320px;
         }
         .mapboxgl-popup-tip {
-          border-top-color: rgba(10, 15, 30, 0.95) !important;
-          border-bottom-color: rgba(10, 15, 30, 0.95) !important;
+          border-top-color: rgba(13, 20, 40, 0.6) !important;
+          border-bottom-color: rgba(13, 20, 40, 0.6) !important;
         }
         .mapboxgl-popup-close-button {
           color: #94a3b8;

@@ -1,7 +1,10 @@
 import { motion } from "motion/react";
-import { ArrowLeft, Building2, Landmark, Users, Compass, SlidersHorizontal, AlertTriangle, FileText, Search, Activity, ShieldCheck, MapPin, User, LogOut } from "lucide-react";
+import { ArrowLeft, Building2, Landmark, Users, Compass, SlidersHorizontal, AlertTriangle, FileText, Search, Activity, ShieldCheck, MapPin, User, LogOut, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { RoleType } from "@/types/urbancore";
+import { ProfileModal } from "./ProfileModal";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 type SectionTab = {
   id: string;
@@ -48,6 +51,9 @@ export function RoleNavigation({
   onTabChange: (tabId: string) => void;
   onBack: () => void;
 }) {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user, logout } = useAuth();
+
   const sections =
     role === "builder"
       ? BUILDER_SECTIONS
@@ -67,14 +73,14 @@ export function RoleNavigation({
 
   return (
     <motion.header
-      className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl px-4 py-3 sm:px-8"
+      className="sticky top-0 z-40 w-full border-b border-white/10 bg-black/50 backdrop-blur-md px-4 py-3 sm:px-8 shadow-sm"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
         {/* Left: Back button & Role Branding */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => {
@@ -84,18 +90,18 @@ export function RoleNavigation({
                 onBack();
               }
             }}
-            className="glass-panel group flex items-center justify-center h-8 w-8 rounded-xl text-muted-foreground transition-colors duration-300 hover:border-primary/50 hover:text-foreground"
+            className="glass-panel group flex items-center justify-center h-8 w-8 rounded-xl text-slate-300 transition-colors duration-300 hover:border-cyan-500/50 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
           </button>
 
-          <div className="hidden h-5 w-px bg-border sm:block" />
+          <div className="hidden h-5 w-px bg-white/15 sm:block" />
 
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary">
+          <div className="flex items-center gap-2 pl-1">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
               <RoleIcon className="h-3.5 w-3.5" />
             </span>
-            <span className="font-display text-sm font-semibold tracking-wider text-foreground">
+            <span className="font-display text-sm font-semibold tracking-wider text-white">
               {roleTitle}
             </span>
           </div>
@@ -125,21 +131,35 @@ export function RoleNavigation({
         ) : (
           <div className="flex items-center">
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-1.5 py-1.5 pr-4 transition-colors hover:bg-primary/10 outline-none">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary">
-                  <User className="h-4 w-4" />
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-1.5 py-1.5 pr-3 transition-colors hover:bg-primary/10 outline-none">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary uppercase">
+                  {user?.full_name ? user.full_name.charAt(0) : <User className="h-4 w-4" />}
                 </div>
-                <span className="text-sm font-medium text-foreground">John Doe</span>
+                <span className="text-sm font-medium text-foreground">
+                  {user?.full_name || "User"}
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground ml-1" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-[#0a0f1d]/95 backdrop-blur-xl border-white/10 mt-2">
+              <DropdownMenuContent align="end" className="w-48 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 mt-2 shadow-2xl rounded-xl">
                 <DropdownMenuItem 
-                  onClick={() => onTabChange("my-reports")} 
-                  className="gap-2 cursor-pointer text-sm text-slate-200 hover:bg-white/5"
+                  onClick={() => setIsProfileOpen(true)}
+                  className="gap-2 cursor-pointer text-sm text-slate-200 hover:bg-white/5 focus:bg-white/5"
+                >
+                  <User className="h-4 w-4 text-cyan-400" />
+                  My Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onTabChange("my-reports")}
+                  className="gap-2 cursor-pointer text-sm text-slate-200 hover:bg-white/5 focus:bg-white/5"
                 >
                   <FileText className="h-4 w-4 text-cyan-400" />
                   My Reports
                 </DropdownMenuItem>
                 <DropdownMenuItem 
+                  onClick={() => {
+                    logout();
+                    onBack();
+                  }}
                   className="gap-2 cursor-pointer text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:text-red-300 focus:bg-red-500/10"
                 >
                   <LogOut className="h-4 w-4" />
@@ -150,6 +170,8 @@ export function RoleNavigation({
           </div>
         )}
       </div>
+
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </motion.header>
   );
 }

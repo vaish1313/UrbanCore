@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, KeySquare, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { X, KeySquare, Mail, Lock, User, ArrowRight, Phone, MapPin, Eye, EyeOff } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AuthModal({
   role,
@@ -12,15 +13,41 @@ export function AuthModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock authentication
-    onSuccess();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await login({ email, password });
+      } else {
+        await register({
+          email,
+          password,
+          full_name: name,
+          phone,
+          address,
+          role: role === "municipal" ? "MUNICIPAL_CORP" : role?.toUpperCase()
+        });
+      }
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,18 +112,45 @@ export function AuthModal({
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                {!isLogin && (
-                  <div className="group relative">
-                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                    <input
-                      type="text"
-                      placeholder="Full Name"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-4 text-sm font-light outline-none transition-colors focus:border-primary/50"
-                    />
+                {error && (
+                  <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
+                    {error}
                   </div>
+                )}
+                {!isLogin && (
+                  <>
+                    <div className="group relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-4 text-sm font-light outline-none transition-colors focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="group relative">
+                      <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <input
+                        type="tel"
+                        placeholder="Phone Number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-4 text-sm font-light outline-none transition-colors focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="group relative">
+                      <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                      <input
+                        type="text"
+                        placeholder="Full Address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-4 text-sm font-light outline-none transition-colors focus:border-primary/50"
+                      />
+                    </div>
+                  </>
                 )}
                 
                 <div className="group relative">
@@ -114,21 +168,37 @@ export function AuthModal({
                 <div className="group relative">
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-4 text-sm font-light outline-none transition-colors focus:border-primary/50"
+                    className="w-full rounded-xl border border-border/50 bg-background/50 py-2.5 pl-10 pr-10 text-sm font-light outline-none transition-colors focus:border-primary/50"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+
+                {isLogin && (
+                  <div className="flex justify-end mt-[-8px]">
+                    <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                      Forgot Password?
+                    </button>
+                  </div>
+                )}
 
                 <button
                   type="submit"
-                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  disabled={loading}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {isLogin ? "Sign In" : "Create Account"}
-                  <ArrowRight className="h-4 w-4" />
+                  {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
+                  {!loading && <ArrowRight className="h-4 w-4" />}
                 </button>
               </form>
             </div>
