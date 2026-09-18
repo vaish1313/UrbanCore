@@ -50,7 +50,7 @@ export function ComplaintReportModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
           >
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500" />
-            
+
             <button
               onClick={onClose}
               className="absolute right-4 top-4 z-10 rounded-full p-2 text-slate-400 hover:bg-white/5 hover:text-white transition-colors"
@@ -119,7 +119,7 @@ export function ComplaintReportModal({
                 <div className="w-full md:w-7/12 p-6 sm:p-8">
                   <h3 className="font-display text-2xl font-semibold text-white mb-6">File Official Complaint</h3>
                   <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    
+
                     <div className="flex flex-col gap-2">
                       <label className="text-sm text-slate-300 font-medium">Your Full Name</label>
                       <input
