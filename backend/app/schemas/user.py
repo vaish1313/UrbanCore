@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     organization: Optional[str] = None
     phone: Optional[str] = None
+    address: Optional[str] = None
     role: str = "CITIZEN"
 
 
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     organization: Optional[str] = None
     phone: Optional[str] = None
+    address: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -58,6 +60,8 @@ class UserPublic(BaseModel):
     id: str
     email: str
     full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
     role: str
 
 
