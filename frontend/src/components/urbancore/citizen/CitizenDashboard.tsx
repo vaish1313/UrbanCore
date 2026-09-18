@@ -5,7 +5,6 @@ import { BarChart3 } from "lucide-react";
 import { HeroSearch } from "./HeroSearch";
 import { InteractiveMap } from "./InteractiveMap";
 import { ConstructionTimeline } from "./ConstructionTimeline";
-import { AIReport } from "./AIReport";
 import { MyReports } from "./MyReports";
 import { ComplaintReportModal } from "./ComplaintReportModal";
 
@@ -108,7 +107,9 @@ export function CitizenDashboard({
         .cs-page {
           position: relative;
           width: 100%;
-          min-height: calc(100vh - 60px);
+          min-height: 100vh;
+          margin-top: -68px;
+          padding-top: 68px;
           overflow-x: hidden;
           background: transparent;
           color: #e2e8f0;
@@ -187,22 +188,7 @@ export function CitizenDashboard({
             )}
           </AnimatePresence>
 
-          {/* ── 5. AI Report (conditional) ── */}
-          <AnimatePresence>
-            {(selectedLocation || analysisTriggered) && (
-              <motion.div
-                key="ai-report"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                style={{ width: "100%" }}
-              >
-                <SectionDivider label="AI Generated Report" />
-                <AIReport location={selectedLocation ?? DEFAULT_LOCATION} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+
 
             </>
           )}

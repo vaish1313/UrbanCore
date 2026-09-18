@@ -52,6 +52,8 @@ export type LocationInfo = {
   village: string;
   taluka: string;
   district: string;
+  state?: string;
+  pincode?: string;
   lat: number;
   lng: number;
   elevation: number;
