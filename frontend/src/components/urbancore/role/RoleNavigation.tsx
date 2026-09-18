@@ -105,11 +105,10 @@ export function RoleNavigation({
                   key={id}
                   type="button"
                   onClick={() => onTabChange(id)}
-                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-300 ${
-                    isActive
+                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-300 ${isActive
                       ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(114,180,255,0.2)]"
                       : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   <Icon className="h-3 w-3" />
                   <span>{label}</span>
