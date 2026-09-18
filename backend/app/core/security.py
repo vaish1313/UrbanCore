@@ -20,8 +20,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Bearer token authentication
 security = HTTPBearer()
 
-# Access token expiry: 7 days = 10080 minutes = 604800 seconds
-ACCESS_TOKEN_EXPIRE_MINUTES = 10080
+# Access token expiry: 5 days = 7200 minutes
+ACCESS_TOKEN_EXPIRE_MINUTES = 7200
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -39,7 +39,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     Create JWT access token.
 
     Payload includes: sub (user_id), email, role, exp, type.
-    Default expiry is 7 days (604800 seconds).
+    Default expiry is 5 days (7200 minutes).
     """
     to_encode = data.copy()
 
