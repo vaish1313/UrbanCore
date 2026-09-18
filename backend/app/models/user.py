@@ -27,6 +27,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     organization = Column(String(255), nullable=True)
     phone = Column(String(50), nullable=True)
+    address = Column(String(255), nullable=True)
     role = Column(SQLEnum(UserRole), default=UserRole.CITIZEN, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)

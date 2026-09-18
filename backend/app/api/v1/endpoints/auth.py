@@ -52,6 +52,8 @@ def _build_token_response(user: User) -> dict:
             "id": str(user.id),
             "email": user.email,
             "full_name": user.full_name,
+            "phone": user.phone,
+            "address": user.address,
             "role": user.role.value if hasattr(user.role, "value") else str(user.role)
         }
     }
@@ -100,6 +102,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         full_name=user_data.full_name,
         organization=user_data.organization,
         phone=user_data.phone,
+        address=user_data.address,
         role=resolved_role
     )
 
