@@ -28,6 +28,7 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [liveSuggestions, setLiveSuggestions] = useState<Suggestion[]>([]);
   const [recentSearches, setRecentSearches] = useState<Suggestion[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -51,12 +52,45 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const filtered = query.length > 0
+  // Mapbox Autocomplete
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      if (query.trim().length < 2) {
+        setLiveSuggestions([]);
+        return;
+      }
+      try {
+        const MAPBOX_TOKEN = "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+        // Bounding box roughly covers Nashik to improve relevance
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&bbox=73.5,19.8,74.0,20.2`);
+        const data = await res.json();
+        
+        if (data.features) {
+          const suggestions = data.features.map((f: any) => ({
+            label: f.text,
+            type: f.context?.find((c: any) => c.id.startsWith('place'))?.text || "Location",
+            lat: f.center[1],
+            lng: f.center[0]
+          }));
+          setLiveSuggestions(suggestions);
+        }
+      } catch (e) {
+        console.error("Autocomplete failed", e);
+      }
+    };
+
+    const debounceId = setTimeout(fetchPlaces, 300);
+    return () => clearTimeout(debounceId);
+  }, [query]);
+
+  const staticFiltered = query.length > 0
     ? SEARCH_SUGGESTIONS.filter((s) =>
         s.label.toLowerCase().includes(query.toLowerCase()) ||
         s.type.toLowerCase().includes(query.toLowerCase())
       ).slice(0, 6)
     : [];
+
+  const filtered = liveSuggestions.length > 0 ? liveSuggestions : staticFiltered;
 
   const showDropdown = focused && (filtered.length > 0 || query.length === 0);
   const showRecent = focused && query.length === 0 && recentSearches.length > 0;
@@ -450,11 +484,12 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
           position: absolute;
           top: calc(100% + 10px);
           left: 0; right: 0;
-          background: rgba(8,12,28,0.97);
-          border: 1px solid rgba(255,255,255,0.09);
+          background: rgba(13, 20, 40, 0.6);
+          border: 1px solid rgba(34, 211, 238, 0.2);
           border-radius: 20px;
           overflow: hidden;
-          backdrop-filter: blur(28px);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 20px 60px rgba(0,0,0,0.6);
           z-index: 60;
           max-height: 380px;
