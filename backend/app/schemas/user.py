@@ -12,12 +12,13 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     organization: Optional[str] = None
     phone: Optional[str] = None
-    role: str = "builder"
+    role: str = "CITIZEN"
 
 
 class UserCreate(UserBase):
     """Schema for user creation."""
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    authority_code: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -38,7 +39,7 @@ class UserChangePassword(BaseModel):
 class UserInDB(UserBase):
     """User schema with database fields."""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     is_active: bool
     is_verified: bool
@@ -52,18 +53,28 @@ class UserResponse(UserInDB):
     pass
 
 
+class UserPublic(BaseModel):
+    """Minimal user info embedded in auth token response."""
+    id: str
+    email: str
+    full_name: Optional[str] = None
+    role: str
+
+
 class Token(BaseModel):
-    """Authentication token response."""
+    """Authentication token response (matches frontend expectation)."""
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
+    user: UserPublic
 
 
 class TokenPayload(BaseModel):
     """JWT token payload."""
-    sub: str  # User ID
+    sub: str       # User ID
+    email: str
+    role: str
     exp: datetime
-    type: str  # 'access' or 'refresh'
+    type: str      # 'access' or 'refresh'
 
 
 class LoginRequest(BaseModel):

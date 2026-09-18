@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectListResponse
 
@@ -65,8 +65,8 @@ async def list_projects(
     """
     query = db.query(Project)
     
-    # Regular users see only their projects, admins see all
-    if current_user.role != "admin":
+    # Regular users see only their projects, MUNICIPAL_CORP sees all
+    if current_user.role != UserRole.MUNICIPAL_CORP:
         query = query.filter(Project.owner_id == current_user.id)
     
     total = query.count()
@@ -104,7 +104,7 @@ async def get_project(
         )
     
     # Check access
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if current_user.role != UserRole.MUNICIPAL_CORP and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this project"
@@ -141,7 +141,7 @@ async def update_project(
         )
     
     # Check access
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if current_user.role != UserRole.MUNICIPAL_CORP and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this project"
@@ -184,7 +184,7 @@ async def delete_project(
         )
     
     # Check access
-    if current_user.role != "admin" and project.owner_id != current_user.id:
+    if current_user.role != UserRole.MUNICIPAL_CORP and project.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this project"
