@@ -42,6 +42,7 @@ class Project(Base):
     error_message = Column(Text, nullable=True)
     
     # Relationships
+
     owner = relationship("User", back_populates="projects")
     aois = relationship("AOI", back_populates="project", cascade="all, delete-orphan")
     images = relationship("SatelliteImage", back_populates="project", cascade="all, delete-orphan")
@@ -50,7 +51,6 @@ class Project(Base):
     violations = relationship("Violation", back_populates="project", cascade="all, delete-orphan")
     terrain_analyses = relationship("TerrainAnalysis", back_populates="project", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="project", cascade="all, delete-orphan")
-    complaints = relationship("Complaint", back_populates="project", cascade="all, delete-orphan")
     job_logs = relationship("JobLog", back_populates="project", cascade="all, delete-orphan")
     
     def __repr__(self):

@@ -15,7 +15,9 @@ from app.api.v1.endpoints import (
     reports,
     complaints,
     notifications,
-    admin
+    admin,
+    citizen,
+    municipal
 )
 
 
@@ -56,3 +58,9 @@ api_router.include_router(notifications.router, prefix="/notifications", tags=["
 
 # Admin panel
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
+
+# Citizen self-service analysis (cache-backed)
+api_router.include_router(citizen.router)
+
+# Municipal portal
+api_router.include_router(municipal.router, prefix="/municipal")

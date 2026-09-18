@@ -17,6 +17,7 @@ from app.models.report import Report
 from app.models.complaint import Complaint
 from app.models.notification import Notification
 from app.models.log import SystemLog, JobLog
+from app.models.area_cache import AreaCache, CacheStatus
 
 __all__ = [
     "Base",
@@ -35,4 +36,6 @@ __all__ = [
     "Notification",
     "SystemLog",
     "JobLog",
+    "AreaCache",
+    "CacheStatus",
 ]

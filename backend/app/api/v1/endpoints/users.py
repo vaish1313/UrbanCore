@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user, get_current_active_admin, get_password_hash
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.user import UserResponse, UserUpdate, UserChangePassword
 
 
@@ -54,8 +54,8 @@ async def get_user(
     Returns:
         User information
     """
-    # Users can only view their own profile unless they're admin
-    if current_user.id != user_id and current_user.role != "admin":
+    # Users can only view their own profile unless they're MUNICIPAL_CORP
+    if current_user.id != user_id and current_user.role != UserRole.MUNICIPAL_CORP:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this user"
@@ -90,8 +90,8 @@ async def update_user(
     Returns:
         Updated user
     """
-    # Users can only update their own profile unless they're admin
-    if current_user.id != user_id and current_user.role != "admin":
+    # Users can only update their own profile unless they're MUNICIPAL_CORP
+    if current_user.id != user_id and current_user.role != UserRole.MUNICIPAL_CORP:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this user"

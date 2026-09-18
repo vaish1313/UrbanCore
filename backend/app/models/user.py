@@ -11,9 +11,9 @@ from app.db.base_class import Base
 
 class UserRole(str, enum.Enum):
     """User roles."""
-    ADMIN = "admin"
-    GOVERNMENT_OFFICER = "government_officer"
-    BUILDER = "builder"
+    CITIZEN = "CITIZEN"
+    BUILDER = "BUILDER"
+    MUNICIPAL_CORP = "MUNICIPAL_CORP"
 
 
 class User(Base):
@@ -27,7 +27,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     organization = Column(String(255), nullable=True)
     phone = Column(String(50), nullable=True)
-    role = Column(SQLEnum(UserRole), default=UserRole.BUILDER, nullable=False)
+    role = Column(SQLEnum(UserRole), default=UserRole.CITIZEN, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -37,7 +37,7 @@ class User(Base):
     # Relationships
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     reports = relationship("Report", back_populates="created_by_user", cascade="all, delete-orphan")
-    complaints = relationship("Complaint", back_populates="created_by_user", cascade="all, delete-orphan")
+    complaints = relationship("Complaint", back_populates="submitted_by_user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
