@@ -14,6 +14,7 @@ import { Awakening } from "@/components/urbancore/Awakening";
 import { LogoReveal } from "@/components/urbancore/LogoReveal";
 import type { Feature } from "@/components/urbancore/MapOverlays";
 import { RoleWorkspace } from "@/components/urbancore/role/RoleWorkspace";
+import { AuthModal } from "@/components/urbancore/AuthModal";
 import type { RoleType } from "@/types/urbancore";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -72,6 +73,7 @@ function Index() {
 
   /** Active role workspace state */
   const [activeRole, setActiveRole] = useState<RoleType>(null);
+  const [pendingAuthRole, setPendingAuthRole] = useState<RoleType>(null);
   const drag = useRef<{ x: number; y: number; yaw: number; tilt: number } | null>(null);
 
   /** one calm second over Nashik before the city starts assembling the logo */
@@ -86,82 +88,35 @@ function Index() {
     window.setTimeout(() => setReveal("done"), 1500);
   }, []);
 
-  /** the story cannot start until the reveal has finished */
+  /** lock scrolling permanently */
   useEffect(() => {
-    if (entered) return;
-    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.scrollTo({ top: 0 });
     return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [entered]);
-
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      setPointer({
-        x: e.clientX / window.innerWidth - 0.5,
-        y: e.clientY / window.innerHeight - 0.5,
-      });
-      if (drag.current) {
-        const d = drag.current;
-        setOrbit({
-          yaw: Math.max(-38, Math.min(38, d.yaw + (e.clientX - d.x) * 0.12)),
-          tilt: Math.max(-16, Math.min(22, d.tilt - (e.clientY - d.y) * 0.07)),
-        });
-      }
-    };
-    const onDown = (e: PointerEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el?.closest("button, a, input, textarea, [role='button']")) return;
-      drag.current = { x: e.clientX, y: e.clientY, yaw: orbit.yaw, tilt: orbit.tilt };
-      document.body.style.cursor = "grabbing";
-    };
-    const onUp = () => {
-      drag.current = null;
-      document.body.style.cursor = "";
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [orbit.yaw, orbit.tilt]);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const vh = window.innerHeight || 1;
-      setProgress(Math.max(0, window.scrollY / vh));
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      document.body.style.overflow = "";
     };
   }, []);
 
-  const stage = arrived && entered ? Math.min(STAGES - 1, Math.floor(progress)) : -1;
-  const frac = progress - Math.floor(progress);
-  const inWorkspace = stage >= WORKSPACE;
-  const inStack = stage === S_STACK;
+  useEffect(() => {
+    // Disabled pointer move and orbit dragging so elements are static
+  }, []);
 
-  const chapter = CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, stage))]!;
-  const beatIndex = Math.min(
-    chapter.beats.length - 1,
-    Math.floor(frac * chapter.beats.length),
-  );
+  useEffect(() => {
+    // Removed scroll listener so no components move on scroll
+    setProgress(0);
+  }, []);
+
+  // Directly jump to workspace after the initial logo reveal
+  const stage = arrived && entered ? WORKSPACE : -1;
+  const inWorkspace = stage >= WORKSPACE;
+  const inStack = false;
+
+  const chapter = CHAPTERS[0]!;
+  const beatIndex = 0;
   const beat = chapter.beats[beatIndex]!;
 
-  // the growth chapter is user-scrubbed; afterwards the city stays current
-  const growth = stage === S_GROWTH ? year : stage > S_GROWTH ? 4 : Math.max(0, stage);
-  const depth = reduce || isMobile ? 0 : stage >= S_TWIN ? Math.min(1, 0.45 + stage * 0.12) : 0;
+  const growth = 4;
+  const depth = reduce || isMobile ? 0 : inWorkspace ? 1 : 0;
 
   const onSelect = useCallback((f: Feature) => setFeature(f), []);
 
@@ -175,7 +130,7 @@ function Index() {
         <CityDescent
           phase={phase}
           pointer={pointer}
-          cityZoom={Math.min(1, progress / STAGES)}
+          cityZoom={inWorkspace ? 1 : 0}
           orbit={reduce ? { yaw: 0, tilt: 0 } : orbit}
           depth={inStack ? 0.2 : depth}
           layers={{
@@ -301,23 +256,6 @@ function Index() {
         <GrowthTimeline value={year} onChange={setYear} visible={stage === S_GROWTH && !activeRole} />
       </div>
 
-      {/* Orbit hint */}
-      <motion.p
-        className="pointer-events-none fixed bottom-8 right-8 z-30 hidden font-mono text-[9px] uppercase tracking-[0.24em] text-muted-foreground/70 sm:block"
-        animate={{
-          opacity: entered && stage >= S_TWIN && !inWorkspace && !activeRole ? 1 : 0,
-        }}
-        transition={{ duration: 1.2, ease }}
-      >
-        Drag to orbit · click a parcel
-      </motion.p>
-
-      {/* Scroll track — invisible, drives the camera and the layers */}
-      <div className="relative z-10" style={{ pointerEvents: "none" }}>
-        {Array.from({ length: STAGES + 1 }).map((_, i) => (
-          <section key={i} className="h-screen" aria-hidden />
-        ))}
-      </div>
 
       {/* Workspace — grows out of the map, never a new page */}
       <div className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center px-6">
@@ -325,7 +263,7 @@ function Index() {
           className="flex w-full max-w-3xl flex-col items-center text-center"
           initial={false}
           animate={
-            inWorkspace && !activeRole
+            inWorkspace && !activeRole && !pendingAuthRole
               ? { opacity: 1, y: 0, filter: "blur(0px)" }
               : { opacity: 0, y: 34, filter: "blur(16px)" }
           }
@@ -348,11 +286,11 @@ function Index() {
           </p>
 
           <div className="mt-10 w-full">
-            <IntelligenceSearch visible={inWorkspace && !activeRole} activeRole={activeRole} onSelectRole={setActiveRole} />
+            <IntelligenceSearch visible={inWorkspace && !activeRole && !pendingAuthRole} activeRole={activeRole} onSelectRole={setPendingAuthRole} />
           </div>
 
           <div className="mt-12 w-full max-w-3xl">
-            <RoleCards pointer={pointer} visible={inWorkspace && !activeRole} onSelectRole={setActiveRole} />
+            <RoleCards pointer={pointer} visible={inWorkspace && !activeRole && !pendingAuthRole} onSelectRole={setPendingAuthRole} />
           </div>
         </motion.div>
       </div>
@@ -363,6 +301,15 @@ function Index() {
           <RoleWorkspace role={activeRole} onBack={() => setActiveRole(null)} />
         )}
       </AnimatePresence>
+
+      <AuthModal
+        role={pendingAuthRole}
+        onClose={() => setPendingAuthRole(null)}
+        onSuccess={() => {
+          setActiveRole(pendingAuthRole);
+          setPendingAuthRole(null);
+        }}
+      />
 
       {/* Descent caption while the camera falls */}
       <motion.p
@@ -380,16 +327,7 @@ function Index() {
               : "Establishing orbit"}
       </motion.p>
 
-      {/* Scroll invitation */}
-      <motion.div
-        className="pointer-events-none fixed bottom-8 left-1/2 z-30 -translate-x-1/2"
-        animate={{ opacity: entered && stage === 0 ? 1 : 0 }}
-        transition={{ duration: 1.2, ease }}
-      >
-        <span className="font-mono text-[9px] uppercase tracking-[0.34em] text-muted-foreground">
-          Scroll to explore
-        </span>
-      </motion.div>
+
     </main>
   );
 }
