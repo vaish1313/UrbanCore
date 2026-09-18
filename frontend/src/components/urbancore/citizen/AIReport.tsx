@@ -34,8 +34,8 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
 
 const SENTIMENT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
   positive: { bg: "rgba(52,211,153,0.07)", border: "rgba(52,211,153,0.2)", text: "#34d399" },
-  neutral:  { bg: "rgba(148,163,184,0.06)", border: "rgba(148,163,184,0.15)", text: "#94a3b8" },
-  warning:  { bg: "rgba(251,146,60,0.07)", border: "rgba(251,146,60,0.2)", text: "#fb923c" },
+  neutral: { bg: "rgba(148,163,184,0.06)", border: "rgba(148,163,184,0.15)", text: "#94a3b8" },
+  warning: { bg: "rgba(251,146,60,0.07)", border: "rgba(251,146,60,0.2)", text: "#fb923c" },
   critical: { bg: "rgba(248,113,113,0.07)", border: "rgba(248,113,113,0.2)", text: "#f87171" },
 };
 
@@ -57,13 +57,13 @@ function useTyping(text: string, active: boolean, speed = 30): string {
 }
 
 function ReportSectionCard({ section, index, visible }: { section: AIReportSection; index: number; visible: boolean }) {
-  const Icon = SECTION_ICONS[section.icon] ?? BarChart3;
-  const style = SENTIMENT_COLORS[section.sentiment] ?? SENTIMENT_COLORS.neutral!;
+  const Icon: any = SECTION_ICONS[section.icon] ?? BarChart3;
+  const style = SENTIMENT_COLORS[section.sentiment] ?? SENTIMENT_COLORS['neutral']!;
   const lines = section.content.split("\n");
 
-  const cardStyle: React.CSSProperties = { background: style.bg, borderColor: style.border };
-  const iconStyle: React.CSSProperties = { background: `${style.text}18`, border: `1px solid ${style.text}28` };
-  const badgeStyle: React.CSSProperties = { background: `${style.text}15`, color: style.text, borderColor: `${style.text}30` };
+  const cardStyle: any = { background: style.bg, borderColor: style.border };
+  const iconStyle: any = { background: `${style.text}18`, border: `1px solid ${style.text}28` };
+  const badgeStyle: any = { background: `${style.text}15`, color: style.text, borderColor: `${style.text}30` };
 
   return (
     <motion.div
@@ -75,7 +75,7 @@ function ReportSectionCard({ section, index, visible }: { section: AIReportSecti
     >
       <div className="cs-report-sec-header">
         <div className="cs-report-sec-icon" style={iconStyle}>
-          <Icon className="h-4 w-4" style={{ color: style.text } as React.CSSProperties} />
+          <Icon className="h-4 w-4" style={{ color: style.text }} />
         </div>
         <h3 className="cs-report-sec-title">{section.title}</h3>
         <span className="cs-report-sec-badge" style={badgeStyle}>
@@ -84,7 +84,7 @@ function ReportSectionCard({ section, index, visible }: { section: AIReportSecti
       </div>
       <div className="cs-report-sec-content">
         {lines.map((line, i) => (
-          <p key={i} style={{ margin: "0 0 4px", fontSize: "0.875rem", color: "#94a3b8", lineHeight: 1.65 } as React.CSSProperties}>
+          <p key={i} style={{ margin: "0 0 4px", fontSize: "0.875rem", color: "#94a3b8", lineHeight: 1.65 }}>
             {line}
           </p>
         ))}
@@ -125,7 +125,7 @@ export function AIReport({ location }: AIReportProps) {
   const typingText = useTyping("Analysing selected location — gathering satellite data, running AI classification, computing risk indices…", phase === "typing", 28);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(AI_REPORT_SECTIONS.map((s) => `## ${s.title}\n${s.content}`).join("\n\n")).catch(() => {});
+    navigator.clipboard.writeText(AI_REPORT_SECTIONS.map((s) => `## ${s.title}\n${s.content}`).join("\n\n")).catch(() => { });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
