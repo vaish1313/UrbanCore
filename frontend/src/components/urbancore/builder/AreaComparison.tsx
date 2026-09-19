@@ -1,164 +1,468 @@
-import { useState } from "react";
-import { SlidersHorizontal, Trophy, ArrowRightLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  ArrowRightLeft,
+  MapPin,
+  TrendingUp,
+  ShieldAlert,
+  Mountain,
+  RefreshCw,
+  Compass,
+  Layers,
+  Info,
+  CheckCircle2,
+} from "lucide-react";
+import type { AOI } from "@/types/urbancore";
 import { NASHIK_AOIS } from "@/data/nashikAois";
-import { BUILDER_COMPARISON_PRESETS } from "@/data/builderData";
 
-export function AreaComparison() {
-  const [areaAId, setAreaAId] = useState("gangapur-road");
-  const [areaBId, setAreaBId] = useState("pathardi-phata");
+interface ComparisonItem {
+  id: string;
+  name: string;
+  distance_km: number;
+  suitability_score: number;
+  flood_zone_percent: number;
+  construction_growth_percent: number;
+  avg_slope: number;
+  elevation?: number;
+  is_selected?: boolean;
+}
 
-  const areaA = NASHIK_AOIS.find((a) => a.id === areaAId) || NASHIK_AOIS[0]!;
-  const areaB = NASHIK_AOIS.find((a) => a.id === areaBId) || NASHIK_AOIS[1]!;
+interface ComparisonData {
+  selected_aoi: ComparisonItem;
+  nearest_aois: ComparisonItem[];
+  observations: string[];
+}
 
-  const preset = BUILDER_COMPARISON_PRESETS.find(
-    (p) =>
-      (p.areaA === areaAId && p.areaB === areaBId) || (p.areaA === areaBId && p.areaB === areaAId),
-  );
+interface AreaComparisonProps {
+  aoi: AOI;
+}
 
-  const customMetrics = [
-    {
-      label: "Suitability Score",
-      valA: areaA.suitabilityScore,
-      valB: areaB.suitabilityScore,
-      winner: areaA.suitabilityScore >= areaB.suitabilityScore ? "A" : "B",
-    },
-    {
-      label: "Flat Land %",
-      valA: `${areaA.terrain.flatLandPercent}%`,
-      valB: `${areaB.terrain.flatLandPercent}%`,
-      winner: areaA.terrain.flatLandPercent >= areaB.terrain.flatLandPercent ? "A" : "B",
-    },
-    {
-      label: "Average Slope",
-      valA: `${areaA.terrain.slope}°`,
-      valB: `${areaB.terrain.slope}°`,
-      winner: areaA.terrain.slope <= areaB.terrain.slope ? "A" : "B",
-    },
-    {
-      label: "Road Access Score",
-      valA: areaA.accessibilityScore,
-      valB: areaB.accessibilityScore,
-      winner: areaA.accessibilityScore >= areaB.accessibilityScore ? "A" : "B",
-    },
-    {
-      label: "Flood Risk Overlap",
-      valA: `${areaA.constraints.floodZoneOverlapPercent}%`,
-      valB: `${areaB.constraints.floodZoneOverlapPercent}%`,
-      winner:
-        areaA.constraints.floodZoneOverlapPercent <= areaB.constraints.floodZoneOverlapPercent
-          ? "A"
-          : "B",
-    },
-    {
-      label: "Environmental Restriction",
-      valA: areaA.constraints.environmentalRestriction,
-      valB: areaB.constraints.environmentalRestriction,
-      winner: areaA.constraints.environmentalRestriction === "Low" ? "A" : "B",
-    },
+// Haversine distance fallback for client-side calculation
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+function buildFallbackData(selectedAoi: AOI): ComparisonData {
+  const selLat = selectedAoi.coords.lat;
+  const selLng = selectedAoi.coords.lng;
+
+  const otherAois = NASHIK_AOIS.filter((item) => item.id !== selectedAoi.id);
+
+  const calculated = otherAois.map((item) => {
+    const dist = calculateDistanceKm(selLat, selLng, item.coords.lat, item.coords.lng);
+    const growth = item.constructionHistory
+      ? item.constructionHistory[item.constructionHistory.length - 1]?.builtUpChangePercent || 0
+      : 0;
+
+    return {
+      id: item.id,
+      name: item.name,
+      distance_km: dist,
+      suitability_score: item.suitabilityScore,
+      flood_zone_percent: item.constraints.floodZoneOverlapPercent,
+      construction_growth_percent: growth,
+      avg_slope: item.terrain.slope,
+      elevation: item.terrain.elevation,
+      is_selected: false,
+    };
+  });
+
+  calculated.sort((a, b) => a.distance_km - b.distance_km);
+  const top4 = calculated.slice(0, 4);
+
+  const selGrowth = selectedAoi.constructionHistory
+    ? selectedAoi.constructionHistory[selectedAoi.constructionHistory.length - 1]?.builtUpChangePercent || 0
+    : 0;
+
+  const selItem: ComparisonItem = {
+    id: selectedAoi.id,
+    name: selectedAoi.name,
+    distance_km: 0.0,
+    suitability_score: selectedAoi.suitabilityScore,
+    flood_zone_percent: selectedAoi.constraints.floodZoneOverlapPercent,
+    construction_growth_percent: selGrowth,
+    avg_slope: selectedAoi.terrain.slope,
+    elevation: selectedAoi.terrain.elevation,
+    is_selected: true,
+  };
+
+  const observations = [
+    `Selected site (${selectedAoi.name}) has a suitability score of ${selectedAoi.suitabilityScore}/100.`,
+    `Nearest spatial neighbor is ${top4[0]?.name || "N/A"} located ${top4[0]?.distance_km || 0} km away.`,
+    `Flood zone overlap across the 5 comparison sites ranges from ${Math.min(
+      selItem.flood_zone_percent,
+      ...top4.map((t) => t.flood_zone_percent)
+    )}% to ${Math.max(
+      selItem.flood_zone_percent,
+      ...top4.map((t) => t.flood_zone_percent)
+    )}%.`,
+    `5-Year construction growth in this micro-region averages ${Math.round(
+      (selGrowth + top4.reduce((acc, curr) => acc + curr.construction_growth_percent, 0)) / 5
+    )}%.`,
   ];
 
-  const metrics = preset
-    ? preset.metrics.map((m) => ({
-        label: m.label,
-        valA: m.valueA,
-        valB: m.valueB,
-        winner: m.winner,
-      }))
-    : customMetrics;
+  return {
+    selected_aoi: selItem,
+    nearest_aois: top4,
+    observations,
+  };
+}
+
+export function AreaComparison({ aoi }: AreaComparisonProps) {
+  const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchComparison = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/aois/compare/${aoi.id}`);
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      const json: ComparisonData = await response.json();
+      setComparisonData(json);
+    } catch (err) {
+      console.warn("Backend API call failed, utilizing client-side spatial fallback.", err);
+      const fallback = buildFallbackData(aoi);
+      setComparisonData(fallback);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComparison();
+  }, [aoi.id]);
+
+  if (isLoading) {
+    return (
+      <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 animate-pulse rounded-2xl bg-primary/20" />
+            <div className="flex flex-col gap-2">
+              <div className="h-4 w-40 animate-pulse rounded bg-muted/40" />
+              <div className="h-6 w-64 animate-pulse rounded bg-muted/30" />
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-2xl border border-border/30 bg-card/20" />
+          ))}
+        </div>
+        <div className="h-48 animate-pulse rounded-2xl border border-border/30 bg-card/20" />
+      </div>
+    );
+  }
+
+  if (error || !comparisonData) {
+    return (
+      <div className="glass-panel flex flex-col items-center justify-center gap-4 rounded-3xl p-8 text-center">
+        <ShieldAlert className="h-10 w-10 text-destructive" />
+        <h3 className="font-display text-lg font-semibold text-foreground">Comparison Data Unavailable</h3>
+        <p className="text-xs text-muted-foreground">
+          Unable to compute neighborhood spatial comparison for {aoi.name}.
+        </p>
+        <button
+          type="button"
+          onClick={fetchComparison}
+          className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/20 px-4 py-2 text-xs font-medium text-primary hover:bg-primary/30"
+        >
+          <RefreshCw className="h-4 w-4" /> Retry Analysis
+        </button>
+      </div>
+    );
+  }
+
+  const { selected_aoi, nearest_aois, observations } = comparisonData;
+  const allSites: ComparisonItem[] = [{ ...selected_aoi, is_selected: true }, ...nearest_aois];
+
+  const maxSuitability = 100;
+  const maxGrowth = Math.max(...allSites.map((s) => s.construction_growth_percent), 40);
 
   return (
     <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
-            GEOSPATIAL BENCHMARKING
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
+              MODULE 6 — NEIGHBOURHOOD COMPARISON
+            </span>
+          </div>
+          <h3 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            Spatial Benchmark Matrix
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Comparing <strong className="text-foreground">{selected_aoi.name}</strong> with the 4 geographically nearest candidate locations in Nashik.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+            <Compass className="h-3.5 w-3.5 text-primary" /> 4 Spatial Neighbors
           </span>
-          <h3 className="font-display text-lg font-medium text-foreground">Compare Nearby Areas</h3>
-        </div>
-        <span className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-primary">
-          <ArrowRightLeft className="h-3.5 w-3.5" /> Side-by-Side Matrix
-        </span>
-      </div>
-
-      {/* Selector dropdowns */}
-      <div className="grid items-center gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Area A
-          </label>
-          <select
-            value={areaAId}
-            onChange={(e) => setAreaAId(e.target.value)}
-            className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-primary"
-          >
-            {NASHIK_AOIS.map((a) => (
-              <option key={a.id} value={a.id} disabled={a.id === areaBId}>
-                {a.name} ({a.suitabilityScore}/100)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Area B
-          </label>
-          <select
-            value={areaBId}
-            onChange={(e) => setAreaBId(e.target.value)}
-            className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-primary"
-          >
-            {NASHIK_AOIS.map((a) => (
-              <option key={a.id} value={a.id} disabled={a.id === areaAId}>
-                {a.name} ({a.suitabilityScore}/100)
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
-      {/* Comparison Table */}
-      <div className="overflow-x-auto rounded-2xl border border-border/40 bg-foreground/[0.01]">
+      {/* 5 Sites Overview Cards Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {allSites.map((site) => (
+          <div
+            key={site.id}
+            className={`flex flex-col justify-between rounded-2xl p-4 transition-all duration-300 ${
+              site.is_selected
+                ? "border-2 border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(114,180,255,0.15)]"
+                : "border border-border/50 bg-card/30 hover:border-border hover:bg-card/50"
+            }`}
+          >
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                {site.is_selected ? (
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-primary">
+                    SELECTED SITE
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    {site.distance_km} km away
+                  </span>
+                )}
+              </div>
+              <h4 className="font-display text-sm font-semibold text-foreground truncate" title={site.name}>
+                {site.name}
+              </h4>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 font-mono text-xs">
+              <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
+                <span className="text-[10px] text-muted-foreground">Suitability</span>
+                <span
+                  className={`font-bold ${
+                    site.suitability_score >= 80
+                      ? "text-emerald-400"
+                      : site.suitability_score >= 70
+                      ? "text-cyan-400"
+                      : "text-amber-400"
+                  }`}
+                >
+                  {site.suitability_score}/100
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
+                <span className="text-[10px] text-muted-foreground">Flood Zone</span>
+                <span
+                  className={
+                    site.flood_zone_percent <= 5
+                      ? "text-emerald-400"
+                      : site.flood_zone_percent <= 15
+                      ? "text-amber-400"
+                      : "text-rose-400"
+                  }
+                >
+                  {site.flood_zone_percent}%
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
+                <span className="text-[10px] text-muted-foreground">Growth (5Y)</span>
+                <span className="text-cyan-300">+{site.construction_growth_percent}%</span>
+              </div>
+
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-muted-foreground">Avg Slope</span>
+                <span className="text-foreground">{site.avg_slope}°</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Side-by-Side Comparison Table */}
+      <div className="overflow-x-auto rounded-2xl border border-border/50 bg-card/20">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-border/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              <th className="p-3.5">Metric</th>
-              <th className="p-3.5 text-primary">{areaA.name}</th>
-              <th className="p-3.5 text-accent">{areaB.name}</th>
-              <th className="p-3.5 text-right">Advantage</th>
+            <tr className="border-b border-border/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/20">
+              <th className="p-3.5">AOI Site Name</th>
+              <th className="p-3.5">Spatial Distance</th>
+              <th className="p-3.5">Suitability Score</th>
+              <th className="p-3.5">Flood Zone %</th>
+              <th className="p-3.5">Construction Growth %</th>
+              <th className="p-3.5 text-right">Avg Slope</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30">
-            {metrics.map((m) => (
-              <tr key={m.label} className="transition-colors hover:bg-white/[0.02]">
-                <td className="p-3.5 font-medium text-foreground">{m.label}</td>
-                <td
-                  className={`p-3.5 font-mono ${m.winner === "A" ? "font-bold text-primary" : "text-muted-foreground"}`}
-                >
-                  {m.valA}
+            {allSites.map((site) => (
+              <tr
+                key={site.id}
+                className={`transition-colors ${
+                  site.is_selected
+                    ? "bg-primary/10 font-semibold"
+                    : "hover:bg-white/[0.02]"
+                }`}
+              >
+                <td className="p-3.5 font-medium text-foreground">
+                  <div className="flex items-center gap-2">
+                    {site.is_selected && (
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                    <span>{site.name}</span>
+                    {site.is_selected && (
+                      <span className="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
+                        Active Selection
+                      </span>
+                    )}
+                  </div>
                 </td>
-                <td
-                  className={`p-3.5 font-mono ${m.winner === "B" ? "font-bold text-accent" : "text-muted-foreground"}`}
-                >
-                  {m.valB}
-                </td>
-                <td className="p-3.5 text-right font-mono text-[10px]">
-                  {m.winner === "A" ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-primary">
-                      <Trophy className="h-3 w-3" /> {areaA.name}
-                    </span>
-                  ) : m.winner === "B" ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-accent/10 px-2 py-0.5 text-accent">
-                      <Trophy className="h-3 w-3" /> {areaB.name}
-                    </span>
+                <td className="p-3.5 font-mono text-muted-foreground">
+                  {site.is_selected ? (
+                    <span className="text-primary font-bold">0.0 km (Selected Site)</span>
                   ) : (
-                    <span className="text-muted-foreground">Tie</span>
+                    `${site.distance_km} km`
                   )}
+                </td>
+                <td className="p-3.5 font-mono">
+                  <span
+                    className={`inline-block rounded-md px-2 py-0.5 font-bold ${
+                      site.suitability_score >= 80
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : site.suitability_score >= 70
+                        ? "bg-cyan-500/10 text-cyan-400"
+                        : "bg-amber-500/10 text-amber-400"
+                    }`}
+                  >
+                    {site.suitability_score} / 100
+                  </span>
+                </td>
+                <td className="p-3.5 font-mono">
+                  <span
+                    className={
+                      site.flood_zone_percent <= 5
+                        ? "text-emerald-400"
+                        : site.flood_zone_percent <= 15
+                        ? "text-amber-400"
+                        : "text-rose-400"
+                    }
+                  >
+                    {site.flood_zone_percent}%
+                  </span>
+                </td>
+                <td className="p-3.5 font-mono text-cyan-300">
+                  +{site.construction_growth_percent}%
+                </td>
+                <td className="p-3.5 text-right font-mono text-foreground">
+                  {site.avg_slope}°
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Visual Comparison Charts */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Land Suitability Score Visual Comparison */}
+        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+          <div className="flex items-center gap-2 border-b border-border/30 pb-3">
+            <Layers className="h-4 w-4 text-primary" />
+            <h4 className="font-display text-sm font-semibold text-foreground">
+              Land Suitability Score Comparison
+            </h4>
+          </div>
+          <div className="flex flex-col gap-3">
+            {allSites.map((site) => {
+              const pct = Math.round((site.suitability_score / maxSuitability) * 100);
+              return (
+                <div key={site.id} className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center justify-between font-mono text-[11px]">
+                    <span className={site.is_selected ? "font-bold text-primary" : "text-muted-foreground"}>
+                      {site.name} {site.is_selected && "(Selected)"}
+                    </span>
+                    <span className="font-bold text-foreground">{site.suitability_score}/100</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/30">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        site.is_selected
+                          ? "bg-gradient-to-r from-primary to-cyan-400"
+                          : site.suitability_score >= 80
+                          ? "bg-emerald-400/80"
+                          : "bg-cyan-500/70"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 5-Year Construction Growth Visual Comparison */}
+        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+          <div className="flex items-center gap-2 border-b border-border/30 pb-3">
+            <TrendingUp className="h-4 w-4 text-cyan-400" />
+            <h4 className="font-display text-sm font-semibold text-foreground">
+              5-Year Built-Up Growth (%) Comparison
+            </h4>
+          </div>
+          <div className="flex flex-col gap-3">
+            {allSites.map((site) => {
+              const pct = Math.min(100, Math.round((site.construction_growth_percent / maxGrowth) * 100));
+              return (
+                <div key={site.id} className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center justify-between font-mono text-[11px]">
+                    <span className={site.is_selected ? "font-bold text-primary" : "text-muted-foreground"}>
+                      {site.name} {site.is_selected && "(Selected)"}
+                    </span>
+                    <span className="font-bold text-cyan-300">+{site.construction_growth_percent}%</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/30">
+                    <div
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        site.is_selected
+                          ? "bg-gradient-to-r from-cyan-400 to-blue-500"
+                          : "bg-cyan-500/60"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Neutral Factual Observations Box */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="flex items-center gap-2">
+          <Info className="h-4 w-4 text-primary" />
+          <h4 className="font-display text-xs font-bold uppercase tracking-wider text-primary">
+            Spatial Benchmark Observations
+          </h4>
+        </div>
+        <ul className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+          {observations.map((obs, idx) => (
+            <li key={idx} className="flex items-start gap-2">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+              <span>{obs}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
