@@ -26,7 +26,7 @@ export function TimelineSlider({
       if (isDragging) handleMove(e.clientX);
     };
     const onMouseUp = () => setIsDragging(false);
-    
+
     if (isDragging) {
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
@@ -43,8 +43,12 @@ export function TimelineSlider({
     <div className="flex w-full flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-2xl font-semibold text-white">Construction Heatmap (2021 - 2025)</h3>
-          <p className="text-slate-400 text-sm mt-1">Drag the slider to observe structural changes over time.</p>
+          <h3 className="font-display text-2xl font-semibold text-white">
+            Construction Heatmap (2021 - 2025)
+          </h3>
+          <p className="text-slate-400 text-sm mt-1">
+            Drag the slider to observe structural changes over time.
+          </p>
         </div>
         <button
           onClick={() => setShowRedOverlay(!showRedOverlay)}
@@ -59,7 +63,7 @@ export function TimelineSlider({
         </button>
       </div>
 
-      <div 
+      <div
         ref={containerRef}
         className="relative h-[400px] sm:h-[500px] w-full cursor-ew-resize overflow-hidden rounded-2xl border border-white/10 shadow-2xl touch-none"
         onMouseDown={(e) => {
@@ -76,18 +80,18 @@ export function TimelineSlider({
         onTouchEnd={() => setIsDragging(false)}
       >
         {/* Base Image (2021) */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center saturate-50 brightness-75"
           style={{ backgroundImage: `url('${image2021}')` }}
         />
 
         {/* Overlay Image (2025) */}
-        <div 
+        <div
           className="absolute inset-y-0 left-0 bg-cover bg-center"
-          style={{ 
-            backgroundImage: `url('${image2025}')`, 
+          style={{
+            backgroundImage: `url('${image2025}')`,
             width: `${sliderPos}%`,
-            borderRight: '2px solid rgba(255,255,255,0.8)'
+            borderRight: "2px solid rgba(255,255,255,0.8)",
           }}
         >
           {/* Red Highlight Overlay (Masked to 2025 visibility) */}
@@ -102,7 +106,7 @@ export function TimelineSlider({
         </div>
 
         {/* Slider Handle */}
-        <div 
+        <div
           className="absolute inset-y-0 flex items-center justify-center"
           style={{ left: `calc(${sliderPos}% - 24px)` }}
         >
@@ -113,7 +117,9 @@ export function TimelineSlider({
 
         {/* Year Label Float */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-6 py-2 backdrop-blur-md border border-white/10">
-          <span className="font-mono text-xl font-bold text-white tracking-widest">{yearDisplay}</span>
+          <span className="font-mono text-xl font-bold text-white tracking-widest">
+            {yearDisplay}
+          </span>
         </div>
       </div>
     </div>

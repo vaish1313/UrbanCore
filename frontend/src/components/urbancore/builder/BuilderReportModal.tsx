@@ -105,14 +105,23 @@ export function BuilderReportModal({
             {/* Score & Executive Summary */}
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Suitability Score</span>
-                <div className="font-display text-4xl font-bold text-primary mt-1">{aoi.suitabilityScore}/100</div>
-                <span className="font-mono text-[11px] font-semibold text-accent mt-1 block">HIGH SUITABILITY</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Suitability Score
+                </span>
+                <div className="font-display text-4xl font-bold text-primary mt-1">
+                  {aoi.suitabilityScore}/100
+                </div>
+                <span className="font-mono text-[11px] font-semibold text-accent mt-1 block">
+                  HIGH SUITABILITY
+                </span>
               </div>
               <div className="rounded-2xl border border-border/50 bg-foreground/[0.02] p-4 sm:col-span-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Executive Summary</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Executive Summary
+                </span>
                 <p className="mt-1 text-xs text-foreground/90 leading-relaxed">
-                  {aoi.summary} Terrain is characterized as {aoi.terrain.roughness} with {aoi.terrain.flatLandPercent}% buildable plane.
+                  {aoi.summary} Terrain is characterized as {aoi.terrain.roughness} with{" "}
+                  {aoi.terrain.flatLandPercent}% buildable plane.
                 </p>
               </div>
             </div>
@@ -120,22 +129,62 @@ export function BuilderReportModal({
             {/* Key Audit Sections */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4">
-                <h4 className="font-mono text-xs uppercase tracking-wider text-primary mb-2">Terrain & Readiness Audit</h4>
+                <h4 className="font-mono text-xs uppercase tracking-wider text-primary mb-2">
+                  Terrain & Readiness Audit
+                </h4>
                 <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex justify-between"><span>Elevation:</span> <strong className="text-foreground font-mono">{aoi.terrain.elevation} m MSL</strong></li>
-                  <li className="flex justify-between"><span>Average Slope:</span> <strong className="text-foreground font-mono">{aoi.terrain.slope}°</strong></li>
-                  <li className="flex justify-between"><span>Flat Area Availability:</span> <strong className="text-foreground font-mono">{aoi.terrain.flatLandPercent}%</strong></li>
-                  <li className="flex justify-between"><span>Site Preparation Level:</span> <strong className="text-accent font-mono">{aoi.terrain.readiness}</strong></li>
+                  <li className="flex justify-between">
+                    <span>Elevation:</span>{" "}
+                    <strong className="text-foreground font-mono">
+                      {aoi.terrain.elevation} m MSL
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Average Slope:</span>{" "}
+                    <strong className="text-foreground font-mono">{aoi.terrain.slope}°</strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Flat Area Availability:</span>{" "}
+                    <strong className="text-foreground font-mono">
+                      {aoi.terrain.flatLandPercent}%
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Site Preparation Level:</span>{" "}
+                    <strong className="text-accent font-mono">{aoi.terrain.readiness}</strong>
+                  </li>
                 </ul>
               </div>
 
               <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4">
-                <h4 className="font-mono text-xs uppercase tracking-wider text-primary mb-2">Constraints & Risk Audit</h4>
+                <h4 className="font-mono text-xs uppercase tracking-wider text-primary mb-2">
+                  Constraints & Risk Audit
+                </h4>
                 <ul className="space-y-1.5 text-xs text-muted-foreground">
-                  <li className="flex justify-between"><span>River Flood Overlap:</span> <strong className="text-foreground font-mono">{aoi.constraints.floodZoneOverlapPercent}%</strong></li>
-                  <li className="flex justify-between"><span>Forest Boundary Overlap:</span> <strong className="text-foreground font-mono">{aoi.constraints.forestBoundaryOverlapPercent}%</strong></li>
-                  <li className="flex justify-between"><span>Greenbelt Overlap:</span> <strong className="text-foreground font-mono">{aoi.constraints.greenBeltOverlapPercent}%</strong></li>
-                  <li className="flex justify-between"><span>Environmental Risk:</span> <strong className="text-amber-400 font-mono">{aoi.constraints.environmentalRestriction}</strong></li>
+                  <li className="flex justify-between">
+                    <span>River Flood Overlap:</span>{" "}
+                    <strong className="text-foreground font-mono">
+                      {aoi.constraints.floodZoneOverlapPercent}%
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Forest Boundary Overlap:</span>{" "}
+                    <strong className="text-foreground font-mono">
+                      {aoi.constraints.forestBoundaryOverlapPercent}%
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Greenbelt Overlap:</span>{" "}
+                    <strong className="text-foreground font-mono">
+                      {aoi.constraints.greenBeltOverlapPercent}%
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Environmental Risk:</span>{" "}
+                    <strong className="text-amber-400 font-mono">
+                      {aoi.constraints.environmentalRestriction}
+                    </strong>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -146,7 +195,8 @@ export function BuilderReportModal({
                 <CheckCircle2 className="h-4 w-4" /> Recommendation
               </div>
               <p className="text-xs text-foreground/90">
-                Suitable for residential/mixed-use investment. Ensure 100m statutory river set-back compliance prior to layout approval submission.
+                Suitable for residential/mixed-use investment. Ensure 100m statutory river set-back
+                compliance prior to layout approval submission.
               </p>
             </div>
 

@@ -70,8 +70,7 @@ export function LayerStack({
                 transition={{ duration: 1.2, delay: visible ? i * 0.08 : 0, ease }}
                 style={{
                   transformStyle: "preserve-3d",
-                  borderColor:
-                    focused === layer.id ? "var(--primary)" : "var(--glass-border)",
+                  borderColor: focused === layer.id ? "var(--primary)" : "var(--glass-border)",
                   background:
                     i === STACK.length - 1
                       ? "linear-gradient(135deg, oklch(0.72 0.14 235 / 16%), oklch(0.8 0.14 160 / 10%))"

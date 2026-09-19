@@ -9,7 +9,7 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Float, Integer, Boolean,
-    DateTime, Enum as SAEnum, Text, Index
+    DateTime, Enum as SAEnum, Text, Index, JSON
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import func
@@ -48,6 +48,11 @@ class AreaCache(Base):
         Index("ix_area_cache_lookup", "bbox_key", "year", unique=True),
     )
 
+    # ── Versions ────────────────────────────────────────────────────────
+    unet_version = Column(String(50), default="v1", nullable=False)
+    sam_version = Column(String(50), default="v1", nullable=False)
+    preproc_version = Column(String(50), default="v1", nullable=False)
+
     # ── Bounding box coordinates ────────────────────────────────────────
     min_lat = Column(Float, nullable=False)
     min_lon = Column(Float, nullable=False)
@@ -66,8 +71,7 @@ class AreaCache(Base):
 
     # ── AI inference results (from BuildingDetector) ────────────────────
     construction_detected = Column(Boolean, nullable=True)
-    mask_png_path = Column(String(500), nullable=True)  # S3 / local path to mask
-    rgb_png_path = Column(String(500), nullable=True)   # S3 / local path to RGB
+    geojson_features = Column(JSON, nullable=True)  # Stores building polygons in GeoJSON format
 
     # ── Zone violation results (from ViolationChecker) ──────────────────
     is_river_buffer = Column(Boolean, default=False, nullable=False)

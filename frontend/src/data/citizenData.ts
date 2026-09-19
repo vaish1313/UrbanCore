@@ -6,7 +6,8 @@ export const INITIAL_CITIZEN_REPORTS: CitizenReport[] = [
     referenceNumber: "UC-2026-00482",
     location: "Panchavati near Godavari Ramkund",
     concernType: "Possible illegal construction",
-    description: "Concrete pillars being erected close to the riverbank line inside the prohibited buffer zone.",
+    description:
+      "Concrete pillars being erected close to the riverbank line inside the prohibited buffer zone.",
     submittedAt: "2026-08-14",
     status: "Pending Review",
     contactName: "Aarav Sharma",
@@ -37,7 +38,8 @@ export const CITIZEN_NEIGHBORHOOD_STORIES = [
   {
     id: "panchavati",
     neighborhood: "Panchavati & Godavari Banks",
-    summary: "Heritage and river corridor. 12% increase in built structures since 2021 with heightened focus on riverbank green protection.",
+    summary:
+      "Heritage and river corridor. 12% increase in built structures since 2021 with heightened focus on riverbank green protection.",
     greeneryTrend: "Stable (-2%)",
     constructionTrend: "Moderate growth (+12%)",
     waterIndex: "High river presence",
@@ -45,7 +47,8 @@ export const CITIZEN_NEIGHBORHOOD_STORIES = [
   {
     id: "gangapur-road",
     neighborhood: "Gangapur Road Belt",
-    summary: "Active residential transformation. 52 new housing structures detected since 2021 with 74% flat-land availability.",
+    summary:
+      "Active residential transformation. 52 new housing structures detected since 2021 with 74% flat-land availability.",
     greeneryTrend: "Moderate drop (-6%)",
     constructionTrend: "High growth (+36.6%)",
     waterIndex: "Canal & dam downstream proximity",
@@ -53,7 +56,8 @@ export const CITIZEN_NEIGHBORHOOD_STORIES = [
   {
     id: "pathardi-phata",
     neighborhood: "Pathardi Phata & Mumbai Highway",
-    summary: "Fastest growing urban corridor in Nashik. Built-up footprint doubled between 2021 and 2025.",
+    summary:
+      "Fastest growing urban corridor in Nashik. Built-up footprint doubled between 2021 and 2025.",
     greeneryTrend: "Significant change (-14%)",
     constructionTrend: "Rapid growth (+114.2%)",
     waterIndex: "Low flood risk",
@@ -61,7 +65,8 @@ export const CITIZEN_NEIGHBORHOOD_STORIES = [
   {
     id: "cidco",
     neighborhood: "CIDCO & Ambad Link",
-    summary: "Well-established residential & commercial hub. High density redevelopment with low environmental constraints.",
+    summary:
+      "Well-established residential & commercial hub. High density redevelopment with low environmental constraints.",
     greeneryTrend: "Preserved canopy",
     constructionTrend: "Steady infill (+20.0%)",
     waterIndex: "Municipal supply managed",

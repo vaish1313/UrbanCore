@@ -114,12 +114,15 @@ function ScoreGauge({ score }: { score: number }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting && !animated) {
-        setAnimated(true);
-        setProgress(score / 100);
-      }
-    }, { threshold: 0.4 });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !animated) {
+          setAnimated(true);
+          setProgress(score / 100);
+        }
+      },
+      { threshold: 0.4 },
+    );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, [score, animated]);
@@ -130,9 +133,18 @@ function ScoreGauge({ score }: { score: number }) {
     <div ref={ref} className="cs-gauge-wrapper">
       <div className="cs-gauge-container">
         <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
           <circle
-            cx={size / 2} cy={size / 2} r={r}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
             fill="none"
             stroke="url(#gauge-gradient)"
             strokeWidth={strokeWidth}
@@ -193,13 +205,18 @@ function ScoreGauge({ score }: { score: number }) {
 
 // Single metric card
 function MetricCard({ metric, index }: { metric: PropertyMetric; index: number }) {
-  const Icon: any = ICON_MAP[metric.icon] ?? Leaf;
+  const Icon: React.ElementType = ICON_MAP[metric.icon] ?? Leaf;
   const [visible, setVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const displayVal = useCounter(metric.value, 1000, visible);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e?.isIntersecting) setVisible(true); }, { threshold: 0.3 });
+    const observer = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting) setVisible(true);
+      },
+      { threshold: 0.3 },
+    );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -222,7 +239,10 @@ function MetricCard({ metric, index }: { metric: PropertyMetric; index: number }
     >
       {/* Top row */}
       <div className="cs-metric-top">
-        <div className="cs-metric-icon" style={{ background: `${metric.color}15`, border: `1px solid ${metric.color}30` }}>
+        <div
+          className="cs-metric-icon"
+          style={{ background: `${metric.color}15`, border: `1px solid ${metric.color}30` }}
+        >
           <Icon className="h-4 w-4" style={{ color: metric.color }} />
         </div>
         <ProgressRing value={visible ? metric.value : 0} max={metric.max} color={metric.color} />
@@ -230,7 +250,9 @@ function MetricCard({ metric, index }: { metric: PropertyMetric; index: number }
 
       {/* Value */}
       <div className="cs-metric-value">
-        <span className="cs-metric-number">{metric.displayValue.startsWith("+") ? metric.displayValue : displayVal}</span>
+        <span className="cs-metric-number">
+          {metric.displayValue.startsWith("+") ? metric.displayValue : displayVal}
+        </span>
         <span className="cs-metric-unit">{metric.unit}</span>
       </div>
 
@@ -238,7 +260,14 @@ function MetricCard({ metric, index }: { metric: PropertyMetric; index: number }
       <p className="cs-metric-label">{metric.label}</p>
 
       {/* Status badge */}
-      <div className="cs-metric-status" style={{ background: `${statusColors[metric.status]}14`, color: statusColors[metric.status], border: `1px solid ${statusColors[metric.status]}30` }}>
+      <div
+        className="cs-metric-status"
+        style={{
+          background: `${statusColors[metric.status]}14`,
+          color: statusColors[metric.status],
+          border: `1px solid ${statusColors[metric.status]}30`,
+        }}
+      >
         {metric.statusLabel}
       </div>
 

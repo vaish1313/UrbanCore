@@ -4,15 +4,37 @@ import type { AOI } from "@/types/urbancore";
 
 export function SuitabilityScore({ aoi }: { aoi: AOI }) {
   const score = aoi.suitabilityScore;
-  const statusLabel = score >= 80 ? "HIGH SUITABILITY" : score >= 60 ? "MODERATE SUITABILITY" : "LOW SUITABILITY";
-  const statusColor = score >= 80 ? "text-accent" : score >= 60 ? "text-amber-400" : "text-destructive";
+  const statusLabel =
+    score >= 80 ? "HIGH SUITABILITY" : score >= 60 ? "MODERATE SUITABILITY" : "LOW SUITABILITY";
+  const statusColor =
+    score >= 80 ? "text-accent" : score >= 60 ? "text-amber-400" : "text-destructive";
 
   const factors = [
-    { label: "Terrain & Elevation", score: Math.round(100 - aoi.terrain.slope * 2.5), explanation: `${aoi.terrain.flatLandPercent}% flat land, average slope ${aoi.terrain.slope}°` },
-    { label: "Road Access & Connectivity", score: aoi.accessibilityScore, explanation: "Direct arterial highway connectivity and grid road density" },
-    { label: "Water Availability", score: aoi.waterAvailabilityScore, explanation: "Godavari canal network & municipal water pipeline supply" },
-    { label: "Environmental Restrictions", score: aoi.environmentalRiskScore, explanation: `Flood zone overlap: ${aoi.constraints.floodZoneOverlapPercent}%, Forest overlap: ${aoi.constraints.forestBoundaryOverlapPercent}%` },
-    { label: "Development Potential", score: aoi.developmentPotentialScore, explanation: "5-yr growth trajectory and low structural density saturation" },
+    {
+      label: "Terrain & Elevation",
+      score: Math.round(100 - aoi.terrain.slope * 2.5),
+      explanation: `${aoi.terrain.flatLandPercent}% flat land, average slope ${aoi.terrain.slope}°`,
+    },
+    {
+      label: "Road Access & Connectivity",
+      score: aoi.accessibilityScore,
+      explanation: "Direct arterial highway connectivity and grid road density",
+    },
+    {
+      label: "Water Availability",
+      score: aoi.waterAvailabilityScore,
+      explanation: "Godavari canal network & municipal water pipeline supply",
+    },
+    {
+      label: "Environmental Restrictions",
+      score: aoi.environmentalRiskScore,
+      explanation: `Flood zone overlap: ${aoi.constraints.floodZoneOverlapPercent}%, Forest overlap: ${aoi.constraints.forestBoundaryOverlapPercent}%`,
+    },
+    {
+      label: "Development Potential",
+      score: aoi.developmentPotentialScore,
+      explanation: "5-yr growth trajectory and low structural density saturation",
+    },
   ];
 
   const circumference = 2 * Math.PI * 52;
@@ -89,10 +111,15 @@ export function SuitabilityScore({ aoi }: { aoi: AOI }) {
         {/* Breakdown Factors */}
         <div className="flex flex-col gap-3 md:col-span-7">
           {factors.map((f, i) => (
-            <div key={f.label} className="group rounded-2xl border border-border/50 bg-foreground/[0.02] p-3 transition-colors hover:border-primary/30">
+            <div
+              key={f.label}
+              className="group rounded-2xl border border-border/50 bg-foreground/[0.02] p-3 transition-colors hover:border-primary/30"
+            >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-foreground">{f.label}</span>
-                <span className="font-mono text-xs font-semibold text-primary">{f.score} / 100</span>
+                <span className="font-mono text-xs font-semibold text-primary">
+                  {f.score} / 100
+                </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
                 <motion.div

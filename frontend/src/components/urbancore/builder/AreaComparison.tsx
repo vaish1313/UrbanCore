@@ -11,16 +11,50 @@ export function AreaComparison() {
   const areaB = NASHIK_AOIS.find((a) => a.id === areaBId) || NASHIK_AOIS[1]!;
 
   const preset = BUILDER_COMPARISON_PRESETS.find(
-    (p) => (p.areaA === areaAId && p.areaB === areaBId) || (p.areaA === areaBId && p.areaB === areaAId)
+    (p) =>
+      (p.areaA === areaAId && p.areaB === areaBId) || (p.areaA === areaBId && p.areaB === areaAId),
   );
 
   const customMetrics = [
-    { label: "Suitability Score", valA: areaA.suitabilityScore, valB: areaB.suitabilityScore, winner: areaA.suitabilityScore >= areaB.suitabilityScore ? "A" : "B" },
-    { label: "Flat Land %", valA: `${areaA.terrain.flatLandPercent}%`, valB: `${areaB.terrain.flatLandPercent}%`, winner: areaA.terrain.flatLandPercent >= areaB.terrain.flatLandPercent ? "A" : "B" },
-    { label: "Average Slope", valA: `${areaA.terrain.slope}°`, valB: `${areaB.terrain.slope}°`, winner: areaA.terrain.slope <= areaB.terrain.slope ? "A" : "B" },
-    { label: "Road Access Score", valA: areaA.accessibilityScore, valB: areaB.accessibilityScore, winner: areaA.accessibilityScore >= areaB.accessibilityScore ? "A" : "B" },
-    { label: "Flood Risk Overlap", valA: `${areaA.constraints.floodZoneOverlapPercent}%`, valB: `${areaB.constraints.floodZoneOverlapPercent}%`, winner: areaA.constraints.floodZoneOverlapPercent <= areaB.constraints.floodZoneOverlapPercent ? "A" : "B" },
-    { label: "Environmental Restriction", valA: areaA.constraints.environmentalRestriction, valB: areaB.constraints.environmentalRestriction, winner: areaA.constraints.environmentalRestriction === "Low" ? "A" : "B" },
+    {
+      label: "Suitability Score",
+      valA: areaA.suitabilityScore,
+      valB: areaB.suitabilityScore,
+      winner: areaA.suitabilityScore >= areaB.suitabilityScore ? "A" : "B",
+    },
+    {
+      label: "Flat Land %",
+      valA: `${areaA.terrain.flatLandPercent}%`,
+      valB: `${areaB.terrain.flatLandPercent}%`,
+      winner: areaA.terrain.flatLandPercent >= areaB.terrain.flatLandPercent ? "A" : "B",
+    },
+    {
+      label: "Average Slope",
+      valA: `${areaA.terrain.slope}°`,
+      valB: `${areaB.terrain.slope}°`,
+      winner: areaA.terrain.slope <= areaB.terrain.slope ? "A" : "B",
+    },
+    {
+      label: "Road Access Score",
+      valA: areaA.accessibilityScore,
+      valB: areaB.accessibilityScore,
+      winner: areaA.accessibilityScore >= areaB.accessibilityScore ? "A" : "B",
+    },
+    {
+      label: "Flood Risk Overlap",
+      valA: `${areaA.constraints.floodZoneOverlapPercent}%`,
+      valB: `${areaB.constraints.floodZoneOverlapPercent}%`,
+      winner:
+        areaA.constraints.floodZoneOverlapPercent <= areaB.constraints.floodZoneOverlapPercent
+          ? "A"
+          : "B",
+    },
+    {
+      label: "Environmental Restriction",
+      valA: areaA.constraints.environmentalRestriction,
+      valB: areaB.constraints.environmentalRestriction,
+      winner: areaA.constraints.environmentalRestriction === "Low" ? "A" : "B",
+    },
   ];
 
   const metrics = preset
@@ -39,9 +73,7 @@ export function AreaComparison() {
           <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
             GEOSPATIAL BENCHMARKING
           </span>
-          <h3 className="font-display text-lg font-medium text-foreground">
-            Compare Nearby Areas
-          </h3>
+          <h3 className="font-display text-lg font-medium text-foreground">Compare Nearby Areas</h3>
         </div>
         <span className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-primary">
           <ArrowRightLeft className="h-3.5 w-3.5" /> Side-by-Side Matrix
@@ -51,7 +83,9 @@ export function AreaComparison() {
       {/* Selector dropdowns */}
       <div className="grid items-center gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Area A</label>
+          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            Area A
+          </label>
           <select
             value={areaAId}
             onChange={(e) => setAreaAId(e.target.value)}
@@ -66,7 +100,9 @@ export function AreaComparison() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Area B</label>
+          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            Area B
+          </label>
           <select
             value={areaBId}
             onChange={(e) => setAreaBId(e.target.value)}
@@ -96,10 +132,14 @@ export function AreaComparison() {
             {metrics.map((m) => (
               <tr key={m.label} className="transition-colors hover:bg-white/[0.02]">
                 <td className="p-3.5 font-medium text-foreground">{m.label}</td>
-                <td className={`p-3.5 font-mono ${m.winner === "A" ? "font-bold text-primary" : "text-muted-foreground"}`}>
+                <td
+                  className={`p-3.5 font-mono ${m.winner === "A" ? "font-bold text-primary" : "text-muted-foreground"}`}
+                >
                   {m.valA}
                 </td>
-                <td className={`p-3.5 font-mono ${m.winner === "B" ? "font-bold text-accent" : "text-muted-foreground"}`}>
+                <td
+                  className={`p-3.5 font-mono ${m.winner === "B" ? "font-bold text-accent" : "text-muted-foreground"}`}
+                >
                   {m.valB}
                 </td>
                 <td className="p-3.5 text-right font-mono text-[10px]">

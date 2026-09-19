@@ -90,6 +90,8 @@ class Settings(BaseSettings):
     # Google Earth Engine
     GEE_SERVICE_ACCOUNT_EMAIL: str = ""
     GEE_PRIVATE_KEY_PATH: str = ""
+    GOOGLE_DRIVE_FOLDER_NAME: str = "UrbanCore_Data"
+    GOOGLE_DRIVE_FOLDER_ID: str = ""
     
     # Sentinel Hub
     SENTINEL_HUB_CLIENT_ID: str = ""
@@ -109,9 +111,10 @@ class Settings(BaseSettings):
     FIREBASE_CREDENTIALS_PATH: str = ""
     
     # AI Model
-    MODEL_PATH: str = "/app/ai/checkpoints"
-    SAM_CHECKPOINT_PATH: str = "/app/ai/checkpoints/sam_vit_h_4b8939.pth"
-    UNET_CHECKPOINT_PATH: str = "/app/ai/checkpoints/unet_best.pth"
+    MODEL_PATH: str = "/app/ml_models"
+    SAM_CHECKPOINT_PATH: str = "/app/ml_models/sam_vit_h_4b8939.pth"
+    UNET_CHECKPOINT_PATH: str = "/app/ml_models/best_unet_urbancore.pth"
+    ENABLE_SAM: bool = True
     DEVICE: str = "cuda"
     BATCH_SIZE: int = 8
     NUM_WORKERS: int = 4
@@ -121,7 +124,7 @@ class Settings(BaseSettings):
     VAL_DATA_PATH: str = "/data/validation"
     TEST_DATA_PATH: str = "/data/test"
     TENSORBOARD_LOG_DIR: str = "/logs/tensorboard"
-    CHECKPOINT_DIR: str = "/app/ai/checkpoints"
+    CHECKPOINT_DIR: str = "/app/ml_models"
     
     # Processing
     TEMP_DIR: str = "/tmp/urbancore"

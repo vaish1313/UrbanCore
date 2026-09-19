@@ -47,8 +47,6 @@ export function CityDescent({
   const regionScale = phase >= 4 ? 3.4 : phase >= 3 ? 1.9 : 1.25;
   const cityScale = phase >= 5 ? 1.06 + cityZoom * 0.14 : phase >= 4 ? 1.16 : 1.5;
 
-
-
   return (
     <div className="absolute inset-0 overflow-hidden bg-background">
       {/* Space */}
@@ -139,7 +137,6 @@ export function CityDescent({
           </motion.div>
         </motion.div>
       </motion.div>
-
 
       {/* Depth & vignette */}
       <div

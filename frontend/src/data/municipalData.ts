@@ -22,12 +22,14 @@ export const MUNICIPAL_ALERTS: MunicipalAlert[] = [
     evidence: {
       beforeImage: "/assets/city-nashik.jpg",
       afterImage: "/assets/region-maharashtra.jpg",
-      buildingFootprint: "Poly 14-vertex / 3-storey concrete foundation detected within 100m blue line buffer",
+      buildingFootprint:
+        "Poly 14-vertex / 3-storey concrete foundation detected within 100m blue line buffer",
       gpsCoords: "20.0078° N, 73.7911° E",
       satelliteSensor: "Sentinel-2 Multi-spectral (10m res)",
       detectionDate: "Nov 14, 2024",
     },
-    description: "Multi-year change detection flagged a newly constructed 3-storey commercial shell 42 meters inside the 100m Godavari statutory river regulation buffer.",
+    description:
+      "Multi-year change detection flagged a newly constructed 3-storey commercial shell 42 meters inside the 100m Godavari statutory river regulation buffer.",
   },
   {
     id: "enc-002",
@@ -48,7 +50,8 @@ export const MUNICIPAL_ALERTS: MunicipalAlert[] = [
       satelliteSensor: "Sentinel-2 NDVI Difference Mapping",
       detectionDate: "Mar 22, 2023",
     },
-    description: "Satellite vegetation index analysis detected 3.2 hectares of canopy clearing and 2 structural foundations within reserved forest survey boundaries.",
+    description:
+      "Satellite vegetation index analysis detected 3.2 hectares of canopy clearing and 2 structural foundations within reserved forest survey boundaries.",
   },
   {
     id: "enc-003",
@@ -69,7 +72,8 @@ export const MUNICIPAL_ALERTS: MunicipalAlert[] = [
       satelliteSensor: "Sentinel-2 NDBI + SAM Refinement",
       detectionDate: "Jan 18, 2025",
     },
-    description: "Unsanctioned structural erection detected on land designated as Agricultural Green Belt in Nashik DP 2036.",
+    description:
+      "Unsanctioned structural erection detected on land designated as Agricultural Green Belt in Nashik DP 2036.",
   },
   {
     id: "enc-004",
@@ -90,7 +94,8 @@ export const MUNICIPAL_ALERTS: MunicipalAlert[] = [
       satelliteSensor: "SRTM DEM + Sentinel-2 optical",
       detectionDate: "Aug 05, 2024",
     },
-    description: "Steep slope excavation (22.5° gradient) violating eco-sensitive zoning regulations in Trimbak eco-sensitive area.",
+    description:
+      "Steep slope excavation (22.5° gradient) violating eco-sensitive zoning regulations in Trimbak eco-sensitive area.",
   },
 ];
 
@@ -146,8 +151,32 @@ export const BUILDING_DETECTIONS: BuildingDetection[] = [
 ];
 
 export const GROWTH_HOTSPOTS = [
-  { id: "pathardi-phata", name: "Pathardi Phata", growthPercent: 114.2, buildingsAdded: 112, category: "Residential Corridor" },
-  { id: "ambad-midc", name: "Ambad MIDC", growthPercent: 45.2, buildingsAdded: 95, category: "Industrial Hub" },
-  { id: "gangapur-road", name: "Gangapur Road", growthPercent: 36.6, buildingsAdded: 52, category: "Luxury Residential" },
-  { id: "sinnar-outskirts", name: "Sinnar Outskirts", growthPercent: 192.3, buildingsAdded: 100, category: "Logistics Corridor" },
+  {
+    id: "pathardi-phata",
+    name: "Pathardi Phata",
+    growthPercent: 114.2,
+    buildingsAdded: 112,
+    category: "Residential Corridor",
+  },
+  {
+    id: "ambad-midc",
+    name: "Ambad MIDC",
+    growthPercent: 45.2,
+    buildingsAdded: 95,
+    category: "Industrial Hub",
+  },
+  {
+    id: "gangapur-road",
+    name: "Gangapur Road",
+    growthPercent: 36.6,
+    buildingsAdded: 52,
+    category: "Luxury Residential",
+  },
+  {
+    id: "sinnar-outskirts",
+    name: "Sinnar Outskirts",
+    growthPercent: 192.3,
+    buildingsAdded: 100,
+    category: "Logistics Corridor",
+  },
 ];

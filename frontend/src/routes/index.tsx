@@ -120,8 +120,18 @@ function Index() {
 
   const onSelect = useCallback((f: Feature) => setFeature(f), []);
 
-  const show = (id: "imagery" | "terrain" | "vegetation" | "roads" | "buildings" | "zones" | "intelligence" | null, on: boolean) =>
-    on && !inStack;
+  const show = (
+    id:
+      | "imagery"
+      | "terrain"
+      | "vegetation"
+      | "roads"
+      | "buildings"
+      | "zones"
+      | "intelligence"
+      | null,
+    on: boolean,
+  ) => on && !inStack;
 
   return (
     <main className="relative bg-background">
@@ -153,11 +163,7 @@ function Index() {
         />
 
         {/* The digital twin grows into a spatial city during this chapter. */}
-        <RisingCity
-          visible={inStack}
-          yaw={orbit.yaw}
-          tilt={orbit.tilt}
-        />
+        <RisingCity visible={inStack} yaw={orbit.yaw} tilt={orbit.tilt} />
 
         {/* Calming scrim so materialising UI stays legible */}
         <motion.div
@@ -253,14 +259,21 @@ function Index() {
 
       {/* Timeline scrubber for the construction chapter */}
       <div className="pointer-events-none fixed inset-x-0 bottom-8 z-30 px-6">
-        <GrowthTimeline value={year} onChange={setYear} visible={stage === S_GROWTH && !activeRole} />
+        <GrowthTimeline
+          value={year}
+          onChange={setYear}
+          visible={stage === S_GROWTH && !activeRole}
+        />
       </div>
 
-
       {/* Workspace — grows out of the map, never a new page */}
-      <div className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center px-6">
+      <div
+        className={`fixed inset-0 z-20 flex flex-col items-center overflow-y-auto px-6 py-24 sm:py-32 scrollbar-none ${
+          inWorkspace && !activeRole && !pendingAuthRole ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
         <motion.div
-          className="flex w-full max-w-3xl flex-col items-center text-center"
+          className="flex w-full max-w-3xl flex-col items-center text-center my-auto"
           initial={false}
           animate={
             inWorkspace && !activeRole && !pendingAuthRole
@@ -286,20 +299,26 @@ function Index() {
           </p>
 
           <div className="mt-10 w-full">
-            <IntelligenceSearch visible={inWorkspace && !activeRole && !pendingAuthRole} activeRole={activeRole} onSelectRole={setPendingAuthRole} />
+            <IntelligenceSearch
+              visible={inWorkspace && !activeRole && !pendingAuthRole}
+              activeRole={activeRole}
+              onSelectRole={setPendingAuthRole}
+            />
           </div>
 
           <div className="mt-12 w-full max-w-3xl">
-            <RoleCards pointer={pointer} visible={inWorkspace && !activeRole && !pendingAuthRole} onSelectRole={setPendingAuthRole} />
+            <RoleCards
+              pointer={pointer}
+              visible={inWorkspace && !activeRole && !pendingAuthRole}
+              onSelectRole={setPendingAuthRole}
+            />
           </div>
         </motion.div>
       </div>
 
       {/* Interactive Role Workspace Modal overlay */}
       <AnimatePresence>
-        {activeRole && (
-          <RoleWorkspace role={activeRole} onBack={() => setActiveRole(null)} />
-        )}
+        {activeRole && <RoleWorkspace role={activeRole} onBack={() => setActiveRole(null)} />}
       </AnimatePresence>
 
       <AuthModal
@@ -326,8 +345,6 @@ function Index() {
               ? "Approaching India"
               : "Establishing orbit"}
       </motion.p>
-
-
     </main>
   );
 }

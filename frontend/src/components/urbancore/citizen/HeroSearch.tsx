@@ -1,19 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  Search,
-  Mic,
-  LocateFixed,
-  Clock,
-  TrendingUp,
-  ChevronRight,
-  X,
-} from "lucide-react";
-import {
-  SEARCH_SUGGESTIONS,
-  POPULAR_SEARCHES,
-  RECENT_SEARCHES_KEY,
-} from "@/data/citizenMockData";
+import { Search, Mic, LocateFixed, Clock, TrendingUp, ChevronRight, X } from "lucide-react";
+import { SEARCH_SUGGESTIONS, POPULAR_SEARCHES, RECENT_SEARCHES_KEY } from "@/data/citizenMockData";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -38,7 +26,9 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
     try {
       const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
       if (stored) setRecentSearches(JSON.parse(stored).slice(0, 4));
-    } catch {}
+    } catch {
+      // Ignore parsing errors for localStorage
+    }
   }, []);
 
   // Close on outside click
@@ -60,18 +50,29 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
         return;
       }
       try {
-        const MAPBOX_TOKEN = "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+        const MAPBOX_TOKEN =
+          "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
         // Bounding box roughly covers Nashik to improve relevance
-        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&bbox=73.5,19.8,74.0,20.2`);
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&bbox=73.5,19.8,74.0,20.2`,
+        );
         const data = await res.json();
-        
+
         if (data.features) {
-          const suggestions = data.features.map((f: any) => ({
-            label: f.text,
-            type: f.context?.find((c: any) => c.id.startsWith('place'))?.text || "Location",
-            lat: f.center[1],
-            lng: f.center[0]
-          }));
+          const suggestions = data.features.map(
+            (f: {
+              text: string;
+              context?: { id: string; text: string }[];
+              center: [number, number];
+            }) => ({
+              label: f.text,
+              type:
+                f.context?.find((c: { id: string; text: string }) => c.id.startsWith("place"))
+                  ?.text || "Location",
+              lat: f.center[1],
+              lng: f.center[0],
+            }),
+          );
           setLiveSuggestions(suggestions);
         }
       } catch (e) {
@@ -83,12 +84,14 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
     return () => clearTimeout(debounceId);
   }, [query]);
 
-  const staticFiltered = query.length > 0
-    ? SEARCH_SUGGESTIONS.filter((s) =>
-        s.label.toLowerCase().includes(query.toLowerCase()) ||
-        s.type.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6)
-    : [];
+  const staticFiltered =
+    query.length > 0
+      ? SEARCH_SUGGESTIONS.filter(
+          (s) =>
+            s.label.toLowerCase().includes(query.toLowerCase()) ||
+            s.type.toLowerCase().includes(query.toLowerCase()),
+        ).slice(0, 6)
+      : [];
 
   const filtered = liveSuggestions.length > 0 ? liveSuggestions : staticFiltered;
 
@@ -96,19 +99,24 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
   const showRecent = focused && query.length === 0 && recentSearches.length > 0;
   const showPopular = focused && query.length === 0;
 
-  const handleSelect = useCallback((s: Suggestion) => {
-    setQuery(s.label);
-    setFocused(false);
+  const handleSelect = useCallback(
+    (s: Suggestion) => {
+      setQuery(s.label);
+      setFocused(false);
 
-    // Save to recent
-    try {
-      const next = [s, ...recentSearches.filter((r) => r.label !== s.label)].slice(0, 4);
-      setRecentSearches(next);
-      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-    } catch {}
+      // Save to recent
+      try {
+        const next = [s, ...recentSearches.filter((r) => r.label !== s.label)].slice(0, 4);
+        setRecentSearches(next);
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore localStorage errors
+      }
 
-    onSearch(s);
-  }, [recentSearches, onSearch]);
+      onSearch(s);
+    },
+    [recentSearches, onSearch],
+  );
 
   const clearRecent = () => {
     setRecentSearches([]);
@@ -120,17 +128,20 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
       alert("Geolocation is not supported by your browser");
       return;
     }
-    
+
     setIsLocating(true);
-    
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         let placeName = "Your Current Location";
-        
+
         try {
-          const MAPBOX_TOKEN = "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
-          const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`);
+          const MAPBOX_TOKEN =
+            "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`,
+          );
           const data = await res.json();
           if (data.features && data.features.length > 0) {
             placeName = data.features[0].place_name;
@@ -138,7 +149,7 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
         } catch (error) {
           console.error("Geocoding failed:", error);
         }
-        
+
         setIsLocating(false);
         handleSelect({ label: placeName, type: "GPS Location", lat: latitude, lng: longitude });
       },
@@ -146,7 +157,7 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
         setIsLocating(false);
         alert("Unable to retrieve your location. Please check browser permissions.");
         console.error(error);
-      }
+      },
     );
   };
 
@@ -177,15 +188,19 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
 
         {/* Subtitle */}
         <p className="cs-hero-subtitle">
-          Explore your locality using satellite intelligence, monitor urban
-          development, and generate AI-powered location insights.
+          Explore your locality using satellite intelligence, monitor urban development, and
+          generate AI-powered location insights.
         </p>
 
         {/* Search bar */}
         <div ref={wrapperRef} className="cs-search-wrapper">
           <motion.div
             className={`cs-search-bar ${focused ? "cs-search-bar--focused" : ""}`}
-            animate={{ boxShadow: focused ? "0 0 0 2px rgba(34,211,238,0.25), 0 8px 32px rgba(0,0,0,0.4)" : "0 4px 24px rgba(0,0,0,0.3)" }}
+            animate={{
+              boxShadow: focused
+                ? "0 0 0 2px rgba(34,211,238,0.25), 0 8px 32px rgba(0,0,0,0.4)"
+                : "0 4px 24px rgba(0,0,0,0.3)",
+            }}
             transition={{ duration: 0.2 }}
           >
             <Search className="cs-search-icon-left" aria-hidden />
@@ -206,7 +221,15 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
               aria-label="Search location"
             />
             {query && (
-              <button type="button" className="cs-search-clear" onClick={() => { setQuery(""); inputRef.current?.focus(); }} aria-label="Clear search">
+              <button
+                type="button"
+                className="cs-search-clear"
+                onClick={() => {
+                  setQuery("");
+                  inputRef.current?.focus();
+                }}
+                aria-label="Clear search"
+              >
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -232,7 +255,9 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
               ) : (
                 <LocateFixed className="h-4 w-4" />
               )}
-              <span className="hidden sm:inline">{isLocating ? "Locating..." : "Use My Location"}</span>
+              <span className="hidden sm:inline">
+                {isLocating ? "Locating..." : "Use My Location"}
+              </span>
             </motion.button>
             {/* Search button */}
             <motion.button
@@ -262,7 +287,12 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
                   <div className="cs-dropdown-section">
                     <p className="cs-dropdown-label">Results</p>
                     {filtered.map((s) => (
-                      <DropdownItem key={s.label} item={s} onSelect={handleSelect} icon={<Search className="h-4 w-4 text-cyan-400" />} />
+                      <DropdownItem
+                        key={s.label}
+                        item={s}
+                        onSelect={handleSelect}
+                        icon={<Search className="h-4 w-4 text-cyan-400" />}
+                      />
                     ))}
                   </div>
                 )}
@@ -272,10 +302,17 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
                   <div className="cs-dropdown-section">
                     <div className="cs-dropdown-label-row">
                       <p className="cs-dropdown-label">Recent</p>
-                      <button type="button" className="cs-dropdown-clear" onClick={clearRecent}>Clear</button>
+                      <button type="button" className="cs-dropdown-clear" onClick={clearRecent}>
+                        Clear
+                      </button>
                     </div>
                     {recentSearches.map((s) => (
-                      <DropdownItem key={s.label} item={s} onSelect={handleSelect} icon={<Clock className="h-4 w-4 text-slate-500" />} />
+                      <DropdownItem
+                        key={s.label}
+                        item={s}
+                        onSelect={handleSelect}
+                        icon={<Clock className="h-4 w-4 text-slate-500" />}
+                      />
                     ))}
                   </div>
                 )}
@@ -285,7 +322,12 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
                   <div className="cs-dropdown-section">
                     <p className="cs-dropdown-label">Popular in Nashik</p>
                     {POPULAR_SEARCHES.map((s) => (
-                      <DropdownItem key={s.label} item={s} onSelect={handleSelect} icon={<TrendingUp className="h-4 w-4 text-cyan-500/70" />} />
+                      <DropdownItem
+                        key={s.label}
+                        item={s}
+                        onSelect={handleSelect}
+                        icon={<TrendingUp className="h-4 w-4 text-cyan-500/70" />}
+                      />
                     ))}
                   </div>
                 )}
@@ -537,7 +579,7 @@ function DropdownItem({
   icon,
 }: {
   item: { label: string; type: string; lat: number; lng: number };
-  onSelect: (s: any) => void;
+  onSelect: (s: Suggestion) => void;
   icon: React.ReactNode;
 }) {
   return (
@@ -563,8 +605,22 @@ function DropdownItem({
     >
       <span style={{ flexShrink: 0 }}>{icon}</span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: "0.875rem", color: "#f1f5f9", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
-        <span style={{ display: "block", fontSize: "0.7rem", color: "#475569", marginTop: 1 }}>{item.type}</span>
+        <span
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            color: "#f1f5f9",
+            fontWeight: 500,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.label}
+        </span>
+        <span style={{ display: "block", fontSize: "0.7rem", color: "#475569", marginTop: 1 }}>
+          {item.type}
+        </span>
       </span>
     </button>
   );
