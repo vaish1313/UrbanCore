@@ -53,6 +53,7 @@ export function RoleWorkspace({
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onSelectAlert={onSelectAlert}
+            onBack={onBack}
           />
         )}
         {role === "citizen" && (
