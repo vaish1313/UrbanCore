@@ -4,7 +4,12 @@ import type { AOI } from "@/types/urbancore";
 export function SiteReadiness({ aoi }: { aoi: AOI }) {
   const { elevation, slope, roughness, flatLandPercent, readiness } = aoi.terrain;
 
-  const readinessColor = readiness === "HIGH" ? "text-accent bg-accent/10 border-accent/30" : readiness === "MEDIUM" ? "text-amber-400 bg-amber-400/10 border-amber-400/30" : "text-destructive bg-destructive/10 border-destructive/30";
+  const readinessColor =
+    readiness === "HIGH"
+      ? "text-accent bg-accent/10 border-accent/30"
+      : readiness === "MEDIUM"
+        ? "text-amber-400 bg-amber-400/10 border-amber-400/30"
+        : "text-destructive bg-destructive/10 border-destructive/30";
 
   return (
     <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
@@ -17,7 +22,9 @@ export function SiteReadiness({ aoi }: { aoi: AOI }) {
             Site Preparation & Readiness
           </h3>
         </div>
-        <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wider font-semibold ${readinessColor}`}>
+        <span
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wider font-semibold ${readinessColor}`}
+        >
           <CheckCircle className="h-3.5 w-3.5" /> Readiness: {readiness}
         </span>
       </div>
@@ -33,7 +40,9 @@ export function SiteReadiness({ aoi }: { aoi: AOI }) {
             <span className="font-display text-2xl font-semibold text-foreground">{elevation}</span>
             <span className="font-mono text-xs text-muted-foreground">m MSL</span>
           </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Above Mean Sea Level (SRTM 30m dataset)</p>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Above Mean Sea Level (SRTM 30m dataset)
+          </p>
         </div>
 
         {/* Metric 2: Slope */}
@@ -46,7 +55,9 @@ export function SiteReadiness({ aoi }: { aoi: AOI }) {
             <span className="font-display text-2xl font-semibold text-foreground">{slope}°</span>
             <span className="font-mono text-xs text-muted-foreground">gradient</span>
           </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Low grading expense required for foundation</p>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Low grading expense required for foundation
+          </p>
         </div>
 
         {/* Metric 3: Flat Land */}
@@ -56,10 +67,14 @@ export function SiteReadiness({ aoi }: { aoi: AOI }) {
             <Layers className="h-4 w-4 text-accent" />
           </div>
           <div className="mt-2 flex items-baseline gap-1">
-            <span className="font-display text-2xl font-semibold text-accent">{flatLandPercent}%</span>
+            <span className="font-display text-2xl font-semibold text-accent">
+              {flatLandPercent}%
+            </span>
             <span className="font-mono text-xs text-muted-foreground">buildable</span>
           </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Contiguous un-excavated buildable plane</p>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Contiguous un-excavated buildable plane
+          </p>
         </div>
 
         {/* Metric 4: Roughness */}
@@ -71,7 +86,9 @@ export function SiteReadiness({ aoi }: { aoi: AOI }) {
           <div className="mt-2 font-display text-lg font-semibold text-foreground truncate">
             {roughness}
           </div>
-          <p className="mt-2 text-[10px] text-muted-foreground">Sub-surface stability & rock depth profile</p>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Sub-surface stability & rock depth profile
+          </p>
         </div>
       </div>
 

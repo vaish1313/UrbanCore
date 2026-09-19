@@ -8,7 +8,10 @@ export function ConstructionMonitor() {
   const [selectedBld, setSelectedBld] = useState<BuildingDetection | null>(BUILDING_DETECTIONS[0]!);
 
   const filtered = BUILDING_DETECTIONS.filter(
-    (b) => filterYear === "ALL" || b.firstDetectedYear === filterYear || b.latestDetectedYear === filterYear
+    (b) =>
+      filterYear === "ALL" ||
+      b.firstDetectedYear === filterYear ||
+      b.latestDetectedYear === filterYear,
   );
 
   return (
@@ -26,12 +29,14 @@ export function ConstructionMonitor() {
         {/* Year Filter */}
         <div className="flex items-center gap-2">
           <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Filter Year:</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            Filter Year:
+          </span>
           {["ALL", 2021, 2022, 2023, 2024, 2025].map((y) => (
             <button
               key={y.toString()}
               type="button"
-              onClick={() => setFilterYear(y as any)}
+              onClick={() => setFilterYear(y as number | "ALL")}
               className={`rounded-lg px-2.5 py-1 font-mono text-[11px] transition-colors ${
                 filterYear === y
                   ? "bg-primary text-primary-foreground font-semibold"
@@ -64,10 +69,10 @@ export function ConstructionMonitor() {
                 b.status === "Newly Detected"
                   ? "text-accent bg-accent/10 border-accent/30"
                   : b.status === "Under Review"
-                  ? "text-amber-400 bg-amber-400/10 border-amber-400/30"
-                  : b.status === "Changed"
-                  ? "text-primary bg-primary/10 border-primary/30"
-                  : "text-muted-foreground bg-foreground/5 border-border";
+                    ? "text-amber-400 bg-amber-400/10 border-amber-400/30"
+                    : b.status === "Changed"
+                      ? "text-primary bg-primary/10 border-primary/30"
+                      : "text-muted-foreground bg-foreground/5 border-border";
 
               return (
                 <tr
@@ -80,7 +85,9 @@ export function ConstructionMonitor() {
                       <Building2 className="h-4 w-4 text-primary shrink-0" />
                       <div>
                         <span>{b.location}</span>
-                        <span className="block font-mono text-[9px] text-muted-foreground">{b.id}</span>
+                        <span className="block font-mono text-[9px] text-muted-foreground">
+                          {b.id}
+                        </span>
                       </div>
                     </div>
                   </td>
@@ -89,7 +96,9 @@ export function ConstructionMonitor() {
                   <td className="p-3.5 font-mono text-foreground">{b.builtUpAreaSqM} m²</td>
                   <td className="p-3.5 text-muted-foreground">{b.nearbyProtectedZone}</td>
                   <td className="p-3.5 text-right">
-                    <span className={`inline-block rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-wider font-semibold ${statusColor}`}>
+                    <span
+                      className={`inline-block rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-wider font-semibold ${statusColor}`}
+                    >
                       {b.status}
                     </span>
                   </td>

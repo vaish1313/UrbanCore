@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, KeySquare, Mail, Lock, User, ArrowRight, Phone, MapPin, Eye, EyeOff } from "lucide-react";
+import {
+  X,
+  KeySquare,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  Phone,
+  MapPin,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -39,12 +50,12 @@ export function AuthModal({
           full_name: name,
           phone,
           address,
-          role: role === "municipal" ? "MUNICIPAL_CORP" : role?.toUpperCase()
+          role: role === "municipal" ? "MUNICIPAL_CORP" : role?.toUpperCase(),
         });
       }
       onSuccess();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -68,7 +79,7 @@ export function AuthModal({
           >
             {/* Header Glow */}
             <div className="absolute left-1/2 top-0 h-32 w-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-[60px]" />
-            
+
             <button
               type="button"
               onClick={onClose}
@@ -86,7 +97,8 @@ export function AuthModal({
                   {isLogin ? "Welcome Back" : "Create Account"}
                 </h3>
                 <p className="mt-2 text-sm font-light text-muted-foreground">
-                  Access the <span className="font-medium text-foreground capitalize">{role}</span> Workspace
+                  Access the <span className="font-medium text-foreground capitalize">{role}</span>{" "}
+                  Workspace
                 </p>
               </div>
 
@@ -95,7 +107,9 @@ export function AuthModal({
                   type="button"
                   onClick={() => setIsLogin(false)}
                   className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
-                    !isLogin ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    !isLogin
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Register
@@ -104,7 +118,9 @@ export function AuthModal({
                   type="button"
                   onClick={() => setIsLogin(true)}
                   className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
-                    isLogin ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    isLogin
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   Login
@@ -152,7 +168,7 @@ export function AuthModal({
                     </div>
                   </>
                 )}
-                
+
                 <div className="group relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
                   <input
@@ -186,7 +202,10 @@ export function AuthModal({
 
                 {isLogin && (
                   <div className="flex justify-end mt-[-8px]">
-                    <button type="button" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
                       Forgot Password?
                     </button>
                   </div>

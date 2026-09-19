@@ -16,16 +16,43 @@ import type { CitizenReportFull, StatusType } from "@/data/citizenMockData";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-const STATUS_STYLES: Record<StatusType, { bg: string; text: string; border: string; icon: React.ElementType; label: string }> = {
-  Pending: { bg: "rgba(250,204,21,0.1)", text: "#fbbf24", border: "rgba(250,204,21,0.25)", icon: Clock, label: "Pending" },
-  "Under Review": { bg: "rgba(251,146,60,0.1)", text: "#fb923c", border: "rgba(251,146,60,0.25)", icon: Search, label: "Under Review" },
-  Resolved: { bg: "rgba(52,211,153,0.1)", text: "#34d399", border: "rgba(52,211,153,0.25)", icon: CheckCircle2, label: "Resolved" },
-  Rejected: { bg: "rgba(248,113,113,0.1)", text: "#f87171", border: "rgba(248,113,113,0.25)", icon: XCircle, label: "Rejected" },
+const STATUS_STYLES: Record<
+  StatusType,
+  { bg: string; text: string; border: string; icon: React.ElementType; label: string }
+> = {
+  Pending: {
+    bg: "rgba(250,204,21,0.1)",
+    text: "#fbbf24",
+    border: "rgba(250,204,21,0.25)",
+    icon: Clock,
+    label: "Pending",
+  },
+  "Under Review": {
+    bg: "rgba(251,146,60,0.1)",
+    text: "#fb923c",
+    border: "rgba(251,146,60,0.25)",
+    icon: Search,
+    label: "Under Review",
+  },
+  Resolved: {
+    bg: "rgba(52,211,153,0.1)",
+    text: "#34d399",
+    border: "rgba(52,211,153,0.25)",
+    icon: CheckCircle2,
+    label: "Resolved",
+  },
+  Rejected: {
+    bg: "rgba(248,113,113,0.1)",
+    text: "#f87171",
+    border: "rgba(248,113,113,0.25)",
+    icon: XCircle,
+    label: "Rejected",
+  },
 };
 
 function StatusBadge({ status }: { status: StatusType }) {
   const s = STATUS_STYLES[status]!;
-  const Icon: any = s.icon;
+  const Icon: React.ElementType = s.icon;
   const style: React.CSSProperties = { background: s.bg, color: s.text, borderColor: s.border };
   return (
     <span className="cs-report-status" style={style}>
@@ -72,7 +99,9 @@ function ReportCard({ report }: { report: CitizenReportFull }) {
         </div>
         <div className="cs-myr-card-info">
           <p className="cs-myr-location">{report.location}</p>
-          <p className="cs-myr-meta">{report.type} · {report.date}</p>
+          <p className="cs-myr-meta">
+            {report.type} · {report.date}
+          </p>
         </div>
         <motion.div
           animate={{ rotate: expanded ? 180 : 0 }}
@@ -148,9 +177,18 @@ interface MyReportsProps {
 
 export function MyReports({ onNewReport }: MyReportsProps) {
   const [filter, setFilter] = useState<StatusType | "All">("All");
-  const filters: (StatusType | "All")[] = ["All", "Pending", "Under Review", "Resolved", "Rejected"];
+  const filters: (StatusType | "All")[] = [
+    "All",
+    "Pending",
+    "Under Review",
+    "Resolved",
+    "Rejected",
+  ];
 
-  const filtered = filter === "All" ? MOCK_CITIZEN_REPORTS : MOCK_CITIZEN_REPORTS.filter((r) => r.status === filter);
+  const filtered =
+    filter === "All"
+      ? MOCK_CITIZEN_REPORTS
+      : MOCK_CITIZEN_REPORTS.filter((r) => r.status === filter);
 
   return (
     <motion.section
@@ -168,7 +206,9 @@ export function MyReports({ onNewReport }: MyReportsProps) {
             Citizen Portal
           </p>
           <h2 className="cs-myr-title">My Submitted Reports</h2>
-          <p className="cs-myr-subtitle">{MOCK_CITIZEN_REPORTS.length} reports filed · click to expand</p>
+          <p className="cs-myr-subtitle">
+            {MOCK_CITIZEN_REPORTS.length} reports filed · click to expand
+          </p>
         </div>
         <motion.button
           type="button"

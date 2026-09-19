@@ -56,7 +56,12 @@ export const CHAPTERS: readonly Chapter[] = [
   },
   {
     eyebrow: "AI decision support",
-    beats: [{ lines: ["Raw data"] }, { lines: ["Patterns"] }, { lines: ["Context"] }, { lines: ["Intelligence"] }],
+    beats: [
+      { lines: ["Raw data"] },
+      { lines: ["Patterns"] },
+      { lines: ["Context"] },
+      { lines: ["Intelligence"] },
+    ],
   },
 ];
 

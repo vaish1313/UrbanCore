@@ -18,7 +18,7 @@ export function RoleWorkspace({
   onSelectAlert?: ((alertId: string) => void) | undefined;
 }) {
   const [activeTab, setActiveTab] = useState(
-    role === "builder" ? "overview" : role === "municipal" ? "command" : "explore"
+    role === "builder" ? "overview" : role === "municipal" ? "command" : "explore",
   );
 
   if (!role) return null;
@@ -40,10 +40,20 @@ export function RoleWorkspace({
 
       <AnimatePresence mode="wait">
         {role === "builder" && (
-          <BuilderDashboard key="builder" activeTab={activeTab} onTabChange={setActiveTab} onSelectAoi={onSelectAoi} />
+          <BuilderDashboard
+            key="builder"
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onSelectAoi={onSelectAoi}
+          />
         )}
         {role === "municipal" && (
-          <MunicipalDashboard key="municipal" activeTab={activeTab} onTabChange={setActiveTab} onSelectAlert={onSelectAlert} />
+          <MunicipalDashboard
+            key="municipal"
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onSelectAlert={onSelectAlert}
+          />
         )}
         {role === "citizen" && (
           <CitizenDashboard key="citizen" activeTab={activeTab} onTabChange={setActiveTab} />

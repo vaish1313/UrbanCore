@@ -71,7 +71,12 @@ export type CitizenReport = {
   id: string;
   referenceNumber: string;
   location: string;
-  concernType: "Possible illegal construction" | "River / waterbody concern" | "Green area concern" | "Environmental concern" | "Other";
+  concernType:
+    | "Possible illegal construction"
+    | "River / waterbody concern"
+    | "Green area concern"
+    | "Environmental concern"
+    | "Other";
   description: string;
   submittedAt: string;
   status: "Pending Review" | "Verified" | "Action Taken";

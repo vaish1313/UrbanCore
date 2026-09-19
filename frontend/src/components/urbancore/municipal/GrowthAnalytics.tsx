@@ -26,7 +26,9 @@ export function GrowthAnalytics({ onSelectHotspot }: { onSelectHotspot?: (id: st
             className="group cursor-pointer rounded-2xl border border-border/50 bg-foreground/[0.02] p-4 transition-all duration-300 hover:border-primary/40 hover:bg-primary/5"
           >
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-primary">{hotspot.category}</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                {hotspot.category}
+              </span>
               <MapPin className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" />
             </div>
 
@@ -35,8 +37,12 @@ export function GrowthAnalytics({ onSelectHotspot }: { onSelectHotspot?: (id: st
             </h4>
 
             <div className="mt-3 flex items-baseline justify-between">
-              <span className="font-mono text-2xl font-bold text-accent">+{hotspot.growthPercent}%</span>
-              <span className="font-mono text-xs text-muted-foreground">+{hotspot.buildingsAdded} structures</span>
+              <span className="font-mono text-2xl font-bold text-accent">
+                +{hotspot.growthPercent}%
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                +{hotspot.buildingsAdded} structures
+              </span>
             </div>
 
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border/40">

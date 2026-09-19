@@ -13,23 +13,23 @@ export const CITIZEN_USER = {
 // ── Search ────────────────────────────────────────────────────────────────────
 export const POPULAR_SEARCHES = [
   { label: "Gangapur Road", type: "Residential Area", lat: 20.0059, lng: 73.7912 },
-  { label: "Panchavati", type: "Heritage & Riverfront", lat: 20.0120, lng: 73.7891 },
-  { label: "Pathardi Phata", type: "Developing Zone", lat: 19.9780, lng: 73.8150 },
-  { label: "Nashik Road", type: "Industrial Corridor", lat: 19.9800, lng: 73.8200 },
-  { label: "CIDCO Nashik", type: "Planned Township", lat: 20.0020, lng: 73.7850 },
+  { label: "Panchavati", type: "Heritage & Riverfront", lat: 20.012, lng: 73.7891 },
+  { label: "Pathardi Phata", type: "Developing Zone", lat: 19.978, lng: 73.815 },
+  { label: "Nashik Road", type: "Industrial Corridor", lat: 19.98, lng: 73.82 },
+  { label: "CIDCO Nashik", type: "Planned Township", lat: 20.002, lng: 73.785 },
 ];
 
 export const RECENT_SEARCHES_KEY = "uc_citizen_recent_searches";
 
 export const SEARCH_SUGGESTIONS = [
   { label: "Gangapur Road, Plot 4A", type: "Address", lat: 20.0059, lng: 73.7912 },
-  { label: "Gangapur Village", type: "Village", lat: 20.0090, lng: 73.7930 },
-  { label: "Panchavati Sector", type: "Locality", lat: 20.0120, lng: 73.7891 },
-  { label: "Pathardi Phata", type: "Developing Zone", lat: 19.9780, lng: 73.8150 },
+  { label: "Gangapur Village", type: "Village", lat: 20.009, lng: 73.793 },
+  { label: "Panchavati Sector", type: "Locality", lat: 20.012, lng: 73.7891 },
+  { label: "Pathardi Phata", type: "Developing Zone", lat: 19.978, lng: 73.815 },
   { label: "422001", type: "PIN Code", lat: 19.9975, lng: 73.7898 },
-  { label: "Nashik Road", type: "Industrial Area", lat: 19.9800, lng: 73.8200 },
-  { label: "Godavari Riverbank, Sec 2", type: "Zone", lat: 20.0140, lng: 73.7760 },
-  { label: "CIDCO Ambad", type: "Planned Township", lat: 20.0020, lng: 73.7850 },
+  { label: "Nashik Road", type: "Industrial Area", lat: 19.98, lng: 73.82 },
+  { label: "Godavari Riverbank, Sec 2", type: "Zone", lat: 20.014, lng: 73.776 },
+  { label: "CIDCO Ambad", type: "Planned Township", lat: 20.002, lng: 73.785 },
 ];
 
 // ── Map / Location ─────────────────────────────────────────────────────────────
@@ -44,8 +44,16 @@ export type MapMarker = {
 };
 
 export const DEFAULT_MARKERS: MapMarker[] = [
-  { id: "m1", label: "Selected Location", lat: 20.0059, lng: 73.7912, x: 29, y: 41, color: "orange" },
-  { id: "m2", label: "Another Location", lat: 20.0120, lng: 73.7891, x: 63, y: 57, color: "teal" },
+  {
+    id: "m1",
+    label: "Selected Location",
+    lat: 20.0059,
+    lng: 73.7912,
+    x: 29,
+    y: 41,
+    color: "orange",
+  },
+  { id: "m2", label: "Another Location", lat: 20.012, lng: 73.7891, x: 63, y: 57, color: "teal" },
 ];
 
 export type LocationInfo = {
@@ -216,6 +224,8 @@ export const TIMELINE_YEARS = [2021, 2022, 2023, 2024, 2025];
 export type TimelineYearData = {
   year: number;
   buildingCount: number;
+  newConstructions: number; // Dynamic UI stat
+  areaCovered: number; // Dynamic UI stat
   builtUpChange: number; // %
   greenCover: number; // %
   roadsKm: number;
@@ -223,11 +233,59 @@ export type TimelineYearData = {
 };
 
 export const TIMELINE_DATA: Record<number, TimelineYearData> = {
-  2021: { year: 2021, buildingCount: 142, builtUpChange: 0, greenCover: 41, roadsKm: 38, description: "Baseline year. Predominantly agricultural land with scattered residential clusters." },
-  2022: { year: 2022, buildingCount: 168, builtUpChange: 8.2, greenCover: 39, roadsKm: 42, description: "New residential plots approved near Gangapur Dam approach road." },
-  2023: { year: 2023, buildingCount: 211, builtUpChange: 22.4, greenCover: 36, roadsKm: 48, description: "Highway expansion triggered rapid commercial development along eastern belt." },
-  2024: { year: 2024, buildingCount: 274, builtUpChange: 38.1, greenCover: 34, roadsKm: 53, description: "High-density construction detected near riverbank buffer zones — flagged for review." },
-  2025: { year: 2025, buildingCount: 321, builtUpChange: 55.7, greenCover: 31, roadsKm: 58, description: "Continued rapid urbanisation. 3 construction sites under municipal investigation." },
+  2021: {
+    year: 2021,
+    buildingCount: 142,
+    newConstructions: 5,
+    areaCovered: 259,
+    builtUpChange: 0,
+    greenCover: 41,
+    roadsKm: 38,
+    description:
+      "Baseline year. Predominantly agricultural land with scattered residential clusters.",
+  },
+  2022: {
+    year: 2022,
+    buildingCount: 168,
+    newConstructions: 12,
+    areaCovered: 261,
+    builtUpChange: 8.2,
+    greenCover: 39,
+    roadsKm: 42,
+    description: "New residential plots approved near Gangapur Dam approach road.",
+  },
+  2023: {
+    year: 2023,
+    buildingCount: 211,
+    newConstructions: 24,
+    areaCovered: 258,
+    builtUpChange: 22.4,
+    greenCover: 36,
+    roadsKm: 48,
+    description: "Highway expansion triggered rapid commercial development along eastern belt.",
+  },
+  2024: {
+    year: 2024,
+    buildingCount: 274,
+    newConstructions: 38,
+    areaCovered: 262,
+    builtUpChange: 38.1,
+    greenCover: 34,
+    roadsKm: 53,
+    description:
+      "High-density construction detected near riverbank buffer zones — flagged for review.",
+  },
+  2025: {
+    year: 2025,
+    buildingCount: 321,
+    newConstructions: 51,
+    areaCovered: 260,
+    builtUpChange: 55.7,
+    greenCover: 31,
+    roadsKm: 58,
+    description:
+      "Continued rapid urbanisation. 3 construction sites under municipal investigation.",
+  },
 };
 
 // ── AI Report ─────────────────────────────────────────────────────────────────
@@ -245,56 +303,64 @@ export const AI_REPORT_SECTIONS: AIReportSection[] = [
     title: "Overview",
     icon: "BarChart3",
     sentiment: "neutral",
-    content: "Gangapur Road locality in Nashik shows significant urban development activity between 2021 and 2025. The area sits at 565m elevation with moderate terrain slope, making it structurally suitable for mixed-use development.",
+    content:
+      "Gangapur Road locality in Nashik shows significant urban development activity between 2021 and 2025. The area sits at 565m elevation with moderate terrain slope, making it structurally suitable for mixed-use development.",
   },
   {
     id: "construction-growth",
     title: "Construction Growth",
     icon: "TrendingUp",
     sentiment: "warning",
-    content: "Built-up footprint has expanded by 55.7% since 2021 — well above the Nashik district average of 18.3%. A total of 179 new structures detected via satellite. 12 structures flagged as potentially unauthorised near buffer zones.",
+    content:
+      "Built-up footprint has expanded by 55.7% since 2021 — well above the Nashik district average of 18.3%. A total of 179 new structures detected via satellite. 12 structures flagged as potentially unauthorised near buffer zones.",
   },
   {
     id: "green-cover",
     title: "Green Cover Analysis",
     icon: "Trees",
     sentiment: "warning",
-    content: "Vegetated area has declined from 41% (2021) to 31% (2025), a loss of approximately 0.4 sq km of green land. This rate exceeds acceptable thresholds under Nashik Municipal Green Policy 2023.",
+    content:
+      "Vegetated area has declined from 41% (2021) to 31% (2025), a loss of approximately 0.4 sq km of green land. This rate exceeds acceptable thresholds under Nashik Municipal Green Policy 2023.",
   },
   {
     id: "water-bodies",
     title: "Nearby Water Bodies",
     icon: "Droplets",
     sentiment: "positive",
-    content: "Three water bodies detected within 2km: Gangapur Dam reservoir, Godavari River tributary, and a seasonal nala. Current distance from nearest water edge to the selected plot is 340m — above the mandatory 200m buffer.",
+    content:
+      "Three water bodies detected within 2km: Gangapur Dam reservoir, Godavari River tributary, and a seasonal nala. Current distance from nearest water edge to the selected plot is 340m — above the mandatory 200m buffer.",
   },
   {
     id: "terrain",
     title: "Terrain & Soil",
     icon: "Mountain",
     sentiment: "positive",
-    content: "Average terrain slope of 4° indicates predominantly flat land — ideal for foundation work. Soil classification: Black Cotton Soil (expansive). Engineering precautions recommended for multi-storey construction.",
+    content:
+      "Average terrain slope of 4° indicates predominantly flat land — ideal for foundation work. Soil classification: Black Cotton Soil (expansive). Engineering precautions recommended for multi-storey construction.",
   },
   {
     id: "risks",
     title: "Possible Risks",
     icon: "AlertTriangle",
     sentiment: "critical",
-    content: "• River buffer zone encroachment risk in eastern quadrant\n• Green belt overlap detected in 2 plots (NMC boundary data, 2024)\n• Seasonal flood probability: 12% based on 10-year hydrological data\n• 3 active municipal notices in adjacent ward",
+    content:
+      "• River buffer zone encroachment risk in eastern quadrant\n• Green belt overlap detected in 2 plots (NMC boundary data, 2024)\n• Seasonal flood probability: 12% based on 10-year hydrological data\n• 3 active municipal notices in adjacent ward",
   },
   {
     id: "recommendations",
     title: "AI Recommendations",
     icon: "Sparkles",
     sentiment: "neutral",
-    content: "• Verify plot status against latest NMC Town Planning Scheme\n• Commission geo-technical survey before foundation work\n• Maintain minimum 250m buffer from seasonal water channels\n• File construction commencement notice with Nashik Municipal Corporation",
+    content:
+      "• Verify plot status against latest NMC Town Planning Scheme\n• Commission geo-technical survey before foundation work\n• Maintain minimum 250m buffer from seasonal water channels\n• File construction commencement notice with Nashik Municipal Corporation",
   },
   {
     id: "summary",
     title: "Summary",
     icon: "CheckCircle2",
     sentiment: "positive",
-    content: "Location Intelligence Score: 92/100. This location is suitable for regulated development with standard precautions. No critical environmental violations detected for the selected plot. Rapid neighbourhood growth warrants ongoing monitoring.",
+    content:
+      "Location Intelligence Score: 92/100. This location is suitable for regulated development with standard precautions. No critical environmental violations detected for the selected plot. Rapid neighbourhood growth warrants ongoing monitoring.",
   },
 ];
 
@@ -329,7 +395,8 @@ export const MOCK_CITIZEN_REPORTS: CitizenReportFull[] = [
     location: "Panchavati near Godavari Ramkund",
     type: "Possible illegal construction",
     status: "Under Review",
-    description: "Concrete pillars being erected close to the riverbank inside the prohibited 200m buffer zone.",
+    description:
+      "Concrete pillars being erected close to the riverbank inside the prohibited 200m buffer zone.",
     officerRemarks: "Site visit scheduled for 18 Sep 2026. Structural measurements underway.",
     timeline: [
       { label: "Submitted", date: "14 Aug 2026", done: true },
@@ -386,8 +453,10 @@ export const MOCK_CITIZEN_REPORTS: CitizenReportFull[] = [
     location: "Nashik Road Industrial Zone",
     type: "Possible illegal construction",
     status: "Rejected",
-    description: "Alleged unauthorised godown construction. Later found to have valid industrial license.",
-    officerRemarks: "Construction found compliant with NMC industrial zone regulations. Report rejected.",
+    description:
+      "Alleged unauthorised godown construction. Later found to have valid industrial license.",
+    officerRemarks:
+      "Construction found compliant with NMC industrial zone regulations. Report rejected.",
     timeline: [
       { label: "Submitted", date: "05 Jun 2026", done: true },
       { label: "Acknowledged", date: "06 Jun 2026", done: true },

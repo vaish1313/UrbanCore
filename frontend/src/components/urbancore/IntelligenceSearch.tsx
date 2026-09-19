@@ -4,7 +4,8 @@ import { ArrowUpRight } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 import { ComparativeVisualization } from "./ComparativeVisualization";
 
-const TARGET_QUERY = "What changed near Panchvati near 2021 and 2025 in the terms of lands like building etc and build a builders report for that report by comparing both the years";
+const TARGET_QUERY =
+  "What changed near Panchvati near 2021 and 2025 in the terms of lands like building etc and build a builders report for that report by comparing both the years";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -25,7 +26,7 @@ export function IntelligenceSearch({
   useEffect(() => {
     if (!visible || isSubmitted || typingStarted.current) return;
     typingStarted.current = true;
-    
+
     let i = 0;
     const tick = window.setInterval(() => {
       i += 1;
@@ -37,7 +38,7 @@ export function IntelligenceSearch({
         }, 800); // Wait 800ms after finishing typing, then auto-submit
       }
     }, 45); // Adjust typing speed here
-    
+
     return () => {
       window.clearInterval(tick);
     };
@@ -49,7 +50,11 @@ export function IntelligenceSearch({
         {!isSubmitted || isCompleted ? (
           <motion.div
             key="search-box"
-            initial={{ opacity: isCompleted ? 0 : 1, scale: isCompleted ? 0.95 : 1, y: isCompleted ? 20 : 0 }}
+            initial={{
+              opacity: isCompleted ? 0 : 1,
+              scale: isCompleted ? 0.95 : 1,
+              y: isCompleted ? 20 : 0,
+            }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
             transition={{ duration: 0.6, ease }}
@@ -72,7 +77,10 @@ export function IntelligenceSearch({
                   className="w-full bg-transparent text-base font-light tracking-tight text-foreground outline-none sm:text-lg cursor-default"
                 />
                 {typed.length < TARGET_QUERY.length && (
-                  <span className="absolute right-auto inline-block h-[1.1em] w-px bg-primary align-middle breathe" style={{ left: `${typed.length}ch`, display: 'none' }} />
+                  <span
+                    className="absolute right-auto inline-block h-[1.1em] w-px bg-primary align-middle breathe"
+                    style={{ left: `${typed.length}ch`, display: "none" }}
+                  />
                 )}
               </div>
 

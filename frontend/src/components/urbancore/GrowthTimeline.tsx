@@ -16,8 +16,7 @@ export function GrowthTimeline({
   visible: boolean;
 }) {
   const ratio = value / MAX;
-  const year =
-    GROWTH_YEARS[Math.min(MAX, Math.round(value))] ?? GROWTH_YEARS[MAX];
+  const year = GROWTH_YEARS[Math.min(MAX, Math.round(value))] ?? GROWTH_YEARS[MAX];
 
   return (
     <motion.div

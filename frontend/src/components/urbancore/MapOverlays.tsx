@@ -150,7 +150,10 @@ export function MapOverlays(layers: Layers) {
             fill="none"
             strokeDasharray="5 395"
             opacity={awaken ? 0.95 : 0.5}
-            style={{ animation: `uc-dash ${9 + i * 3}s linear infinite`, animationDelay: `${i * 2}s` }}
+            style={{
+              animation: `uc-dash ${9 + i * 3}s linear infinite`,
+              animationDelay: `${i * 2}s`,
+            }}
           />
         ))}
         {awaken && (
@@ -443,9 +446,7 @@ export function MapOverlays(layers: Layers) {
                 }}
                 initial={false}
                 animate={
-                  built
-                    ? { opacity: [0.45, 0.95, 0.45], scale: 1 }
-                    : { opacity: 0, scale: 0.3 }
+                  built ? { opacity: [0.45, 0.95, 0.45], scale: 1 } : { opacity: 0, scale: 0.3 }
                 }
                 transition={{
                   opacity: {
@@ -506,13 +507,16 @@ export function MapOverlays(layers: Layers) {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <div className="absolute border-2 border-primary/70 bg-primary/10 rounded-xl shadow-[0_0_30px_rgba(114,180,255,0.3)] transition-all duration-700 flex flex-col items-center justify-center p-2"
+          <div
+            className="absolute border-2 border-primary/70 bg-primary/10 rounded-xl shadow-[0_0_30px_rgba(114,180,255,0.3)] transition-all duration-700 flex flex-col items-center justify-center p-2"
             style={{ left: "30%", top: "34%", width: "24%", height: "22%" }}
           >
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-primary bg-background/80 px-2 py-0.5 rounded-full border border-primary/40">
               Parcel #88 · 82/100
             </span>
-            <span className="text-[10px] text-foreground/90 font-medium mt-1">Gangapur Road Site</span>
+            <span className="text-[10px] text-foreground/90 font-medium mt-1">
+              Gangapur Road Site
+            </span>
           </div>
         </motion.div>
       )}
@@ -535,7 +539,9 @@ export function MapOverlays(layers: Layers) {
               className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group pointer-events-auto"
               style={{ left: `${alt.x}%`, top: `${alt.y}%` }}
             >
-              <span className={`block h-4 w-4 rounded-full breathe ${alt.severe ? 'bg-destructive shadow-[0_0_20px_var(--destructive)]' : 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.8)]'}`} />
+              <span
+                className={`block h-4 w-4 rounded-full breathe ${alt.severe ? "bg-destructive shadow-[0_0_20px_var(--destructive)]" : "bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.8)]"}`}
+              />
               <span className="glass-panel absolute left-5 top-0 whitespace-nowrap rounded-md px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-foreground group-hover:scale-105 transition-transform">
                 ⚠️ {alt.label}
               </span>

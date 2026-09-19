@@ -1,6 +1,27 @@
 import { motion } from "motion/react";
-import { ArrowLeft, Building2, Landmark, Users, Compass, SlidersHorizontal, AlertTriangle, FileText, Search, Activity, ShieldCheck, MapPin, User, LogOut, ChevronDown } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  ArrowLeft,
+  Building2,
+  Landmark,
+  Users,
+  Compass,
+  SlidersHorizontal,
+  AlertTriangle,
+  FileText,
+  Search,
+  Activity,
+  ShieldCheck,
+  MapPin,
+  User,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { RoleType } from "@/types/urbancore";
 import { ProfileModal } from "./ProfileModal";
 import { useState } from "react";
@@ -9,7 +30,7 @@ import { useAuth } from "@/contexts/AuthContext";
 type SectionTab = {
   id: string;
   label: string;
-  icon: any;
+  icon: React.ElementType;
 };
 
 const BUILDER_SECTIONS: SectionTab[] = [
@@ -61,8 +82,7 @@ export function RoleNavigation({
         ? MUNICIPAL_SECTIONS
         : CITIZEN_SECTIONS;
 
-  const RoleIcon =
-    role === "builder" ? Building2 : role === "municipal" ? Landmark : Users;
+  const RoleIcon = role === "builder" ? Building2 : role === "municipal" ? Landmark : Users;
 
   const roleTitle =
     role === "builder"
@@ -117,10 +137,11 @@ export function RoleNavigation({
                   key={id}
                   type="button"
                   onClick={() => onTabChange(id)}
-                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-300 ${isActive
-                    ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(114,180,255,0.2)]"
-                    : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-                    }`}
+                  className={`relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all duration-300 ${
+                    isActive
+                      ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(114,180,255,0.2)]"
+                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                  }`}
                 >
                   <Icon className="h-3 w-3" />
                   <span>{label}</span>
@@ -140,8 +161,11 @@ export function RoleNavigation({
                 </span>
                 <ChevronDown className="h-4 w-4 text-muted-foreground ml-1" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 mt-2 shadow-2xl rounded-xl">
-                <DropdownMenuItem 
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 mt-2 shadow-2xl rounded-xl"
+              >
+                <DropdownMenuItem
                   onClick={() => setIsProfileOpen(true)}
                   className="gap-2 cursor-pointer text-sm text-slate-200 hover:bg-white/5 focus:bg-white/5"
                 >
@@ -155,7 +179,7 @@ export function RoleNavigation({
                   <FileText className="h-4 w-4 text-cyan-400" />
                   My Reports
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => {
                     logout();
                     onBack();
