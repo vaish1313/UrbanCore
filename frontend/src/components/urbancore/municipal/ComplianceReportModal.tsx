@@ -36,7 +36,9 @@ export function ComplianceReportModal({
               <ShieldAlert className="h-4 w-4" /> AI-GENERATED DRAFT — REQUIRES OFFICIAL REVIEW
             </div>
             <p className="mt-1 text-[11px] text-destructive/80">
-              This notice is generated automatically from satellite multi-temporal change detection algorithms. It serves as an initial spatial audit draft and does not constitute a legal enforcement notice without official municipal officer sign-off.
+              This notice is generated automatically from satellite multi-temporal change detection
+              algorithms. It serves as an initial spatial audit draft and does not constitute a
+              legal enforcement notice without official municipal officer sign-off.
             </p>
           </div>
 
@@ -48,31 +50,55 @@ export function ComplianceReportModal({
               Notice of Spatial Deviation Audit
             </h2>
             <p className="text-xs text-muted-foreground font-mono mt-0.5">
-              Case Ref: NMC-ZON-{alert.id.toUpperCase()} · Flagged Date: {alert.evidence.detectionDate}
+              Case Ref: NMC-ZON-{alert.id.toUpperCase()} · Flagged Date:{" "}
+              {alert.evidence.detectionDate}
             </p>
           </div>
 
           <div className="space-y-3 text-xs text-foreground/90 leading-relaxed">
             <div className="grid grid-cols-2 gap-2 font-mono text-[11px] bg-foreground/[0.02] p-3 rounded-xl border border-border/40">
-              <div><span className="text-muted-foreground">Target Location:</span> {alert.location}</div>
-              <div><span className="text-muted-foreground font-sans">GPS Coords:</span> {alert.evidence.gpsCoords}</div>
-              <div><span className="text-muted-foreground font-sans">Detected Area:</span> {alert.affectedAreaSqM} sq. meters</div>
-              <div><span className="text-muted-foreground font-sans">Affected Zone:</span> {alert.category}</div>
+              <div>
+                <span className="text-muted-foreground">Target Location:</span> {alert.location}
+              </div>
+              <div>
+                <span className="text-muted-foreground font-sans">GPS Coords:</span>{" "}
+                {alert.evidence.gpsCoords}
+              </div>
+              <div>
+                <span className="text-muted-foreground font-sans">Detected Area:</span>{" "}
+                {alert.affectedAreaSqM} sq. meters
+              </div>
+              <div>
+                <span className="text-muted-foreground font-sans">Affected Zone:</span>{" "}
+                {alert.category}
+              </div>
             </div>
 
             <div>
-              <strong className="block font-mono text-[11px] text-primary uppercase">1. Detection Summary</strong>
+              <strong className="block font-mono text-[11px] text-primary uppercase">
+                1. Detection Summary
+              </strong>
               <p className="mt-1 text-muted-foreground">{alert.description}</p>
             </div>
 
             <div>
-              <strong className="block font-mono text-[11px] text-primary uppercase">2. Satellite Evidence Base</strong>
-              <p className="mt-1 text-muted-foreground">{alert.evidence.buildingFootprint}. Sensor data source: {alert.evidence.satelliteSensor}.</p>
+              <strong className="block font-mono text-[11px] text-primary uppercase">
+                2. Satellite Evidence Base
+              </strong>
+              <p className="mt-1 text-muted-foreground">
+                {alert.evidence.buildingFootprint}. Sensor data source:{" "}
+                {alert.evidence.satelliteSensor}.
+              </p>
             </div>
 
             <div>
-              <strong className="block font-mono text-[11px] text-primary uppercase">3. Recommended Municipal Action</strong>
-              <p className="mt-1 text-muted-foreground">Dispatch field survey team for physical ground-truth inspection and cross-reference against DP 2036 sanctioned building permits.</p>
+              <strong className="block font-mono text-[11px] text-primary uppercase">
+                3. Recommended Municipal Action
+              </strong>
+              <p className="mt-1 text-muted-foreground">
+                Dispatch field survey team for physical ground-truth inspection and cross-reference
+                against DP 2036 sanctioned building permits.
+              </p>
             </div>
           </div>
 

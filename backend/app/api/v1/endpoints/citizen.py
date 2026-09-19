@@ -92,8 +92,9 @@ class YearResult(BaseModel):
     ndwi_mean: Optional[float]
     change_pct_from_prev_year: Optional[float]
     construction_detected: Optional[bool]
-    mask_png_url: Optional[str]
-    rgb_png_url: Optional[str]
+    mask_png_url: Optional[str] = None
+    rgb_png_url: Optional[str] = None
+    geojson_features: Optional[dict] = None
     from_cache: bool
     status: str
 
@@ -189,21 +190,16 @@ def analyze_area(
         )
 
         if is_new:
-            # ── Cache MISS: run the full pipeline ─────────────────────────
+            # ── Cache MISS: trigger the real Celery pipeline task ──────────────
             mark_processing(db, cache_entry.id)
-
-            try:
-                results = _run_mock_pipeline(
-                    request.min_lat, request.min_lon,
-                    request.max_lat, request.max_lon,
-                    year,
-                )
-                cache_entry = update_cache_entry(db, cache_entry.id, results)
-
-            except Exception as exc:
-                mark_failed(db, cache_entry.id, str(exc))
-                # Refresh the failed entry so we can report it in timeline
-                db.refresh(cache_entry)
+            
+            from app.tasks.celery_app import run_pipeline_task
+            run_pipeline_task.delay(
+                str(cache_entry.id),
+                request.min_lat, request.min_lon,
+                request.max_lat, request.max_lon,
+                year
+            )
 
         last_entry = cache_entry
 
@@ -216,8 +212,9 @@ def analyze_area(
                 ndwi_mean=cache_entry.ndwi_mean,
                 change_pct_from_prev_year=cache_entry.change_pct_from_prev_year,
                 construction_detected=cache_entry.construction_detected,
-                mask_png_url=cache_entry.mask_png_path,   # URL served separately via storage
-                rgb_png_url=cache_entry.rgb_png_path,
+                mask_png_url=None,
+                rgb_png_url=None,
+                geojson_features=cache_entry.geojson_features,
                 from_cache=not is_new,
                 status=cache_entry.status.value if cache_entry.status else "UNKNOWN",
             )

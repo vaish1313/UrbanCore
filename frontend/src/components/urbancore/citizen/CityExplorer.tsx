@@ -44,9 +44,7 @@ export function CityExplorer({
                 </h4>
               </div>
 
-              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                {story.summary}
-              </p>
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{story.summary}</p>
 
               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-3 text-[10px] font-mono">
                 <div className="flex items-center gap-1 text-accent">

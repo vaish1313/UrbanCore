@@ -67,9 +67,12 @@ export function ComplaintReportModal({
                 >
                   <CheckCircle2 className="mb-4 h-20 w-20 text-emerald-500" />
                 </motion.div>
-                <h3 className="font-display text-2xl font-bold text-white mb-2">Report Filed Successfully</h3>
+                <h3 className="font-display text-2xl font-bold text-white mb-2">
+                  Report Filed Successfully
+                </h3>
                 <p className="text-slate-400 max-w-sm">
-                  Your evidence package has been securely submitted to the Municipal Authority system. Reference #URB-{Math.floor(Math.random() * 90000) + 10000}.
+                  Your evidence package has been securely submitted to the Municipal Authority
+                  system. Reference #URB-{Math.floor(Math.random() * 90000) + 10000}.
                 </p>
               </div>
             ) : (
@@ -88,11 +91,15 @@ export function ComplaintReportModal({
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex flex-col gap-1">
                         <div className="h-20 w-full rounded-lg bg-[url('/src/assets/region-maharashtra.jpg')] bg-cover bg-center border border-white/10" />
-                        <span className="text-[10px] text-slate-500 uppercase font-mono">Before (2021)</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-mono">
+                          Before (2021)
+                        </span>
                       </div>
                       <div className="flex flex-col gap-1">
                         <div className="h-20 w-full rounded-lg bg-[url('/src/assets/city-nashik.jpg')] bg-cover bg-center border border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]" />
-                        <span className="text-[10px] text-red-400 uppercase font-mono">After ({yearAppeared})</span>
+                        <span className="text-[10px] text-red-400 uppercase font-mono">
+                          After ({yearAppeared})
+                        </span>
                       </div>
                     </div>
 
@@ -117,9 +124,10 @@ export function ComplaintReportModal({
 
                 {/* Input Panel (Right) */}
                 <div className="w-full md:w-7/12 p-6 sm:p-8">
-                  <h3 className="font-display text-2xl font-semibold text-white mb-6">File Official Complaint</h3>
+                  <h3 className="font-display text-2xl font-semibold text-white mb-6">
+                    File Official Complaint
+                  </h3>
                   <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
                     <div className="flex flex-col gap-2">
                       <label className="text-sm text-slate-300 font-medium">Your Full Name</label>
                       <input
@@ -133,7 +141,9 @@ export function ComplaintReportModal({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <label className="text-sm text-slate-300 font-medium">Complaint Description</label>
+                      <label className="text-sm text-slate-300 font-medium">
+                        Complaint Description
+                      </label>
                       <textarea
                         required
                         value={description}
@@ -147,7 +157,8 @@ export function ComplaintReportModal({
                     <div className="mt-4 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-start gap-3">
                       <FileText className="h-5 w-5 text-cyan-400 shrink-0" />
                       <p className="text-xs text-cyan-200/80 leading-relaxed">
-                        By submitting, this data package is converted to a sworn digital PDF and securely routed to the Municipal Authority Dashboard.
+                        By submitting, this data package is converted to a sworn digital PDF and
+                        securely routed to the Municipal Authority Dashboard.
                       </p>
                     </div>
 

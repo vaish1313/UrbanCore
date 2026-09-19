@@ -17,13 +17,12 @@ export function ChangeTimeline() {
             See How Nashik Changed ({currentYear})
           </h3>
         </div>
-        <span className="font-mono text-xs font-semibold text-accent">
-          Year {currentYear} View
-        </span>
+        <span className="font-mono text-xs font-semibold text-accent">Year {currentYear} View</span>
       </div>
 
       <p className="text-xs text-muted-foreground leading-relaxed">
-        Drag the timeline scrubber below to observe satellite-detected building footprint emergence and green space evolution between 2021 and 2025.
+        Drag the timeline scrubber below to observe satellite-detected building footprint emergence
+        and green space evolution between 2021 and 2025.
       </p>
 
       <div className="py-2">

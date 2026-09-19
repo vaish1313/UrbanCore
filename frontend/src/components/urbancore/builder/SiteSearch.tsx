@@ -16,7 +16,7 @@ export function SiteSearch({
   const filtered = NASHIK_AOIS.filter(
     (a) =>
       a.name.toLowerCase().includes(query.toLowerCase()) ||
-      a.category.toLowerCase().includes(query.toLowerCase())
+      a.category.toLowerCase().includes(query.toLowerCase()),
   );
 
   return (
@@ -88,7 +88,9 @@ export function SiteSearch({
                   <MapPin className="h-4 w-4 text-primary" />
                   <div>
                     <span className="block text-xs font-medium text-foreground">{aoi.name}</span>
-                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">{aoi.category} · {aoi.terrain.roughness}</span>
+                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">
+                      {aoi.category} · {aoi.terrain.roughness}
+                    </span>
                   </div>
                 </div>
                 <span className="font-mono text-xs font-semibold text-accent">

@@ -32,7 +32,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Moderate",
     },
-    summary: "High residential suitability with excellent arterial connectivity. Minor flood zone buffer along Godavari river tributaries.",
+    summary:
+      "High residential suitability with excellent arterial connectivity. Minor flood zone buffer along Godavari river tributaries.",
   },
   {
     id: "pathardi-phata",
@@ -65,7 +66,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "Prime growth corridor along Mumbai-Agra highway with high flat-land percentage and low environmental restriction.",
+    summary:
+      "Prime growth corridor along Mumbai-Agra highway with high flat-land percentage and low environmental restriction.",
   },
   {
     id: "cidco",
@@ -98,7 +100,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "Dense urbanized neighborhood with steady redevelopment and high infrastructure maturity.",
+    summary:
+      "Dense urbanized neighborhood with steady redevelopment and high infrastructure maturity.",
   },
   {
     id: "panchavati",
@@ -131,7 +134,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 12,
       environmentalRestriction: "High",
     },
-    summary: "Historic riverbank node with high flood zone vulnerability (34%) and heritage zone regulatory restrictions.",
+    summary:
+      "Historic riverbank node with high flood zone vulnerability (34%) and heritage zone regulatory restrictions.",
   },
   {
     id: "satpur-midc",
@@ -164,7 +168,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Moderate",
     },
-    summary: "Established manufacturing hub. Moderate industrial expansion with greenbelt boundaries to the west.",
+    summary:
+      "Established manufacturing hub. Moderate industrial expansion with greenbelt boundaries to the west.",
   },
   {
     id: "ambad-midc",
@@ -230,7 +235,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 55,
       environmentalRestriction: "Critical",
     },
-    summary: "Ecologically sensitive Western Ghats sacred zone. Strict forest boundary and steep slope restrictions.",
+    summary:
+      "Ecologically sensitive Western Ghats sacred zone. Strict forest boundary and steep slope restrictions.",
   },
   {
     id: "anjaneri",
@@ -263,7 +269,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 46,
       environmentalRestriction: "High",
     },
-    summary: "Eco-sensitive hill range with high slope roughness and forest conservation zone constraints.",
+    summary:
+      "Eco-sensitive hill range with high slope roughness and forest conservation zone constraints.",
   },
   {
     id: "cbs",
@@ -296,7 +303,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "Central transit & business node with high land saturation and transit-oriented redevelopment focus.",
+    summary:
+      "Central transit & business node with high land saturation and transit-oriented redevelopment focus.",
   },
   {
     id: "canada-corner",
@@ -329,7 +337,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "High-density retail & financial crossroads with excellent municipal infrastructure service level.",
+    summary:
+      "High-density retail & financial crossroads with excellent municipal infrastructure service level.",
   },
   {
     id: "indira-nagar",
@@ -362,7 +371,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "Sought-after residential zone with rapid medium-rise residential deployment and clean environmental profile.",
+    summary:
+      "Sought-after residential zone with rapid medium-rise residential deployment and clean environmental profile.",
   },
   {
     id: "sinnar-outskirts",
@@ -395,7 +405,8 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 0,
       environmentalRestriction: "Low",
     },
-    summary: "Major industrial & logistics expansion zone with vast contiguous flat parcels and highway proximity.",
+    summary:
+      "Major industrial & logistics expansion zone with vast contiguous flat parcels and highway proximity.",
   },
   {
     id: "godavari-ramkund",
@@ -428,6 +439,7 @@ export const NASHIK_AOIS: AOI[] = [
       protectedAreaOverlapPercent: 64,
       environmentalRestriction: "Critical",
     },
-    summary: "Critical river protection buffer zone. High 25-yr flood return risk and strict blue line non-development mandates.",
+    summary:
+      "Critical river protection buffer zone. High 25-yr flood return risk and strict blue line non-development mandates.",
   },
 ];

@@ -128,21 +128,27 @@ export function EvidenceViewer({
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted-foreground">
             <MapPin className="h-3.5 w-3.5 text-primary" /> GPS Coordinates
           </div>
-          <div className="mt-1 font-mono text-xs font-semibold text-foreground">{alert.evidence.gpsCoords}</div>
+          <div className="mt-1 font-mono text-xs font-semibold text-foreground">
+            {alert.evidence.gpsCoords}
+          </div>
         </div>
 
         <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-3.5">
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted-foreground">
             <Camera className="h-3.5 w-3.5 text-primary" /> Sensor Source
           </div>
-          <div className="mt-1 font-mono text-xs font-semibold text-foreground">{alert.evidence.satelliteSensor}</div>
+          <div className="mt-1 font-mono text-xs font-semibold text-foreground">
+            {alert.evidence.satelliteSensor}
+          </div>
         </div>
 
         <div className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-3.5">
           <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-muted-foreground">
             <AlertCircle className="h-3.5 w-3.5 text-destructive" /> Footprint Signature
           </div>
-          <div className="mt-1 text-xs text-foreground/90 truncate">{alert.evidence.buildingFootprint}</div>
+          <div className="mt-1 text-xs text-foreground/90 truncate">
+            {alert.evidence.buildingFootprint}
+          </div>
         </div>
       </div>
     </div>

@@ -294,3 +294,15 @@ def refresh_statistics():
     
     finally:
         db.close()
+
+@celery_app.task(name='app.tasks.pipeline.run_pipeline_task', bind=True, max_retries=3)
+def run_pipeline_task(self, cache_entry_id: str, min_lat: float, min_lon: float, max_lat: float, max_lon: float, year: int):
+    """
+    Run the full UrbanCore pipeline.
+    """
+    from app.services.pipeline_service import run_real_pipeline
+    try:
+        run_real_pipeline(cache_entry_id, min_lat, min_lon, max_lat, max_lon, year)
+    except Exception as exc:
+        logger.error(f"Pipeline task failed for {cache_entry_id}: {exc}")
+        self.retry(exc=exc, countdown=60)

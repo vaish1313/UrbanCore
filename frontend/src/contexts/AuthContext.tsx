@@ -20,8 +20,8 @@ interface AuthResponse {
 interface AuthContextType {
   user: UserPayload | null;
   token: string | null;
-  login: (data: any) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (data: Record<string, unknown>) => Promise<void>;
+  register: (data: Record<string, unknown>) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem("urbancore_token");
     const storedUser = localStorage.getItem("urbancore_user");
-    
+
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (data: any) => {
+  const login = async (data: Record<string, unknown>) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("urbancore_user", JSON.stringify(result.user));
   };
 
-  const register = async (data: any) => {
+  const register = async (data: Record<string, unknown>) => {
     // Send register request to backend
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",

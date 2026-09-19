@@ -47,7 +47,8 @@ export function BuilderDashboard({
             Builder Intelligence
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            Evaluate land suitability, terrain readiness, constraints, and construction history before investment.
+            Evaluate land suitability, terrain readiness, constraints, and construction history
+            before investment.
           </p>
         </div>
 

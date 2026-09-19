@@ -36,11 +36,17 @@ function DashboardFooter() {
           <span className="text-slate-500">Citizen Intelligence</span>
         </div>
         <nav className="cs-footer-links">
-          <a href="#" className="cs-footer-link">Privacy Policy</a>
+          <a href="#" className="cs-footer-link">
+            Privacy Policy
+          </a>
           <span className="cs-footer-dot">|</span>
-          <a href="#" className="cs-footer-link">Terms of Use</a>
+          <a href="#" className="cs-footer-link">
+            Terms of Use
+          </a>
           <span className="cs-footer-dot">|</span>
-          <a href="#" className="cs-footer-link">Contact</a>
+          <a href="#" className="cs-footer-link">
+            Contact
+          </a>
         </nav>
       </div>
       <style>{`
@@ -69,7 +75,11 @@ export function CitizenDashboard({
   const [selectedLocation, setSelectedLocation] = useState<LocationInfo | null>(null);
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
-  const [searchLocation, setSearchLocation] = useState<{ label: string; lat: number; lng: number } | null>(null);
+  const [searchLocation, setSearchLocation] = useState<{
+    label: string;
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
@@ -79,14 +89,19 @@ export function CitizenDashboard({
 
   const scrollToTimeline = useCallback(() => {
     setTimeout(() => {
-      document.getElementById("construction-timeline-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("construction-timeline-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
   }, []);
 
-  const handleSearch = useCallback((suggestion: { label: string; lat: number; lng: number }) => {
-    setSearchLocation(suggestion);
-    scrollToMap();
-  }, [scrollToMap]);
+  const handleSearch = useCallback(
+    (suggestion: { label: string; lat: number; lng: number }) => {
+      setSearchLocation(suggestion);
+      scrollToMap();
+    },
+    [scrollToMap],
+  );
 
   const handleLocationSelected = useCallback((loc: LocationInfo) => {
     setSelectedLocation(loc);
@@ -96,7 +111,9 @@ export function CitizenDashboard({
     setSelectedLocation(loc);
     setAnalysisTriggered(true);
     setTimeout(() => {
-      document.getElementById("construction-timeline-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("construction-timeline-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
   }, []);
 
@@ -150,7 +167,6 @@ export function CitizenDashboard({
       <div className="cs-page">
         <div className="cs-page-bg" />
         <div className="cs-content">
-
           {activeTab === "my-reports" ? (
             <div className="w-full flex-1 pt-6 pb-24">
               <MyReports onNewReport={() => setIsEvidenceModalOpen(true)} />
@@ -160,39 +176,33 @@ export function CitizenDashboard({
               {/* ── 1. Hero Search ── */}
               <HeroSearch onSearch={handleSearch} onDropPin={scrollToMap} />
 
-          {/* ── 2. Interactive Map ── */}
-          <div ref={mapSectionRef} style={{ width: "100%" }}>
-            <InteractiveMap
-              onLocationSelected={handleAnalyse}
-              externalSearchLocation={searchLocation}
-            />
-          </div>
+              {/* ── 2. Interactive Map ── */}
+              <div ref={mapSectionRef} style={{ width: "100%" }}>
+                <InteractiveMap
+                  onLocationSelected={handleAnalyse}
+                  externalSearchLocation={searchLocation}
+                />
+              </div>
 
-
-
-          {/* ── 4. Construction Timeline (conditional) ── */}
-          <AnimatePresence>
-            {(selectedLocation || analysisTriggered) && (
-              <motion.div
-                id="construction-timeline-section"
-                key="timeline"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                style={{ width: "100%" }}
-              >
-                <SectionDivider label="Construction Timeline 2021 – 2025" />
-                <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-
-
+              {/* ── 4. Construction Timeline (conditional) ── */}
+              <AnimatePresence>
+                {(selectedLocation || analysisTriggered) && (
+                  <motion.div
+                    id="construction-timeline-section"
+                    key="timeline"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    style={{ width: "100%" }}
+                  >
+                    <SectionDivider label="Construction Timeline 2021 – 2025" />
+                    <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           )}
-
         </div>
 
         {/* ── Footer ── */}
@@ -204,7 +214,11 @@ export function CitizenDashboard({
         isOpen={isEvidenceModalOpen}
         onClose={() => setIsEvidenceModalOpen(false)}
         locationName={selectedLocation?.village ?? "Selected Location"}
-        coordinates={selectedLocation ? `Lat: ${selectedLocation.lat}, Lng: ${selectedLocation.lng}` : "Lat: 20.0059, Lng: 73.7912"}
+        coordinates={
+          selectedLocation
+            ? `Lat: ${selectedLocation.lat}, Lng: ${selectedLocation.lng}`
+            : "Lat: 20.0059, Lng: 73.7912"
+        }
         yearAppeared="2025"
       />
     </>

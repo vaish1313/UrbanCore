@@ -43,7 +43,10 @@ const SENTIMENT_COLORS: Record<string, { bg: string; border: string; text: strin
 function useTyping(text: string, active: boolean, speed = 30): string {
   const [displayed, setDisplayed] = useState("");
   useEffect(() => {
-    if (!active) { setDisplayed(""); return; }
+    if (!active) {
+      setDisplayed("");
+      return;
+    }
     setDisplayed("");
     let i = 0;
     const timer = setInterval(() => {
@@ -56,14 +59,29 @@ function useTyping(text: string, active: boolean, speed = 30): string {
   return displayed;
 }
 
-function ReportSectionCard({ section, index, visible }: { section: AIReportSection; index: number; visible: boolean }) {
-  const Icon: any = SECTION_ICONS[section.icon] ?? BarChart3;
-  const style = SENTIMENT_COLORS[section.sentiment] ?? SENTIMENT_COLORS['neutral']!;
+function ReportSectionCard({
+  section,
+  index,
+  visible,
+}: {
+  section: AIReportSection;
+  index: number;
+  visible: boolean;
+}) {
+  const Icon: React.ElementType = SECTION_ICONS[section.icon] ?? BarChart3;
+  const style = SENTIMENT_COLORS[section.sentiment] ?? SENTIMENT_COLORS["neutral"]!;
   const lines = section.content.split("\n");
 
-  const cardStyle: any = { background: style.bg, borderColor: style.border };
-  const iconStyle: any = { background: `${style.text}18`, border: `1px solid ${style.text}28` };
-  const badgeStyle: any = { background: `${style.text}15`, color: style.text, borderColor: `${style.text}30` };
+  const cardStyle: React.CSSProperties = { background: style.bg, borderColor: style.border };
+  const iconStyle: React.CSSProperties = {
+    background: `${style.text}18`,
+    border: `1px solid ${style.text}28`,
+  };
+  const badgeStyle: React.CSSProperties = {
+    background: `${style.text}15`,
+    color: style.text,
+    borderColor: `${style.text}30`,
+  };
 
   return (
     <motion.div
@@ -84,7 +102,10 @@ function ReportSectionCard({ section, index, visible }: { section: AIReportSecti
       </div>
       <div className="cs-report-sec-content">
         {lines.map((line, i) => (
-          <p key={i} style={{ margin: "0 0 4px", fontSize: "0.875rem", color: "#94a3b8", lineHeight: 1.65 }}>
+          <p
+            key={i}
+            style={{ margin: "0 0 4px", fontSize: "0.875rem", color: "#94a3b8", lineHeight: 1.65 }}
+          >
             {line}
           </p>
         ))}
@@ -104,9 +125,12 @@ export function AIReport({ location }: AIReportProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => {
-      if (e?.isIntersecting && phase === "idle") setPhase("typing");
-    }, { threshold: 0.2 });
+    const observer = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting && phase === "idle") setPhase("typing");
+      },
+      { threshold: 0.2 },
+    );
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, [phase]);
@@ -122,10 +146,16 @@ export function AIReport({ location }: AIReportProps) {
     return undefined;
   }, [phase]);
 
-  const typingText = useTyping("Analysing selected location — gathering satellite data, running AI classification, computing risk indices…", phase === "typing", 28);
+  const typingText = useTyping(
+    "Analysing selected location — gathering satellite data, running AI classification, computing risk indices…",
+    phase === "typing",
+    28,
+  );
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(AI_REPORT_SECTIONS.map((s) => `## ${s.title}\n${s.content}`).join("\n\n")).catch(() => { });
+    navigator.clipboard
+      .writeText(AI_REPORT_SECTIONS.map((s) => `## ${s.title}\n${s.content}`).join("\n\n"))
+      .catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -148,7 +178,8 @@ export function AIReport({ location }: AIReportProps) {
           </p>
           <h2 className="cs-air-title">AI Location Report</h2>
           <p className="cs-air-subtitle">
-            Generated for <span className="text-cyan-400">{location.village}</span> · {location.lat.toFixed(4)}°N {location.lng.toFixed(4)}°E
+            Generated for <span className="text-cyan-400">{location.village}</span> ·{" "}
+            {location.lat.toFixed(4)}°N {location.lng.toFixed(4)}°E
           </p>
         </div>
 
@@ -162,7 +193,12 @@ export function AIReport({ location }: AIReportProps) {
             <FileJson className="h-4 w-4" />
             <span>Export JSON</span>
           </button>
-          <button type="button" id="copy-report-btn" className="cs-air-action-btn" onClick={handleCopy}>
+          <button
+            type="button"
+            id="copy-report-btn"
+            className="cs-air-action-btn"
+            onClick={handleCopy}
+          >
             {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
             <span>{copied ? "Copied!" : "Copy"}</span>
           </button>
@@ -183,7 +219,14 @@ export function AIReport({ location }: AIReportProps) {
             </div>
             <div>
               <p className="cs-air-card-title">UrbanCore AI Report</p>
-              <p className="cs-air-card-sub">Automated · {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+              <p className="cs-air-card-sub">
+                Automated ·{" "}
+                {new Date().toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
             </div>
           </div>
           <div className="cs-air-status-dot">
@@ -209,12 +252,14 @@ export function AIReport({ location }: AIReportProps) {
                   className="cs-air-cursor"
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.5, repeat: Infinity }}
-                >|</motion.span>
+                >
+                  |
+                </motion.span>
               </p>
             </motion.div>
           )}
 
-          {(phase === "loaded") && (
+          {phase === "loaded" && (
             <AnimatePresence>
               <div className="cs-report-sections">
                 {AI_REPORT_SECTIONS.map((s, i) => (

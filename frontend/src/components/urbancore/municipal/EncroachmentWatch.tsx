@@ -16,9 +16,7 @@ export function EncroachmentWatch({
           <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
             ZONING AUDIT & PROTECTION
           </span>
-          <h3 className="font-display text-lg font-medium text-foreground">
-            Encroachment Watch
-          </h3>
+          <h3 className="font-display text-lg font-medium text-foreground">Encroachment Watch</h3>
         </div>
         <span className="flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-destructive font-semibold">
           <ShieldAlert className="h-3.5 w-3.5" /> 12 Active Flags
@@ -41,16 +39,22 @@ export function EncroachmentWatch({
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-wider font-semibold ${
-                  isHigh ? "bg-destructive/20 text-destructive border border-destructive/30" : "bg-amber-400/20 text-amber-400 border border-amber-400/30"
-                }`}>
+                <span
+                  className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-wider font-semibold ${
+                    isHigh
+                      ? "bg-destructive/20 text-destructive border border-destructive/30"
+                      : "bg-amber-400/20 text-amber-400 border border-amber-400/30"
+                  }`}
+                >
                   {alert.severity} SEVERITY
                 </span>
                 <span className="font-mono text-[10px] text-muted-foreground">{alert.status}</span>
               </div>
 
               <h4 className="mt-3 text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <AlertTriangle className={`h-4 w-4 shrink-0 ${isHigh ? 'text-destructive' : 'text-amber-400'}`} />
+                <AlertTriangle
+                  className={`h-4 w-4 shrink-0 ${isHigh ? "text-destructive" : "text-amber-400"}`}
+                />
                 {alert.title}
               </h4>
 

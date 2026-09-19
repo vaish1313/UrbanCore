@@ -44,7 +44,8 @@ export function MunicipalDashboard({
             Municipal Intelligence
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            Monitor urban development, zoning compliance, protected zones, and satellite-detected encroachments.
+            Monitor urban development, zoning compliance, protected zones, and satellite-detected
+            encroachments.
           </p>
         </div>
 
@@ -73,24 +74,32 @@ export function MunicipalDashboard({
 
         <div className="glass-panel rounded-2xl p-4">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-wider">Potential Encroachments</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider">
+              Potential Encroachments
+            </span>
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </div>
           <div className="mt-2 font-display text-3xl font-bold text-destructive">
             {MUNICIPAL_STATS.potentialEncroachmentsCount}
           </div>
-          <span className="mt-1 block font-mono text-[10px] text-destructive/80">Requires Priority Review</span>
+          <span className="mt-1 block font-mono text-[10px] text-destructive/80">
+            Requires Priority Review
+          </span>
         </div>
 
         <div className="glass-panel rounded-2xl p-4">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="font-mono text-[10px] uppercase tracking-wider">High Growth Areas</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider">
+              High Growth Areas
+            </span>
             <Activity className="h-4 w-4 text-amber-400" />
           </div>
           <div className="mt-2 font-display text-3xl font-bold text-amber-400">
             {MUNICIPAL_STATS.highPriorityAreasCount}
           </div>
-          <span className="mt-1 block font-mono text-[10px] text-muted-foreground">Pathardi Phata & Ambad</span>
+          <span className="mt-1 block font-mono text-[10px] text-muted-foreground">
+            Pathardi Phata & Ambad
+          </span>
         </div>
 
         <div className="glass-panel rounded-2xl p-4">

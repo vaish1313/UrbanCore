@@ -62,7 +62,15 @@ function readScenePalette() {
 
 type Palette = ReturnType<typeof readScenePalette>;
 
-function District({ active, reducedMotion, palette }: { active: boolean; reducedMotion: boolean; palette: Palette }) {
+function District({
+  active,
+  reducedMotion,
+  palette,
+}: {
+  active: boolean;
+  reducedMotion: boolean;
+  palette: Palette;
+}) {
   const buildingsRef = useRef<THREE.InstancedMesh>(null);
   const roofsRef = useRef<THREE.InstancedMesh>(null);
   const windowsRef = useRef<THREE.Points>(null);
@@ -97,7 +105,11 @@ function District({ active, reducedMotion, palette }: { active: boolean; reduced
     const master = reducedMotion && active ? 1 : progress.current;
 
     BUILDINGS.forEach((building, index) => {
-      const local = THREE.MathUtils.smoothstep(master, building.delay, Math.min(1, building.delay + 0.42));
+      const local = THREE.MathUtils.smoothstep(
+        master,
+        building.delay,
+        Math.min(1, building.delay + 0.42),
+      );
       const rise = THREE.MathUtils.smootherstep(local, 0, 1);
       const height = Math.max(0.001, building.height * rise);
       dummy.position.set(building.x, height / 2, building.z);
@@ -108,7 +120,11 @@ function District({ active, reducedMotion, palette }: { active: boolean; reduced
 
       const crownVisible = THREE.MathUtils.smoothstep(local, 0.72, 1);
       dummy.position.set(building.x, height + 0.07, building.z);
-      dummy.scale.set(building.width * 0.72 * crownVisible, 0.12 * crownVisible, building.depth * 0.72 * crownVisible);
+      dummy.scale.set(
+        building.width * 0.72 * crownVisible,
+        0.12 * crownVisible,
+        building.depth * 0.72 * crownVisible,
+      );
       dummy.updateMatrix();
       roofsRef.current?.setMatrixAt(index, dummy.matrix);
     });
@@ -144,9 +160,19 @@ function District({ active, reducedMotion, palette }: { active: boolean; reduced
 
       <gridHelper args={[20, 40, palette.scan, palette.road]} position={[0, 0.055, 0]} />
 
-      <instancedMesh ref={buildingsRef} args={[undefined, undefined, BUILDINGS.length]} castShadow receiveShadow>
+      <instancedMesh
+        ref={buildingsRef}
+        args={[undefined, undefined, BUILDINGS.length]}
+        castShadow
+        receiveShadow
+      >
         <boxGeometry />
-        <meshStandardMaterial color={palette.building} roughness={0.36} metalness={0.58} envMapIntensity={1.3} />
+        <meshStandardMaterial
+          color={palette.building}
+          roughness={0.36}
+          metalness={0.58}
+          envMapIntensity={1.3}
+        />
       </instancedMesh>
 
       <instancedMesh ref={roofsRef} args={[undefined, undefined, BUILDINGS.length]} castShadow>
@@ -158,18 +184,42 @@ function District({ active, reducedMotion, palette }: { active: boolean; reduced
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[windowPositions, 3]} />
         </bufferGeometry>
-        <pointsMaterial color={palette.light} size={0.055} transparent opacity={0} sizeAttenuation />
+        <pointsMaterial
+          color={palette.light}
+          size={0.055}
+          transparent
+          opacity={0}
+          sizeAttenuation
+        />
       </points>
 
       <mesh ref={scanRef} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[3.5, 7.5, 64]} />
-        <meshBasicMaterial color={palette.scan} transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
+        <meshBasicMaterial
+          color={palette.scan}
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );
 }
 
-function Scene({ active, yaw, tilt, reducedMotion, palette }: { active: boolean; yaw: number; tilt: number; reducedMotion: boolean; palette: Palette }) {
+function Scene({
+  active,
+  yaw,
+  tilt,
+  reducedMotion,
+  palette,
+}: {
+  active: boolean;
+  yaw: number;
+  tilt: number;
+  reducedMotion: boolean;
+  palette: Palette;
+}) {
   const root = useRef<THREE.Group>(null);
 
   useFrame(({ camera, clock }, rawDelta) => {
@@ -177,7 +227,9 @@ function Scene({ active, yaw, tilt, reducedMotion, palette }: { active: boolean;
     if (root.current) {
       const targetYaw = THREE.MathUtils.degToRad(yaw * 0.55);
       root.current.rotation.y += (targetYaw - root.current.rotation.y) * (1 - Math.exp(-4 * dt));
-      root.current.position.y = reducedMotion ? -0.7 : -0.7 + Math.sin(clock.elapsedTime * 0.45) * 0.06;
+      root.current.position.y = reducedMotion
+        ? -0.7
+        : -0.7 + Math.sin(clock.elapsedTime * 0.45) * 0.06;
     }
     const targetY = 10.8 + tilt * 0.045;
     camera.position.y += (targetY - camera.position.y) * (1 - Math.exp(-3 * dt));
@@ -188,11 +240,33 @@ function Scene({ active, yaw, tilt, reducedMotion, palette }: { active: boolean;
     <>
       <ambientLight intensity={0.58} color={palette.glass} />
       <hemisphereLight args={[palette.glass, palette.ground, 1.15]} />
-      <directionalLight position={[-7, 12, 8]} intensity={2.8} color={palette.light} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} />
+      <directionalLight
+        position={[-7, 12, 8]}
+        intensity={2.8}
+        color={palette.light}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-left={-12}
+        shadow-camera-right={12}
+        shadow-camera-top={12}
+        shadow-camera-bottom={-12}
+      />
       <pointLight position={[4, 3, 5]} intensity={35} distance={20} color={palette.scan} />
       <Environment resolution={64}>
-        <Lightformer intensity={2.2} color={palette.glass} position={[0, 10, 2]} scale={[12, 12, 1]} />
-        <Lightformer intensity={1.4} color={palette.scan} position={[-8, 2, 0]} rotation-y={Math.PI / 2} scale={[10, 2, 1]} />
+        <Lightformer
+          intensity={2.2}
+          color={palette.glass}
+          position={[0, 10, 2]}
+          scale={[12, 12, 1]}
+        />
+        <Lightformer
+          intensity={1.4}
+          color={palette.scan}
+          position={[-8, 2, 0]}
+          rotation-y={Math.PI / 2}
+          scale={[10, 2, 1]}
+        />
       </Environment>
       <group ref={root}>
         <District active={active} reducedMotion={reducedMotion} palette={palette} />
@@ -201,7 +275,15 @@ function Scene({ active, yaw, tilt, reducedMotion, palette }: { active: boolean;
   );
 }
 
-export function RisingCity({ visible, yaw, tilt }: { visible: boolean; yaw: number; tilt: number }) {
+export function RisingCity({
+  visible,
+  yaw,
+  tilt,
+}: {
+  visible: boolean;
+  yaw: number;
+  tilt: number;
+}) {
   const reducedMotion = Boolean(useReducedMotion());
   const [palette, setPalette] = useState<Palette | null>(null);
 
@@ -223,7 +305,13 @@ export function RisingCity({ visible, yaw, tilt }: { visible: boolean; yaw: numb
           gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
           style={{ background: "transparent" }}
         >
-          <Scene active={visible} yaw={yaw} tilt={tilt} reducedMotion={reducedMotion} palette={palette} />
+          <Scene
+            active={visible}
+            yaw={yaw}
+            tilt={tilt}
+            reducedMotion={reducedMotion}
+            palette={palette}
+          />
         </Canvas>
       )}
       <div className="city-rise-horizon absolute inset-x-[18%] bottom-[18%] h-px" />

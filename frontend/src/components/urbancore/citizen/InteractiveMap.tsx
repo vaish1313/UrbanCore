@@ -1,13 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { Maximize2, Navigation, Crosshair, MapPin } from "lucide-react";
-// @ts-ignore
+// @ts-expect-error react-map-gl/mapbox types might be missing
 import Map, { Marker, Popup, NavigationControl } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { LocationInfo } from "@/data/citizenMockData";
 import { DEFAULT_LOCATION, PINNED_LOCATION } from "@/data/citizenMockData";
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
 const ease = [0.16, 1, 0.3, 1] as const;
 
 interface InteractiveMapProps {
@@ -15,11 +16,14 @@ interface InteractiveMapProps {
   externalSearchLocation?: { label: string; lat: number; lng: number } | null;
 }
 
-export function InteractiveMap({ onLocationSelected, externalSearchLocation }: InteractiveMapProps) {
+export function InteractiveMap({
+  onLocationSelected,
+  externalSearchLocation,
+}: InteractiveMapProps) {
   const [viewState, setViewState] = useState({
     longitude: 73.7912,
     latitude: 20.0059,
-    zoom: 12
+    zoom: 12,
   });
 
   const [pinnedLoc, setPinnedLoc] = useState<LocationInfo | null>(null);
@@ -33,78 +37,106 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
         village: externalSearchLocation.label,
         lat: externalSearchLocation.lat,
         lng: externalSearchLocation.lng,
-        selectedTime: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+        selectedTime: new Date().toLocaleString("en-IN", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
       };
       setPinnedLoc(loc);
-      setViewState({ longitude: externalSearchLocation.lng, latitude: externalSearchLocation.lat, zoom: 14 });
+      setViewState({
+        longitude: externalSearchLocation.lng,
+        latitude: externalSearchLocation.lat,
+        zoom: 14,
+      });
       setShowPopup(true);
     }
   }, [externalSearchLocation]);
 
   const getProtectionStatus = (lat: number, lng: number, placeName: string) => {
     const name = placeName.toLowerCase();
-    
+
     // Check keywords first
-    if (name.includes("river") || name.includes("godavari") || name.includes("lake") || name.includes("dam") || name.includes("water") || name.includes("nadi") || name.includes("valley")) {
+    if (
+      name.includes("river") ||
+      name.includes("godavari") ||
+      name.includes("lake") ||
+      name.includes("dam") ||
+      name.includes("water") ||
+      name.includes("nadi") ||
+      name.includes("valley")
+    ) {
       return { protection: "⚠️ River buffer zone", protectionLevel: "danger" as const };
     }
-    
-    if (name.includes("hill") || name.includes("forest") || name.includes("mountain") || name.includes("cave") || name.includes("pandavleni") || name.includes("pandav lene") || name.includes("leni") || name.includes("wadi") || name.includes("ghat")) {
+
+    if (
+      name.includes("hill") ||
+      name.includes("forest") ||
+      name.includes("mountain") ||
+      name.includes("cave") ||
+      name.includes("pandavleni") ||
+      name.includes("pandav lene") ||
+      name.includes("leni") ||
+      name.includes("wadi") ||
+      name.includes("ghat")
+    ) {
       return { protection: "🌿 Forest/Hilly boundary nearby", protectionLevel: "caution" as const };
     }
-    
+
     // Fallback: Distance checks to major geographic landmarks
     // Godavari River center approx
-    const distToRiver = Math.sqrt(Math.pow(lat - 20.015, 2) + Math.pow(lng - 73.790, 2));
+    const distToRiver = Math.sqrt(Math.pow(lat - 20.015, 2) + Math.pow(lng - 73.79, 2));
     if (distToRiver < 0.012) {
-       return { protection: "⚠️ River buffer zone", protectionLevel: "danger" as const };
+      return { protection: "⚠️ River buffer zone", protectionLevel: "danger" as const };
     }
-    
+
     // Pandavleni Hills / Pathardi area approx
-    const distToHills = Math.sqrt(Math.pow(lat - 19.945, 2) + Math.pow(lng - 73.770, 2));
+    const distToHills = Math.sqrt(Math.pow(lat - 19.945, 2) + Math.pow(lng - 73.77, 2));
     if (distToHills < 0.035) {
-       return { protection: "🌿 Protected Hilly Zone", protectionLevel: "caution" as const };
+      return { protection: "🌿 Protected Hilly Zone", protectionLevel: "caution" as const };
     }
 
     return { protection: "✅ No protected zone constraints.", protectionLevel: "safe" as const };
   };
 
-  const handleMapClick = useCallback(async (e: any) => {
-    const lat = +(e.lngLat.lat).toFixed(4);
-    const lng = +(e.lngLat.lng).toFixed(4);
-    
+  const handleMapClick = useCallback(async (e: { lngLat: { lat: number; lng: number } }) => {
+    const lat = +e.lngLat.lat.toFixed(4);
+    const lng = +e.lngLat.lng.toFixed(4);
+
     // Center the map on the new pin so the popup doesn't clip at the edges
-    setViewState(prev => ({
+    setViewState((prev) => ({
       ...prev,
       longitude: lng,
-      latitude: lat
+      latitude: lat,
     }));
 
     // Optimistic initial pin
-    const loc = { 
-      ...PINNED_LOCATION, 
-      lat, lng, 
+    const loc = {
+      ...PINNED_LOCATION,
+      lat,
+      lng,
       village: "Locating...",
-      selectedTime: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) 
+      selectedTime: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
     };
     setPinnedLoc(loc);
     setShowPopup(false);
 
     try {
-      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`);
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`,
+      );
       const data = await res.json();
-      
+
       if (data.features && data.features.length > 0) {
         // Find the most relevant feature name
         const feature = data.features[0];
         const placeName = feature.text;
-        
+
         // Extract context details
         let district = "Nashik";
         let state = "Maharashtra";
         let pincode = "";
-        
-        feature.context?.forEach((c: any) => {
+
+        feature.context?.forEach((c: { id: string; text: string }) => {
           if (c.id.startsWith("district") || c.id.startsWith("place")) district = c.text;
           if (c.id.startsWith("region")) state = c.text;
           if (c.id.startsWith("postcode")) pincode = c.text;
@@ -112,7 +144,7 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
 
         const { protection, protectionLevel } = getProtectionStatus(lat, lng, placeName);
 
-        setPinnedLoc(prev => {
+        setPinnedLoc((prev) => {
           if (!prev) return prev;
           if (prev.lat !== lat || prev.lng !== lng) return prev; // If user clicked elsewhere, ignore
           return {
@@ -123,15 +155,19 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
             state,
             pincode,
             protection,
-            protectionLevel
+            protectionLevel,
           };
         });
       } else {
-        setPinnedLoc(prev => prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev);
+        setPinnedLoc((prev) =>
+          prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev,
+        );
       }
     } catch (error) {
       console.error("Geocoding failed:", error);
-      setPinnedLoc(prev => prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev);
+      setPinnedLoc((prev) =>
+        prev && prev.lat === lat ? { ...prev, village: "Unknown Location" } : prev,
+      );
     }
   }, []);
 
@@ -151,7 +187,9 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
               <h2 className="cs-map-title">
                 <Navigation className="h-4 w-4 text-cyan-400 inline -mt-0.5" /> Interactive Map
               </h2>
-              <p className="cs-map-subtitle">Click anywhere to drop a pin, then click the pin to view details and confirm.</p>
+              <p className="cs-map-subtitle">
+                Click anywhere to drop a pin, then click the pin to view details and confirm.
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="cs-coords-badge">
@@ -174,22 +212,30 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
           >
             <Map
               {...viewState}
-              onMove={(evt: any) => setViewState(evt.viewState)}
+              onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
               mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
               mapboxAccessToken={MAPBOX_TOKEN}
               onClick={handleMapClick}
               cursor="crosshair"
             >
               <NavigationControl position="bottom-right" />
-              
+
               {/* Single Pinned Marker */}
               {pinnedLoc && (
-                <Marker longitude={pinnedLoc.lng} latitude={pinnedLoc.lat} anchor="bottom" onClick={(e) => {
-                  e.originalEvent.stopPropagation();
-                  setShowPopup(true);
-                }}>
+                <Marker
+                  longitude={pinnedLoc.lng}
+                  latitude={pinnedLoc.lat}
+                  anchor="bottom"
+                  onClick={(e) => {
+                    e.originalEvent.stopPropagation();
+                    setShowPopup(true);
+                  }}
+                >
                   <div className="flex flex-col items-center cursor-pointer hover:scale-110 transition-transform">
-                    <MapPin className="h-8 w-8 drop-shadow-lg text-red-500" style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))" }} />
+                    <MapPin
+                      className="h-8 w-8 drop-shadow-lg text-red-500"
+                      style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))" }}
+                    />
                   </div>
                 </Marker>
               )}
@@ -206,7 +252,9 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
                   className="cs-map-popup"
                 >
                   <div className="cs-popup-content">
-                    <div className={`cs-protection-badge cs-protection-badge--${pinnedLoc.protectionLevel}`}>
+                    <div
+                      className={`cs-protection-badge cs-protection-badge--${pinnedLoc.protectionLevel}`}
+                    >
                       <span className="cs-protection-dot" />
                       {pinnedLoc.protection}
                     </div>
@@ -214,8 +262,14 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
                     <h3 className="cs-loc-name">{pinnedLoc.village}</h3>
 
                     <div className="cs-loc-fields">
-                      {pinnedLoc.pincode && <LocationField label="PIN Code" value={pinnedLoc.pincode} />}
-                      <LocationField label="Coordinates" value={`${pinnedLoc.lat}°, ${pinnedLoc.lng}°`} mono />
+                      {pinnedLoc.pincode && (
+                        <LocationField label="PIN Code" value={pinnedLoc.pincode} />
+                      )}
+                      <LocationField
+                        label="Coordinates"
+                        value={`${pinnedLoc.lat}°, ${pinnedLoc.lng}°`}
+                        mono
+                      />
                     </div>
 
                     <motion.button
@@ -306,9 +360,26 @@ export function InteractiveMap({ onLocationSelected, externalSearchLocation }: I
 
 function LocationField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "4px 0",
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
+      }}
+    >
       <span style={{ fontSize: "0.7rem", color: "#64748b" }}>{label}</span>
-      <span style={{ fontSize: "0.75rem", color: "#cbd5e1", fontWeight: 500, fontFamily: mono ? "var(--font-mono,monospace)" : undefined }}>{value}</span>
+      <span
+        style={{
+          fontSize: "0.75rem",
+          color: "#cbd5e1",
+          fontWeight: 500,
+          fontFamily: mono ? "var(--font-mono,monospace)" : undefined,
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }

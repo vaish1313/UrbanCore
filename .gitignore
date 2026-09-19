@@ -31,3 +31,11 @@ dist-ssr
 *.sln
 *.sw?
 backend/.env
+.env
+backend/gee_key.json
+*.pth
+*.pt
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/

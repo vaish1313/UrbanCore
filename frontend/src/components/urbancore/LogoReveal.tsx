@@ -132,9 +132,7 @@ export function LogoReveal({
         const appear = Math.max(0, Math.min(1, local * 2.2));
         const alpha = appear * (dist > 6 ? 0.55 : 0.95);
         ctx.fillStyle =
-          p.hue === 1
-            ? `rgba(150, 236, 190, ${alpha})`
-            : `rgba(226, 240, 255, ${alpha})`;
+          p.hue === 1 ? `rgba(150, 236, 190, ${alpha})` : `rgba(226, 240, 255, ${alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, dist > 6 ? p.r * 1.15 : p.r, 0, Math.PI * 2);
         ctx.fill();

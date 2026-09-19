@@ -13,7 +13,9 @@ export function ReportConcernModal({
   onSubmitReport: (report: CitizenReport) => void;
 }) {
   const [location, setLocation] = useState("");
-  const [concernType, setConcernType] = useState<CitizenReport["concernType"]>("Possible illegal construction");
+  const [concernType, setConcernType] = useState<CitizenReport["concernType"]>(
+    "Possible illegal construction",
+  );
   const [description, setDescription] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -30,7 +32,8 @@ export function ReportConcernModal({
       referenceNumber: refNum,
       location: location || "Gangapur Road near Riverbank",
       concernType,
-      description: description || "Unsanctioned construction activity reported near protected buffer.",
+      description:
+        description || "Unsanctioned construction activity reported near protected buffer.",
       submittedAt: new Date().toISOString().split("T")[0]!,
       status: "Pending Review",
       contactName,
@@ -102,7 +105,9 @@ export function ReportConcernModal({
 
             {/* Location */}
             <div className="flex flex-col gap-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Location / Landmark *</label>
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Location / Landmark *
+              </label>
               <input
                 required
                 type="text"
@@ -115,10 +120,12 @@ export function ReportConcernModal({
 
             {/* Concern Type */}
             <div className="flex flex-col gap-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Category *</label>
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Category *
+              </label>
               <select
                 value={concernType}
-                onChange={(e) => setConcernType(e.target.value as any)}
+                onChange={(e) => setConcernType(e.target.value as CitizenReport["concernType"])}
                 className="rounded-xl border border-border/60 bg-background/80 px-3.5 py-2.5 text-xs text-foreground outline-none focus:border-primary"
               >
                 <option value="Possible illegal construction">Possible illegal construction</option>
@@ -131,7 +138,9 @@ export function ReportConcernModal({
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Description *</label>
+              <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                Description *
+              </label>
               <textarea
                 required
                 rows={3}
@@ -145,7 +154,9 @@ export function ReportConcernModal({
             {/* Contact details */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Your Name</label>
+                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Your Name
+                </label>
                 <input
                   type="text"
                   value={contactName}
@@ -155,7 +166,9 @@ export function ReportConcernModal({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Email</label>
+                <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Email
+                </label>
                 <input
                   type="email"
                   value={contactEmail}

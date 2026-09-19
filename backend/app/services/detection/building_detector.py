@@ -27,11 +27,11 @@ class BuildingDetector:
             checkpoint_path: Path to model checkpoint
         """
         self.device = torch.device(settings.DEVICE if torch.cuda.is_available() else 'cpu')
-        self.checkpoint_path = checkpoint_path or settings.UNET_CHECKPOINT_PATH
+        self.checkpoint_path = checkpoint_path or getattr(settings, 'UNET_CHECKPOINT_PATH', None) or "ml_models/best_unet_urbancore.pth"
         
         # Load model
         self.model = get_unet_model(
-            n_channels=3,
+            n_channels=10,
             n_classes=1,
             pretrained=True,
             checkpoint_path=self.checkpoint_path
@@ -39,46 +39,100 @@ class BuildingDetector:
         self.model = self.model.to(self.device)
         self.model.eval()
         
-        logger.info(f"Building detector initialized on {self.device}")
+        logger.info(f"Building detector initialized on {self.device} with 10 channels")
     
     def detect_buildings(
         self,
         image_path: str,
         output_mask_path: str,
+        prev_year_image_path: Optional[str] = None,
         confidence_threshold: float = 0.5,
         min_area_sqm: float = 25.0
     ) -> Dict:
         """
-        Detect buildings in satellite image.
-        
-        Args:
-            image_path: Path to input image
-            output_mask_path: Path to save prediction mask
-            confidence_threshold: Minimum confidence for detection
-            min_area_sqm: Minimum building area in square meters
-        
-        Returns:
-            Dictionary with detection results
+        Detect buildings in a 10-band satellite image using sliding window and temporal pre-screening.
         """
         try:
-            # Read image
+            # Read 10-band image
             with rasterio.open(image_path) as src:
-                image = src.read([1, 2, 3])  # RGB bands
+                image = src.read()
                 meta = src.meta.copy()
                 transform = src.transform
                 crs = src.crs
             
+            orig_h, orig_w = image.shape[1], image.shape[2]
+            
+            # 1. Temporal pre-screening mask
+            # Using strict sign test as per paper: NDBI↑ & NDVI↓ & NDWI↓
+            if prev_year_image_path and os.path.exists(prev_year_image_path):
+                with rasterio.open(prev_year_image_path) as prev_src:
+                    prev_image = prev_src.read()
+                    
+                    delta_ndvi = image[6] - prev_image[6]
+                    delta_ndbi = image[7] - prev_image[7]
+                    delta_ndwi = image[8] - prev_image[8]
+                    
+                    change_mask = (delta_ndbi > 0) & (delta_ndvi < 0) & (delta_ndwi < 0)
+            else:
+                change_mask = np.ones((orig_h, orig_w), dtype=bool)
+            
             # Normalize image
             image = self._normalize_image(image)
+            image_tensor = torch.from_numpy(image).float().unsqueeze(0).to(self.device)
             
-            # Run inference
+            # 2. Pad to 208x208
+            pad_h = max(0, 208 - orig_h)
+            pad_w = max(0, 208 - orig_w)
+            
+            pad_left = pad_w // 2
+            pad_right = pad_w - pad_left
+            pad_top = pad_h // 2
+            pad_bottom = pad_h - pad_top
+            
+            import torch.nn.functional as F
+            padded_tensor = F.pad(image_tensor, (pad_left, pad_right, pad_top, pad_bottom), mode='reflect')
+            
+            # Pad change_mask similarly (with False so we don't predict on padded regions)
+            padded_change_mask = np.pad(
+                change_mask, 
+                ((pad_top, pad_bottom), (pad_left, pad_right)), 
+                mode='constant', 
+                constant_values=False
+            )
+            
+            # 3. Sliding window inference (64x64, stride 16)
+            patch_size = 64
+            stride = 16
+            
+            h_padded = padded_tensor.shape[2]
+            w_padded = padded_tensor.shape[3]
+            
+            prediction_accumulator = np.zeros((h_padded, w_padded), dtype=np.float32)
+            count_accumulator = np.zeros((h_padded, w_padded), dtype=np.float32)
+            
             with torch.no_grad():
-                # Convert to tensor
-                image_tensor = torch.from_numpy(image).float().unsqueeze(0).to(self.device)
-                
-                # Predict
-                output = self.model.predict(image_tensor)
-                prediction = output.squeeze().cpu().numpy()
+                for y in range(0, h_padded - patch_size + 1, stride):
+                    for x in range(0, w_padded - patch_size + 1, stride):
+                        # Pre-screening: Check if the patch has any valid changed pixels
+                        mask_patch = padded_change_mask[y:y+patch_size, x:x+patch_size]
+                        if not mask_patch.any():
+                            # Skip U-Net inference completely to save computation
+                            continue
+                            
+                        patch = padded_tensor[:, :, y:y+patch_size, x:x+patch_size]
+                        output = self.model.predict(patch)
+                        pred_patch = output.squeeze().cpu().numpy()
+                        
+                        prediction_accumulator[y:y+patch_size, x:x+patch_size] += pred_patch
+                        count_accumulator[y:y+patch_size, x:x+patch_size] += 1
+            
+            # Average predictions
+            # Avoid division by zero
+            count_accumulator[count_accumulator == 0] = 1.0
+            prediction_padded = prediction_accumulator / count_accumulator
+            
+            # 4. Crop back to original size
+            prediction = prediction_padded[pad_top:pad_top+orig_h, pad_left:pad_left+orig_w]
             
             # Apply threshold
             binary_mask = (prediction > confidence_threshold).astype(np.uint8)
@@ -103,7 +157,7 @@ class BuildingDetector:
             # Calculate statistics
             num_buildings = len(buildings)
             total_area = sum(b['area_sqm'] for b in buildings)
-            avg_confidence = float(np.mean(prediction[binary_mask > 0]))
+            avg_confidence = float(np.mean(prediction[binary_mask > 0])) if np.any(binary_mask > 0) else 0.0
             
             logger.info(f"Detected {num_buildings} buildings, total area: {total_area:.2f} m²")
             
@@ -120,13 +174,19 @@ class BuildingDetector:
             raise
     
     def _normalize_image(self, image: np.ndarray) -> np.ndarray:
-        """Normalize image to [0, 1] range."""
+        """Normalize 10-band image."""
         image = image.astype(np.float32)
-        for i in range(image.shape[0]):
-            band = image[i]
-            min_val = np.percentile(band, 2)
-            max_val = np.percentile(band, 98)
-            image[i] = np.clip((band - min_val) / (max_val - min_val + 1e-8), 0, 1)
+        
+        # Bands 0-5 are Reflectance (B2, B3, B4, B8, B11, B12)
+        # Sentinel-2 L2A reflectance is usually 0-10000. 
+        for i in range(6):
+            image[i] = np.clip(image[i] / 10000.0, 0, 1)
+            
+        # Bands 6-9 are Indices (NDVI, NDBI, NDWI, BSI) which are already in [-1, 1] range.
+        # We can leave them as is, or clip them just in case of outliers.
+        for i in range(6, 10):
+            image[i] = np.clip(image[i], -1.0, 1.0)
+            
         return image
     
     def _post_process_mask(
