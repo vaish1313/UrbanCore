@@ -16,11 +16,15 @@ export function MunicipalDashboard({
   onTabChange,
   onSelectAlert,
   onBack,
+  activeFeatureId,
+  onFeatureChange,
 }: {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   onSelectAlert?: ((alertId: string) => void) | undefined;
   onBack?: () => void;
+  activeFeatureId?: string;
+  onFeatureChange?: (featureId: string) => void;
 }) {
   const [selectedAlert, setSelectedAlert] = useState<MunicipalAlert>(MUNICIPAL_ALERTS[0]!);
   const [isDraftOpen, setIsDraftOpen] = useState(false);
@@ -44,7 +48,13 @@ export function MunicipalDashboard({
           // Remove the RoleWorkspace padding wrapper so it fills the overlay edge-to-edge.
           style={{ position: "relative", width: "100%" }}
         >
-          <MunicipalGISDashboard onBack={onBack} />
+          <MunicipalGISDashboard
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            onBack={onBack}
+            activeFeatureId={activeFeatureId}
+            onFeatureChange={onFeatureChange}
+          />
         </motion.div>
       </AnimatePresence>
     );
