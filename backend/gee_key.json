@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "final-year-project-501711",
+  "private_key_id": "ef50c79dbe4dec507cd8ee10b020960506ce03bf",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDKWEl5tENCFRGg\niERGI1OrJNHI1PFmd27gUvKRF+xENn6+tUIZG4tAVXUNs9eKLxvjnvAbGm6jZTcu\npOxRd6g9bHWrZr86Zfps7uPqL92tKjlZdCnKSCkyx7vuqFpyWv5J1EyT6Xe9Naut\nid4LHNQP/YcrL32+tjF3ae3iKN895/z/1sna83ljFt0JPSQZEmVdkW8S8EfNwUi2\nNOA0BPR+MuJeMltqx+rWODwRUn39pcsnEfwVFz871CdGjhUXKrQEdkrEORT0u0fj\nCmnF6+lAt6suAEAEsT9kQ+ib+Uf99MSMrrtUPWre83XAf/hJgsnp2E+PBZilVPaU\n7ps7YztfAgMBAAECggEAW3i22nxJjWWN3ubLCnPs3mjaJzJQYJRsPJ9yxXGtnpaO\nDHNPSp9ff3lCXavnq7GpJ2iRvYbg7h+S5xSqOhfgJ8hQl2fu2Z0BLN5/jL4Ptbjp\nTQ2M2MNvUGPnirdzj8+ftctxxMndldzd26kABkEFgqcHRFgHPcAKM6Pg5IS6irZ2\nyE1JnfFq8mUeEMUGfrMQbNPyqKGS3nI0zEekMwBkQMU1akaD4IDlG+UqeYt8b02n\nCN39Fmj61PHCsplpVz/bvwXEyr5xBu4lHM9+1VekHkymv1U0bDPN/KAXBJz0uxKE\n1w+K/gKdZi2lWWTWBm5EA8nKddjI9gPtcn7hHZJUsQKBgQD5vAOjERw4VJLoTx26\nCA+x3cdX3hifE7SlFxlxWjLFrKIcMCgRvuHAVbQTilsWEDGJ3adf61GCCfp9atON\noBhuXus50Srewpu7ewKnuDULaQBnx9MUnUh7DNP5Pm39bI4eIL8K2fWTODQeF7DR\nEP2MwMkP1yjkK6SJG4P6juV77wKBgQDPa+aYIjTy0JpOV8nQrf5rJB+WmUT4kHXD\nK2s4FEapAiQH7b5m502SI3xdhkD/GQreFsR9JcIU89aDPkgYABJCVpUaru204Z5i\nPBpxWDL/eTz1mumPkxQVme7HLvPZASkO9FI2bJ9sUwnHgc1xaMtzfD9P0/gJsH7A\nWHqWIMOHkQKBgF46asTkd9lpT+UHtRe0Yvehzs2Ap5mePdLs3FTAy9d6Q9CO+w93\nDocbz05wLd4tTgPO9pBioeaHDVS1Mg2GErHSbr7qBVr34vridyYBg0JC5DxEUYi9\nr9N+C51HyQiOJTGI+YyGoPpjgoa4Oaco2gJ522N2s58kOHjjQPERadVRAoGBALlt\noKwIiIU573hyCr0/jt6BYKvlQT9lBaIAws1TcwfMHiHoa/radQJcLuX9C0YCQTDh\n8a5ffu30PqT9nL238prThGBiWacGu+zeBlWln5G79L8sSfhMZ/wXrNrsIpqw6t+v\nk3+MA8l3QprUc7EbGiaXwJHA0VD4M5gIgS6NA7/BAoGBAIaT4nooLJ0EoczdfU8J\nCacdKRBh6XmRFXqhh8jnoeQqGOqNlw8y3zUGva8ANYHrKOygHOky0i+uRzm07JGw\nBbuItcXBO5i3N/Igf7T99h1ULgQ+5k9TqnBydG+Ay5uE2rhopJ/O8CLSRtbE70+N\nu7Y3xnWv2PM3S23O3ftewIkN\n-----END PRIVATE KEY-----\n",
+  "client_email": "urbancore-backend@final-year-project-501711.iam.gserviceaccount.com",
+  "client_id": "111564517647823158584",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/urbancore-backend%40final-year-project-501711.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
