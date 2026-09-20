@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 import { ComparativeVisualization } from "./ComparativeVisualization";
 
 const TARGET_QUERY =
-  "What changed near Panchvati near 2021 and 2025 in the terms of lands like building etc and build a builders report for that report by comparing both the years";
+  "Show built-up growth near Panchavati from 2021 to 2025.";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -63,22 +63,21 @@ export function IntelligenceSearch({
               onSubmit={(e) => {
                 e.preventDefault();
               }}
-              className="glass-panel group relative flex items-center gap-4 rounded-2xl px-5 py-4 transition-[box-shadow,border-color] duration-500 focus-within:border-primary/40"
+              className="group relative flex items-center gap-4 rounded-full border border-white/10 bg-white/5 px-2 py-1.5 pl-5 backdrop-blur-2xl transition-[box-shadow,border-color] duration-500 focus-within:border-cyan-400/40"
             >
-              <span className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center">
-                <span className="breathe absolute inset-0 rounded-full bg-accent shadow-[0_0_16px_4px_var(--gis)]" />
-              </span>
+              <Search className="h-4 w-4 text-blue-500 shrink-0" />
 
               <div className="relative flex-1">
                 <input
                   readOnly
                   value={typed}
+                  placeholder="Search Address, PIN Code, Village, Latitude..."
                   aria-label="Ask UrbanCore about this land"
-                  className="w-full bg-transparent text-base font-light tracking-tight text-foreground outline-none sm:text-lg cursor-default"
+                  className="w-full bg-transparent text-sm font-light tracking-tight text-white outline-none sm:text-[15px] cursor-default placeholder:text-slate-500"
                 />
-                {typed.length < TARGET_QUERY.length && (
+                {typed.length < TARGET_QUERY.length && typed.length > 0 && (
                   <span
-                    className="absolute right-auto inline-block h-[1.1em] w-px bg-primary align-middle breathe"
+                    className="absolute right-auto inline-block h-[1.1em] w-px bg-cyan-400 align-middle breathe"
                     style={{ left: `${typed.length}ch`, display: "none" }}
                   />
                 )}
@@ -87,12 +86,14 @@ export function IntelligenceSearch({
               <button
                 type="button"
                 disabled
-                aria-label="Ask UrbanCore"
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border ${
-                  isCompleted ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"
-                } transition-colors duration-300`}
+                aria-label="Search"
+                className={`flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white whitespace-nowrap transition-all duration-300 ${
+                  isCompleted 
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-blue-500/20" 
+                    : "bg-gradient-to-br from-cyan-500 to-blue-500 opacity-80"
+                }`}
               >
-                <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
+                Search
               </button>
             </form>
           </motion.div>
