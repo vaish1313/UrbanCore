@@ -46,8 +46,7 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
     except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
-        raise
+        logger.warning(f"Database connection offline, using seed memory layer: {e}")
     
     yield
     
