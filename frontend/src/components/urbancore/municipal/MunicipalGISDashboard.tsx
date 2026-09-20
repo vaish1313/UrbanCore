@@ -11,14 +11,17 @@
  *   - No Three.js, no oklch solid bg, no HUD telemetry overlays
  */
 
-import { useMemo, useState, useRef } from "react";
-import { motion } from "motion/react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   BarChart3, Layers, RefreshCw, Flame, AlertTriangle, CheckCircle2,
   FileText, Satellite, MapPin, ShieldAlert, Download,
-  Printer, ChevronRight, Flag, Eye, ArrowLeft,
+  Printer, ChevronRight, Flag, Eye,
 } from "lucide-react";
 import { HeroSearch } from "../citizen/HeroSearch";
+import { MUNICIPAL_FEATURE_MENU } from "../role/roleFeatureMenus";
+import { MUNICIPAL_ALERTS } from "@/data/municipalData";
+import { ComplianceReportModal } from "./ComplianceReportModal";
 // @ts-expect-error react-map-gl/mapbox types might be missing
 import Map, { Layer, NavigationControl, Source } from "react-map-gl/mapbox";
 import type { FeatureCollection } from "geojson";
@@ -1056,12 +1059,65 @@ function MunicipalFooter() {
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
-export function MunicipalGISDashboard({ onBack }: { onBack?: () => void }) {
-  const mapSectionRef = useRef<HTMLDivElement>(null);
+function MunicipalModuleDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-4 w-full my-6">
+      <div className="flex-1 h-[1px] bg-slate-800" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-400 font-semibold px-3 py-1 rounded-full border border-cyan-500/20 bg-cyan-500/10">
+        {label}
+      </span>
+      <div className="flex-1 h-[1px] bg-slate-800" />
+    </div>
+  );
+}
 
-  const scrollToMap = () => {
-    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+export function MunicipalGISDashboard({
+  activeTab = "command",
+  onTabChange: _onTabChange,
+  onBack: _onBack,
+  activeFeatureId: controlledFeatureId,
+  onFeatureChange,
+}: {
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+  onBack?: () => void;
+  activeFeatureId?: string;
+  onFeatureChange?: (featureId: string) => void;
+}) {
+  const [internalFeatureId, setInternalFeatureId] = useState("overview");
+  const activeFeatureId = controlledFeatureId ?? internalFeatureId;
+  const setActiveFeatureId = (id: string) => {
+    onFeatureChange?.(id);
+    if (controlledFeatureId === undefined) setInternalFeatureId(id);
   };
+  const [isDraftOpen, setIsDraftOpen] = useState(false);
+
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+  const featureSectionRef = useRef<HTMLDivElement>(null);
+
+  const activeFeature =
+    MUNICIPAL_FEATURE_MENU.find((f) => f.id === activeFeatureId) || MUNICIPAL_FEATURE_MENU[0]!;
+
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
+    setTimeout(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
+  useEffect(() => {
+    const feature = MUNICIPAL_FEATURE_MENU.find((f) => f.id === activeFeatureId);
+    if (feature?.isReportModalTrigger) {
+      setIsDraftOpen(true);
+      return;
+    }
+    if (activeFeatureId === "overview") {
+      mapSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    } else if (activeFeatureId === "district-map") {
+      scrollToRef(mapSectionRef);
+    } else if (activeFeatureId !== "compliance") {
+      scrollToRef(featureSectionRef);
+    }
+  }, [activeFeatureId]);
 
   return (
     <>
@@ -1107,30 +1163,66 @@ export function MunicipalGISDashboard({ onBack }: { onBack?: () => void }) {
         {/* satellite aerial backdrop at 0.25 opacity — same as citizen cs-page-bg */}
         <div className="mg-page-bg" />
 
-        {/* page sections */}
+        {/* page sections — tab shell mirrors CitizenDashboard */}
         <div className="mg-content">
-          {/* ── 1. Hero Title Section matching Citizen Intelligence ── */}
-          <HeroSearch
-            titlePrefix="Municipal"
-            titleGradient="Intelligence"
-            subtitle="Monitor urban development, zoning compliance, protected zones, and satellite-detected encroachments across Nashik."
-            showSearch={false}
-            showDropPin={false}
-          />
+          {activeTab === "my-reports" ? (
+            <div className="w-full flex-1 pt-6 pb-24">
+              <PriorityQueue />
+            </div>
+          ) : (
+            <>
+              <HeroSearch
+                titlePrefix="Municipal"
+                titleGradient="Intelligence"
+                badgeText="AI Urban Intelligence · Nashik 2026"
+                subtitle="Monitor urban development, zoning compliance, protected zones, and satellite-detected encroachments across Nashik."
+                showSearch={false}
+                showDropPin={false}
+              />
 
-          {/* ── 2. District Overview Map Section ── */}
-          <div ref={mapSectionRef} style={{ width: "100%" }}>
-            <DistrictMap />
-          </div>
+              {(activeFeatureId === "overview" || activeFeatureId === "district-map") && (
+                <div ref={mapSectionRef} style={{ width: "100%" }}>
+                  <DistrictMap />
+                </div>
+              )}
 
-          <PriorityQueue />
-          <CaseForensics />
-          <AILegalNotice />
-          <CaseExport />
+              {activeFeatureId === "overview" && <PriorityQueue />}
+
+              <div ref={featureSectionRef} id="municipal-selected-feature-section">
+                <AnimatePresence mode="wait">
+                  {activeFeatureId !== "overview" &&
+                    activeFeatureId !== "district-map" && (
+                      <motion.div
+                        key={activeFeatureId}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4 }}
+                        className="w-full"
+                      >
+                        <MunicipalModuleDivider label={`MODULE FEATURE: ${activeFeature.label}`} />
+                        {activeFeatureId === "encroachment" && <PriorityQueue />}
+                        {(activeFeatureId === "forensics" || activeFeatureId === "heatmap") && (
+                          <CaseForensics />
+                        )}
+                        {activeFeatureId === "legal" && <AILegalNotice />}
+                        {activeFeatureId === "export" && <CaseExport />}
+                      </motion.div>
+                    )}
+                </AnimatePresence>
+              </div>
+            </>
+          )}
         </div>
 
         <MunicipalFooter />
       </div>
+
+      <ComplianceReportModal
+        alert={MUNICIPAL_ALERTS[0]!}
+        isOpen={isDraftOpen}
+        onClose={() => setIsDraftOpen(false)}
+      />
     </>
   );
 }
