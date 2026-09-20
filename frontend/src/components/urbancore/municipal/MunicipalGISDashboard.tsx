@@ -11,7 +11,7 @@
  *   - No Three.js, no oklch solid bg, no HUD telemetry overlays
  */
 
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { motion } from "motion/react";
 import {
   BarChart3, Layers, RefreshCw, Flame, AlertTriangle, CheckCircle2,
@@ -20,11 +20,60 @@ import {
 } from "lucide-react";
 import { HeroSearch } from "../citizen/HeroSearch";
 // @ts-expect-error react-map-gl/mapbox types might be missing
-import Map, { NavigationControl } from "react-map-gl/mapbox";
+import Map, { Layer, NavigationControl, Source } from "react-map-gl/mapbox";
+import type { FeatureCollection } from "geojson";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+
+/** Fixed view — AOI-07 Gangapur Road (frontend demo only). */
+const FORENSICS_HEATMAP_VIEW = {
+  longitude: 73.7548,
+  latitude: 20.0124,
+  zoom: 14.35,
+  pitch: 0,
+  bearing: -12,
+};
+
+/**
+ * Synthetic construction hotspots for timeline scrubbing (2021→2025).
+ * Weights grow each year to simulate spreading built-up change — replace with API GeoJSON later.
+ */
+const DEMO_CONSTRUCTION_HOTSPOTS = [
+  { lng: 73.7536, lat: 20.0134, base: 0.04, growth: 0.17, spread: 0.00035 },
+  { lng: 73.7552, lat: 20.0126, base: 0.07, growth: 0.22, spread: 0.00042 },
+  { lng: 73.7566, lat: 20.0119, base: 0.03, growth: 0.26, spread: 0.00038 },
+  { lng: 73.7524, lat: 20.0121, base: 0.05, growth: 0.14, spread: 0.00028 },
+  { lng: 73.7544, lat: 20.0146, base: 0.04, growth: 0.19, spread: 0.00032 },
+  { lng: 73.7574, lat: 20.0137, base: 0.02, growth: 0.28, spread: 0.00045 },
+  { lng: 73.7518, lat: 20.0138, base: 0.03, growth: 0.12, spread: 0.00025 },
+] as const;
+
+function buildDemoConstructionHeatGeoJSON(epochYear: number): FeatureCollection {
+  const yearsElapsed = Math.max(0, epochYear - 2021);
+  const features = DEMO_CONSTRUCTION_HOTSPOTS.flatMap((site, siteIndex) => {
+    const weight = Math.min(1, site.base + site.growth * yearsElapsed);
+    const pointCount = 1 + Math.floor(yearsElapsed * 1.4);
+    return Array.from({ length: pointCount }, (_, i) => {
+      const angle = (i / pointCount) * Math.PI * 2 + siteIndex * 0.4;
+      const radius = site.spread * (0.35 + i * 0.55);
+      return {
+        type: "Feature" as const,
+        properties: { weight: weight * (1 - i * 0.08) },
+        geometry: {
+          type: "Point" as const,
+          coordinates: [
+            site.lng + Math.cos(angle) * radius,
+            site.lat + Math.sin(angle) * radius * 0.72,
+          ],
+        },
+      };
+    });
+  });
+
+  return { type: "FeatureCollection", features };
+}
 
 // ─── Design tokens (exact citizen hex values) ─────────────────────────────────
 const T = {
@@ -454,6 +503,8 @@ function CaseForensics() {
   const stage = intensity < 25 ? "Pristine" : intensity < 55 ? "Emerging" : intensity < 80 ? "Active Incursion" : "Critical";
   const velocity = Math.round(t * 84);
   const nearest = Math.round(val);
+  const heatGeoJson = useMemo(() => buildDemoConstructionHeatGeoJSON(val), [val]);
+  const demoAreaDelta = Math.round(18 + t * 402);
 
   return (
     <section>
@@ -490,7 +541,7 @@ function CaseForensics() {
                   <div style={{
                     fontSize:12, color:T.slate500,
                     fontFamily:"var(--font-sans,'Manrope',sans-serif)",
-                  }}>Rotate the chrono-dial to scrub through 5 years of change</div>
+                  }}>Scrub 2021–2025 on live satellite — demo heat until backend is wired</div>
                 </div>
               </div>
               <span style={{
@@ -501,25 +552,57 @@ function CaseForensics() {
               }}>Chrono Scrub</span>
             </div>
 
-            {/* heatmap stage */}
+            {/* heatmap stage — satellite base + yearly construction heat (mock) */}
             <div style={{
-              position:"relative", borderRadius:14, overflow:"hidden", height:240,
+              position:"relative", borderRadius:14, overflow:"hidden", height:280,
               background:"rgba(5,10,25,0.9)",
               border:"1px solid rgba(255,255,255,0.06)",
             }}>
+              <Map
+                {...FORENSICS_HEATMAP_VIEW}
+                mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+                mapboxAccessToken={MAPBOX_TOKEN}
+                style={{ width:"100%", height:"100%" }}
+                dragPan={false}
+                dragRotate={false}
+                scrollZoom={false}
+                doubleClickZoom={false}
+                touchZoomRotate={false}
+                keyboard={false}
+                attributionControl={false}
+              >
+                <Source id="forensics-construction-heat" type="geojson" data={heatGeoJson}>
+                  <Layer
+                    id="forensics-construction-heat-layer"
+                    type="heatmap"
+                    paint={{
+                      "heatmap-weight": ["interpolate", ["linear"], ["get", "weight"], 0, 0, 1, 1],
+                      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 12, 0.85, 16, 2.4],
+                      "heatmap-color": [
+                        "interpolate",
+                        ["linear"],
+                        ["heatmap-density"],
+                        0, "rgba(16,185,129,0)",
+                        0.15, "rgba(34,211,238,0.45)",
+                        0.45, "rgba(251,191,36,0.72)",
+                        0.72, "rgba(239,68,68,0.88)",
+                        1, "rgba(220,38,38,1)",
+                      ],
+                      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 12, 22, 16, 58],
+                      "heatmap-opacity": 0.78 + t * 0.12,
+                    }}
+                  />
+                </Source>
+              </Map>
+
               <div style={{
-                position:"absolute", inset:0, transition:"opacity 0.2s",
-                background:"linear-gradient(135deg, rgba(127,0,0,0.7) 0%, rgba(180,80,10,0.4) 50%, transparent 100%)",
-                mixBlendMode:"color-dodge", opacity: 0.05 + t * 0.75,
-              }} />
-              <div style={{
-                position:"absolute", inset:0,
-                background:"linear-gradient(to bottom, rgba(5,10,25,0.15) 0%, transparent 40%, rgba(5,10,25,0.9) 100%)",
+                position:"absolute", inset:0, pointerEvents:"none",
+                background:"linear-gradient(to bottom, rgba(5,10,25,0.35) 0%, transparent 35%, rgba(5,10,25,0.55) 100%)",
               }} />
 
               {/* AOI tag */}
               <div style={{
-                position:"absolute", top:10, left:10,
+                position:"absolute", top:10, left:10, zIndex:5, pointerEvents:"none",
                 display:"flex", alignItems:"center", gap:6,
                 padding:"5px 10px", borderRadius:10,
                 border:"1px solid rgba(34,211,238,0.25)",
@@ -532,8 +615,19 @@ function CaseForensics() {
                 }}>AOI-07 · Gangapur Road</span>
               </div>
 
+              <div style={{
+                position:"absolute", top:10, left:"50%", transform:"translateX(-50%)", zIndex:5,
+                padding:"4px 10px", borderRadius:999, pointerEvents:"none",
+                border:"1px solid rgba(255,255,255,0.12)",
+                background:"rgba(13,20,40,0.75)", backdropFilter:"blur(8px)",
+                fontFamily:"var(--font-mono,'JetBrains Mono',monospace)",
+                fontSize:9, letterSpacing:"0.14em", textTransform:"uppercase", color:T.slate500,
+              }}>
+                Demo · {nearest} baseline
+              </div>
+
               {/* epoch */}
-              <div style={{ position:"absolute", top:10, right:12 }}>
+              <div style={{ position:"absolute", top:10, right:12, zIndex:5, pointerEvents:"none" }}>
                 <span style={{
                   fontFamily:"var(--font-mono,'JetBrains Mono',monospace)",
                   fontSize:20, color:T.slate100, fontWeight:700,
@@ -546,7 +640,7 @@ function CaseForensics() {
 
               {/* intensity bar */}
               <div style={{
-                position:"absolute", bottom:72, right:12,
+                position:"absolute", bottom:72, right:12, zIndex:5, pointerEvents:"none",
                 display:"flex", flexDirection:"column", gap:4,
                 padding:"8px 12px", borderRadius:10,
                 border:"1px solid rgba(255,255,255,0.08)",
@@ -570,10 +664,14 @@ function CaseForensics() {
                   fontFamily:"var(--font-mono,'JetBrains Mono',monospace)",
                   fontSize:9, color:T.slate400,
                 }}>{intensity}% · {stage}</span>
+                <span style={{
+                  fontFamily:"var(--font-mono,'JetBrains Mono',monospace)",
+                  fontSize:9, color:T.cyan,
+                }}>~{demoAreaDelta} m² Δ vs 2021</span>
               </div>
 
               {/* arc + year nodes */}
-              <div style={{ position:"absolute", bottom:8, left:0, right:0, display:"flex", justifyContent:"center" }}>
+              <div style={{ position:"absolute", bottom:8, left:0, right:0, zIndex:6, display:"flex", justifyContent:"center", pointerEvents:"auto" }}>
                 <div style={{ position:"relative", width:"92%", maxWidth:380, height:60 }}>
                   <svg style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }}
                     viewBox="0 0 400 64" preserveAspectRatio="none">
