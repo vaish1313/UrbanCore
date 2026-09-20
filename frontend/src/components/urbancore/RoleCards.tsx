@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Building2, Landmark, Users, ArrowUpRight } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
-const ROLES = [
+const HERO_CARDS = [
   {
     id: "builder" as const,
     title: "Builder / Developer",
@@ -36,7 +36,7 @@ export function RoleCards({
 }) {
   return (
     <div className="grid w-full gap-4 sm:grid-cols-3">
-      {ROLES.map(({ id, title, detail, Icon }, i) => (
+      {HERO_CARDS.map(({ id, title, detail, Icon }, i) => (
         <motion.button
           key={id}
           type="button"
@@ -48,37 +48,37 @@ export function RoleCards({
               : { opacity: 0, y: 30, filter: "blur(12px)" }
           }
           transition={{ duration: 1.3, delay: visible ? 0.25 + i * 0.16 : 0, ease }}
-          whileHover={{ y: -8, scale: 1.02 }}
+          whileHover={{ y: -5 }}
           whileTap={{ scale: 0.98 }}
           style={{
             x: pointer.x * (10 + i * 5),
             pointerEvents: visible ? "auto" : "none",
           }}
-          className="glass-panel group relative flex flex-col items-start gap-5 overflow-hidden rounded-2xl p-5 text-left transition-colors duration-500 hover:border-primary/50 hover:shadow-[0_0_30px_rgba(114,180,255,0.2)]"
+          className="group relative flex flex-col items-start gap-5 overflow-hidden rounded-2xl border border-white/5 bg-black/80 p-6 text-left backdrop-blur-xl transition-all duration-500 hover:border-cyan-500/20 hover:bg-black/90 hover:shadow-[0_0_30px_rgba(34,211,238,0.07)]"
         >
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-60"
+            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-40"
             style={{
-              background: "radial-gradient(120% 90% at 50% 120%, var(--atmos) 0%, transparent 65%)",
+              background: "radial-gradient(120% 90% at 50% 120%, rgba(34,211,238,0.1) 0%, transparent 65%)",
               mixBlendMode: "screen",
             }}
           />
 
           <div className="flex w-full items-center justify-between">
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-foreground/[0.04] text-primary transition-transform duration-500 group-hover:scale-110 group-hover:bg-primary/20">
-              <Icon className="h-4 w-4" strokeWidth={1.4} />
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 transition-all duration-500 group-hover:bg-cyan-500/20 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+              <Icon className="h-5 w-5" strokeWidth={1.4} />
             </span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-all duration-300 group-hover:border-primary group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
-              <ArrowUpRight className="h-3 w-3" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-slate-400 transition-all duration-300 group-hover:border-cyan-400/50 group-hover:text-cyan-400 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:rotate-12">
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </span>
           </div>
 
-          <span className="relative">
-            <span className="block font-display text-[15px] font-medium tracking-tight text-foreground group-hover:text-primary transition-colors">
+          <span className="relative z-10">
+            <span className="block font-display text-[15px] font-medium tracking-tight text-white transition-colors duration-300 group-hover:text-cyan-400">
               {title}
             </span>
-            <span className="mt-1.5 block text-[12.5px] font-light leading-relaxed text-muted-foreground">
+            <span className="mt-2 block text-[13px] font-light leading-relaxed text-slate-400">
               {detail}
             </span>
           </span>
