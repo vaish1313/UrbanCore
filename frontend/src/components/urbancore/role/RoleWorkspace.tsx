@@ -20,7 +20,6 @@ export function RoleWorkspace({
   const [activeTab, setActiveTab] = useState(
     role === "builder" ? "overview" : role === "municipal" ? "command" : "explore",
   );
-  const [builderFeatureId, setBuilderFeatureId] = useState("overview");
 
   if (!role) return null;
 
@@ -37,8 +36,6 @@ export function RoleWorkspace({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onBack={onBack}
-        builderFeatureId={builderFeatureId}
-        onSelectBuilderFeature={setBuilderFeatureId}
       />
 
       <AnimatePresence mode="wait">
@@ -48,8 +45,6 @@ export function RoleWorkspace({
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onSelectAoi={onSelectAoi}
-            activeFeatureId={builderFeatureId}
-            onSelectFeature={setBuilderFeatureId}
           />
         )}
         {role === "municipal" && (
