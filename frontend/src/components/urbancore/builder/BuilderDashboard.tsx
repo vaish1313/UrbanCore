@@ -1,16 +1,119 @@
-import { useState } from "react";
-import { Outlet } from "@tanstack/react-router";
+import { useState, useRef, useCallback } from "react";
 import { NASHIK_AOIS } from "@/data/nashikAois";
 import type { AOI } from "@/types/urbancore";
-import { BuilderReportModal } from "./BuilderReportModal";
-import { BuilderContext } from "./BuilderContext";
 
-export function BuilderDashboard() {
+import { HeroSearch } from "../citizen/HeroSearch";
+import { SelectedSiteCard } from "./SelectedSiteCard";
+import { BuilderMap } from "./BuilderMap";
+import { SuitabilityScore } from "./SuitabilityScore";
+import { SiteReadiness } from "./SiteReadiness";
+import { ConstraintPanel } from "./ConstraintPanel";
+import { ConstructionHistory } from "./ConstructionHistory";
+import { AreaComparison } from "./AreaComparison";
+import { BuilderReportModal } from "./BuilderReportModal";
+import { LandReportsPanel } from "./LandReportsPanel";
+import { SectionDivider } from "./SectionDivider";
+
+const FEATURE_LABELS: Record<string, string> = {
+  overview: "Overview",
+  suitability: "Land Suitability",
+  terrain: "Terrain Analysis",
+  constraints: "Zoning & Constraints",
+  history: "Construction History",
+  risk: "Risk Assessment",
+  reports: "Land Reports",
+};
+
+export function BuilderDashboard({
+  activeTab,
+  onTabChange,
+  onSelectAoi,
+  activeFeatureId = "overview",
+  onSelectFeature,
+}: {
+  activeTab?: string;
+  onTabChange?: (tabId: string) => void;
+  onSelectAoi?: ((aoi: AOI) => void) | undefined;
+  activeFeatureId?: string;
+  onSelectFeature?: (featureId: string) => void;
+}) {
   const [selectedAoi, setSelectedAoi] = useState<AOI>(NASHIK_AOIS[0]!);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+
+  const scrollToMap = useCallback(() => {
+    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleChangeLocation = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const input = document.getElementById("hero-search-input") as HTMLInputElement | null;
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, []);
+
+  const handleSearch = useCallback(
+    (suggestion: { label: string; lat: number; lng: number }) => {
+      const qLower = suggestion.label.toLowerCase();
+      const matched = NASHIK_AOIS.find(
+        (a) =>
+          a.name.toLowerCase().includes(qLower) ||
+          (a.location && a.location.toLowerCase().includes(qLower)) ||
+          a.id.toLowerCase().includes(qLower),
+      );
+
+      if (matched) {
+        setSelectedAoi(matched);
+        onSelectAoi?.(matched);
+      } else {
+        const customAoi: AOI = {
+          id: `aoi-${Date.now()}`,
+          name: suggestion.label,
+          location: suggestion.label,
+          category: "residential",
+          coords: {
+            lat: suggestion.lat,
+            lng: suggestion.lng,
+            x: 50,
+            y: 50,
+          },
+          suitabilityScore: 82,
+          terrain: {
+            elevation: 600,
+            slope: 5,
+            roughness: "Flat Plains",
+            flatLandPercent: 85,
+            readiness: "HIGH",
+          },
+          accessibilityScore: 85,
+          waterAvailabilityScore: 80,
+          environmentalRiskScore: 85,
+          developmentPotentialScore: 85,
+          constructionHistory: [],
+          constraints: {
+            floodZoneOverlapPercent: 0,
+            forestBoundaryOverlapPercent: 0,
+            greenBeltOverlapPercent: 0,
+            protectedAreaOverlapPercent: 0,
+            environmentalRestriction: "Low",
+          },
+          summary: `Site intelligence analysis for ${suggestion.label}.`,
+        };
+        setSelectedAoi(customAoi);
+        onSelectAoi?.(customAoi);
+      }
+      scrollToMap();
+    },
+    [onSelectAoi, scrollToMap],
+  );
+
+  const isFeatureOnlyPage = activeFeatureId && activeFeatureId !== "overview";
+
   return (
-    <BuilderContext.Provider value={{ selectedAoi, setSelectedAoi, setIsReportOpen }}>
+    <>
       {/* Scoped base styles matching Citizen Dashboard 1:1 */}
       <style>{`
         .cs-page {
@@ -60,7 +163,39 @@ export function BuilderDashboard() {
         <div className="cs-page-bg" />
         <div className="cs-content">
           <div className="w-full max-w-[1280px] px-4 sm:px-6 pb-24">
-            <Outlet />
+            {isFeatureOnlyPage ? (
+              /* FEATURE-ONLY PAGE: Renders ONLY the selected feature page */
+              <div className="w-full pt-4">
+                <SectionDivider label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`} />
+
+                {activeFeatureId === "suitability" && <SuitabilityScore aoi={selectedAoi} />}
+                {activeFeatureId === "terrain" && <SiteReadiness aoi={selectedAoi} />}
+                {activeFeatureId === "constraints" && <ConstraintPanel aoi={selectedAoi} />}
+                {activeFeatureId === "history" && <ConstructionHistory aoi={selectedAoi} />}
+                {activeFeatureId === "risk" && <AreaComparison aoi={selectedAoi} />}
+                {activeFeatureId === "reports" && (
+                  <LandReportsPanel aoi={selectedAoi} onGenerateReport={() => setIsReportOpen(true)} />
+                )}
+              </div>
+            ) : (
+              /* DEFAULT DASHBOARD: Navbar + Hero + Search + Map */
+              <div className="flex flex-col gap-6 w-full">
+                <HeroSearch
+                  mode="builder"
+                  badgeText="AI URBAN INTELLIGENCE · NASHIK 2026"
+                  titlePrefix="Builder"
+                  titleSuffix="Intelligence"
+                  subtitle="Explore your site using satellite intelligence, analyze land suitability, monitor development, and generate AI-powered location insights."
+                  onSearch={handleSearch}
+                  onDropPin={scrollToMap}
+                />
+
+                <div ref={mapSectionRef} className="w-full flex flex-col gap-6">
+                  <SelectedSiteCard aoi={selectedAoi} onChangeLocation={handleChangeLocation} />
+                  <BuilderMap aoi={selectedAoi} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -71,6 +206,6 @@ export function BuilderDashboard() {
           onClose={() => setIsReportOpen(false)}
         />
       </div>
-    </BuilderContext.Provider>
+    </>
   );
 }
