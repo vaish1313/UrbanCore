@@ -7,12 +7,38 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 type Suggestion = { label: string; type: string; lat: number; lng: number };
 
-interface HeroSearchProps {
+export interface HeroSearchProps {
   onSearch: (suggestion: Suggestion) => void;
   onDropPin: () => void;
+  badgeText?: string;
+  titlePrefix?: string;
+  titleSuffix?: string;
+  subtitle?: string;
+  mode?: "citizen" | "builder";
 }
 
-export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
+export function HeroSearch({
+  onSearch,
+  onDropPin,
+  mode = "citizen",
+  badgeText,
+  titlePrefix,
+  titleSuffix,
+  subtitle,
+}: HeroSearchProps) {
+  const isBuilder = mode === "builder";
+
+  const resolvedBadgeText =
+    badgeText ??
+    (isBuilder ? "AI URBAN INTELLIGENCE · NASHIK 2026" : "AI Urban Intelligence · Nashik 2026");
+  const resolvedTitlePrefix = titlePrefix ?? (isBuilder ? "Builder" : "Citizen");
+  const resolvedTitleSuffix = titleSuffix ?? "Intelligence";
+  const resolvedSubtitle =
+    subtitle ??
+    (isBuilder
+      ? "Explore your site using satellite intelligence, analyze land suitability, monitor development, and generate AI-powered location insights."
+      : "Explore your locality using satellite intelligence, monitor urban development, and generate AI-powered location insights.");
+
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -177,20 +203,17 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
           className="cs-hero-badge"
         >
           <span className="cs-badge-dot" />
-          AI Urban Intelligence · Nashik 2026
+          {resolvedBadgeText}
         </motion.div>
 
         {/* Heading */}
         <h1 className="cs-hero-heading">
-          <span className="text-white">Citizen </span>
-          <span className="cs-heading-gradient">Intelligence</span>
+          <span className="text-white">{resolvedTitlePrefix} </span>
+          <span className="cs-heading-gradient">{resolvedTitleSuffix}</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="cs-hero-subtitle">
-          Explore your locality using satellite intelligence, monitor urban development, and
-          generate AI-powered location insights.
-        </p>
+        <p className="cs-hero-subtitle">{resolvedSubtitle}</p>
 
         {/* Search bar */}
         <div ref={wrapperRef} className="cs-search-wrapper">
