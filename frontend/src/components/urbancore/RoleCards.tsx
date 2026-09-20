@@ -11,7 +11,7 @@ const ROLES = [
   },
   {
     id: "municipal" as const,
-    title: "Municipal Intelligence",
+    title: "Municipal Authority",
     detail: "Urban Command Center, Construction & Encroachment Watch.",
     Icon: Landmark,
   },
