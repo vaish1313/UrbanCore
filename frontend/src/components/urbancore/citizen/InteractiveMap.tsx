@@ -1,14 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { Maximize2, Navigation, Crosshair, MapPin } from "lucide-react";
-// @ts-expect-error react-map-gl/mapbox types might be missing
-import Map, { Marker, Popup, NavigationControl } from "react-map-gl/mapbox";
-import "mapbox-gl/dist/mapbox-gl.css";
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import type { LocationInfo } from "@/data/citizenMockData";
 import { DEFAULT_LOCATION, PINNED_LOCATION } from "@/data/citizenMockData";
 
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 const ease = [0.16, 1, 0.3, 1] as const;
 
 interface InteractiveMapProps {
@@ -98,9 +96,9 @@ export function InteractiveMap({
     return { protection: "✅ No protected zone constraints.", protectionLevel: "safe" as const };
   };
 
-  const handleMapClick = useCallback(async (e: { lngLat: { lat: number; lng: number } }) => {
-    const lat = +e.lngLat.lat.toFixed(4);
-    const lng = +e.lngLat.lng.toFixed(4);
+  const handleMapClick = useCallback(async (latValue: number, lngValue: number) => {
+    const lat = +latValue.toFixed(4);
+    const lng = +lngValue.toFixed(4);
 
     // Center the map on the new pin so the popup doesn't clip at the edges
     setViewState((prev) => ({
@@ -121,26 +119,13 @@ export function InteractiveMap({
     setShowPopup(false);
 
     try {
-      const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}`,
-      );
+      const res = await fetch(`${API_BASE_URL}/locations/search?q=${lat},${lng}`);
       const data = await res.json();
-
-      if (data.features && data.features.length > 0) {
-        // Find the most relevant feature name
-        const feature = data.features[0];
-        const placeName = feature.text;
-
-        // Extract context details
-        let district = "Nashik";
-        let state = "Maharashtra";
-        let pincode = "";
-
-        feature.context?.forEach((c: { id: string; text: string }) => {
-          if (c.id.startsWith("district") || c.id.startsWith("place")) district = c.text;
-          if (c.id.startsWith("region")) state = c.text;
-          if (c.id.startsWith("postcode")) pincode = c.text;
-        });
+      if (Array.isArray(data) && data.length > 0) {
+        const placeName = data[0].label;
+        const district = "OpenStreetMap";
+        const state = "Location search";
+        const pincode = "";
 
         const { protection, protectionLevel } = getProtectionStatus(lat, lng, placeName);
 
@@ -210,26 +195,19 @@ export function InteractiveMap({
             className="cs-map-container"
             style={{ height: isFullscreen ? "calc(100vh - 120px)" : undefined }}
           >
-            <Map
-              {...viewState}
-              onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
-              mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
-              mapboxAccessToken={MAPBOX_TOKEN}
-              onClick={handleMapClick}
-              cursor="crosshair"
-            >
-              <NavigationControl position="bottom-right" />
+            <MapContainer center={[viewState.latitude, viewState.longitude]} zoom={viewState.zoom} className="h-full w-full" scrollWheelZoom>
+              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapController latitude={viewState.latitude} longitude={viewState.longitude} zoom={viewState.zoom} />
+              <MapClickHandler onClick={handleMapClick} />
 
               {/* Single Pinned Marker */}
               {pinnedLoc && (
                 <Marker
-                  longitude={pinnedLoc.lng}
-                  latitude={pinnedLoc.lat}
-                  anchor="bottom"
-                  onClick={(e) => {
-                    e.originalEvent.stopPropagation();
+                  position={[pinnedLoc.lat, pinnedLoc.lng]}
+                  eventHandlers={{ click: (e) => {
+                    e.originalEvent?.stopPropagation();
                     setShowPopup(true);
-                  }}
+                  } }}
                 >
                   <div className="flex flex-col items-center cursor-pointer hover:scale-110 transition-transform">
                     <MapPin
@@ -243,13 +221,8 @@ export function InteractiveMap({
               {/* Popup Dialogue Box */}
               {showPopup && pinnedLoc && (
                 <Popup
-                  longitude={pinnedLoc.lng}
-                  latitude={pinnedLoc.lat}
-                  offset={30}
-                  onClose={() => setShowPopup(false)}
-                  closeButton={true}
-                  closeOnClick={false}
-                  className="cs-map-popup"
+                  position={[pinnedLoc.lat, pinnedLoc.lng]}
+                  eventHandlers={{ remove: () => setShowPopup(false) }}
                 >
                   <div className="cs-popup-content">
                     <div
@@ -287,7 +260,7 @@ export function InteractiveMap({
                   </div>
                 </Popup>
               )}
-            </Map>
+            </MapContainer>
 
             {/* Crosshair hint */}
             <div className="cs-map-hint">
@@ -356,6 +329,17 @@ export function InteractiveMap({
       `}</style>
     </motion.section>
   );
+}
+
+function MapController({ latitude, longitude, zoom }: { latitude: number; longitude: number; zoom: number }) {
+  const map = useMap();
+  useEffect(() => { map.setView([latitude, longitude], zoom); }, [map, latitude, longitude, zoom]);
+  return null;
+}
+
+function MapClickHandler({ onClick }: { onClick: (latitude: number, longitude: number) => void }) {
+  useMapEvents({ click: (event) => onClick(event.latlng.lat, event.latlng.lng) });
+  return null;
 }
 
 function LocationField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {

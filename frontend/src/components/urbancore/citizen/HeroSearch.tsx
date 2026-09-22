@@ -4,6 +4,7 @@ import { Search, Mic, LocateFixed, Clock, TrendingUp, ChevronRight, X } from "lu
 import { SEARCH_SUGGESTIONS, POPULAR_SEARCHES, RECENT_SEARCHES_KEY } from "@/data/citizenMockData";
 
 const ease = [0.16, 1, 0.3, 1] as const;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 type Suggestion = { label: string; type: string; lat: number; lng: number };
 
@@ -68,7 +69,7 @@ export function HeroSearch({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Mapbox Autocomplete
+  // OpenStreetMap geocoding is proxied through FastAPI so no provider key is exposed.
   useEffect(() => {
     const fetchPlaces = async () => {
       if (query.trim().length < 2) {
@@ -76,29 +77,12 @@ export function HeroSearch({
         return;
       }
       try {
-        const MAPBOX_TOKEN =
-          "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
-        // Bounding box roughly covers Nashik to improve relevance
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&bbox=73.5,19.8,74.0,20.2`,
-        );
+        const res = await fetch(`${API_BASE_URL}/locations/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-
-        if (data.features) {
-          const suggestions = data.features.map(
-            (f: {
-              text: string;
-              context?: { id: string; text: string }[];
-              center: [number, number];
-            }) => ({
-              label: f.text,
-              type:
-                f.context?.find((c: { id: string; text: string }) => c.id.startsWith("place"))
-                  ?.text || "Location",
-              lat: f.center[1],
-              lng: f.center[0],
-            }),
-          );
+        if (Array.isArray(data)) {
+          const suggestions = data.map((f: { label: string; latitude: number; longitude: number }) => ({
+            label: f.label, type: "OpenStreetMap", lat: f.latitude, lng: f.longitude,
+          }));
           setLiveSuggestions(suggestions);
         }
       } catch (e) {
@@ -163,14 +147,10 @@ export function HeroSearch({
         let placeName = "Your Current Location";
 
         try {
-          const MAPBOX_TOKEN =
-            "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
-          const res = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`,
-          );
+          const res = await fetch(`${API_BASE_URL}/locations/search?q=${latitude},${longitude}`);
           const data = await res.json();
-          if (data.features && data.features.length > 0) {
-            placeName = data.features[0].place_name;
+          if (Array.isArray(data) && data.length > 0) {
+            placeName = data[0].label;
           }
         } catch (error) {
           console.error("Geocoding failed:", error);
