@@ -1,153 +1,114 @@
-"""
-UrbanCore FastAPI Application Entry Point.
-"""
-import logging
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import SQLAlchemyError
-from loguru import logger
-import sys
+from .auth import login, register
+from .config import settings
+from .schemas import AnalysisRequest, GeocodeResult, LoginRequest, RegisterRequest
+from .service import analyses, geocode, run_analysis, process_downloaded_images
 
-from app.core.config import settings
-from app.db.session import engine
-from app.db.base import Base
-from app.api.v1.api import api_router
+app = FastAPI(title="UrbanCore API", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+@app.get("/health")
+async def health(): 
+    return {"status": "ok", "message": "UrbanCore API is running"}
 
-# Configure logging
-logger.remove()
-logger.add(
-    sys.stderr,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-    level=settings.LOG_LEVEL
-)
-logger.add(
-    settings.LOG_FILE,
-    rotation="500 MB",
-    retention="10 days",
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-    level=settings.LOG_LEVEL
-)
+@app.post(f"{settings.api_v1_prefix}/auth/register")
+async def auth_register(request: RegisterRequest): 
+    return await register(request)
 
+@app.post(f"{settings.api_v1_prefix}/auth/login")
+async def auth_login(request: LoginRequest): 
+    return await login(request)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan events."""
-    # Startup
-    logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
-    logger.info(f"Environment: {settings.ENVIRONMENT}")
+@app.get(f"{settings.api_v1_prefix}/locations/search", response_model=list[GeocodeResult])
+async def location_search(q: str = Query(min_length=2, max_length=180)):
+    return await geocode(q)
+
+@app.post(f"{settings.api_v1_prefix}/analyses")
+async def create_analysis(request: AnalysisRequest, tasks: BackgroundTasks):
+    """
+    Create a new construction analysis for the specified coordinates.
     
-    # Create database tables
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.warning(f"Database connection offline, using seed memory layer: {e}")
+    This submits Earth Engine export tasks for satellite imagery from the last 5 years.
+    The analysis runs asynchronously - use GET /analyses/{id} to check status.
+    """
+    analysis = analyses.create(request)
+    tasks.add_task(run_analysis, analysis["id"], request)
+    return analysis
+
+@app.get(f"{settings.api_v1_prefix}/analyses/{{analysis_id}}")
+async def get_analysis(analysis_id: str):
+    """
+    Get the current status and results of an analysis.
     
-    yield
+    Status values:
+    - queued: Analysis created, not yet started
+    - exporting: Submitting Earth Engine export tasks
+    - exports_submitted: Export tasks submitted to GEE
+    - monitoring_exports: Waiting for exports to complete
+    - exports_completed: Ready for download
+    - downloading: Downloading files from Google Drive
+    - processing: Running UNet inference
+    - visualizing: Creating SAM-3D visualizations
+    - completed: Analysis finished successfully
+    - failed: An error occurred
+    """
+    result = analyses.get(analysis_id)
+    if not result: 
+        raise HTTPException(404, "Analysis not found")
+    return result
+
+@app.post(f"{settings.api_v1_prefix}/analyses/{{analysis_id}}/process")
+async def trigger_processing(analysis_id: str, tasks: BackgroundTasks):
+    """
+    Manually trigger processing of downloaded imagery.
     
-    # Shutdown
-    logger.info("Shutting down application")
-
-
-# Create FastAPI application
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="AI-powered geospatial platform for detecting newly constructed buildings from satellite imagery",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
-    lifespan=lifespan
-)
-
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=settings.CORS_ALLOW_CREDENTIALS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Add trusted host middleware for production
-if settings.ENVIRONMENT == "production":
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=["*"]  # Configure based on your domain
-    )
-
-
-# Exception handlers
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle validation errors."""
-    logger.warning(f"Validation error: {exc.errors()}")
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors(), "body": exc.body}
-    )
-
-
-@app.exception_handler(SQLAlchemyError)
-async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
-    """Handle database errors."""
-    logger.error(f"Database error: {str(exc)}")
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Database error occurred"}
-    )
-
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    """Handle general exceptions."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error"}
-    )
-
-
-# Health check endpoints
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Health check endpoint."""
+    Call this after confirming GEE exports are complete and files are in Google Drive.
+    This downloads the files, runs UNet inference, and generates visualizations.
+    """
+    analysis = analyses.get(analysis_id)
+    if not analysis:
+        raise HTTPException(404, "Analysis not found")
+    
+    if analysis["status"] not in ["exports_completed", "failed"]:
+        raise HTTPException(
+            400,
+            f"Cannot process analysis with status: {analysis['status']}. "
+            "Wait for exports to complete first."
+        )
+    
+    tasks.add_task(process_downloaded_images, analysis_id)
+    analyses.update(analysis_id, status="queued_for_processing")
+    
     return {
-        "status": "healthy",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "message": "Processing started",
+        "analysis_id": analysis_id,
+        "status": "queued_for_processing"
     }
 
-
-@app.get("/", tags=["Root"])
-async def root():
-    """Root endpoint."""
+@app.get(f"{settings.api_v1_prefix}/analyses/{{analysis_id}}/results/{{year}}")
+async def get_year_results(analysis_id: str, year: int):
+    """
+    Get detailed results for a specific year.
+    
+    Returns inference statistics and URLs to GeoJSON visualization files.
+    """
+    analysis = analyses.get(analysis_id)
+    if not analysis:
+        raise HTTPException(404, "Analysis not found")
+    
+    if analysis["status"] != "completed":
+        raise HTTPException(400, "Analysis not yet completed")
+    
+    inference = analysis.get("inference_results", {}).get(str(year))
+    visualization = analysis.get("visualization_results", {}).get(str(year))
+    
+    if not inference:
+        raise HTTPException(404, f"No results found for year {year}")
+    
     return {
-        "message": f"Welcome to {settings.APP_NAME} API",
-        "version": settings.APP_VERSION,
-        "docs": "/docs",
-        "health": "/health"
+        "year": year,
+        "analysis_id": analysis_id,
+        "inference": inference,
+        "visualization": visualization
     }
-
-
-# Include API router
-app.include_router(api_router, prefix=settings.API_V1_PREFIX)
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        workers=1 if settings.DEBUG else settings.WORKERS
-    )

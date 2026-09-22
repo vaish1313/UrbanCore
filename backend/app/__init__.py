@@ -1,0 +1,1 @@
+"""UrbanCore FastAPI application."""
