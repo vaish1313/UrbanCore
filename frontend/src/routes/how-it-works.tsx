@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
+import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Satellite, Radar, BrainCircuit, Activity, Layers, Play
@@ -24,19 +25,14 @@ function HowItWorksPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+      <NashikBackgroundCarousel />
       <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
       
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Satellite Map" 
-            className="w-full h-full object-cover opacity-30 mix-blend-screen scale-105" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-[#03060d]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/60 to-black" />
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center text-center">
@@ -59,7 +55,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 1 - SATELLITE OBSERVATION */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
@@ -94,7 +90,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 2 - SPECTRAL FEATURES */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col-reverse lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 w-full relative">
             <div className="aspect-square sm:aspect-[4/3] rounded-2xl border border-white/10 bg-[#050a15] overflow-hidden relative shadow-2xl group">
@@ -141,7 +137,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 3 - AI SEGMENTATION */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
@@ -183,7 +179,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 4 - TEMPORAL COMPARISON */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
             <span className="font-mono text-xs text-blue-400 border border-blue-500/20 bg-blue-500/10 px-3 py-1 rounded-full">STEP 04</span>
@@ -226,7 +222,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 5 - CHANGE DETECTION */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center justify-between gap-12">
           
           <div className="lg:w-1/3">
@@ -264,7 +260,7 @@ function HowItWorksPage() {
       </section>
 
       {/* STEP 6 - URBAN INSIGHT */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5 flex flex-col items-center text-center">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5 flex flex-col items-center text-center">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
             <span className="font-mono text-xs text-cyan-400 border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 rounded-full">STEP 06</span>
@@ -313,7 +309,7 @@ function HowItWorksPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center justify-center text-center px-6 bg-[#03060d]">
+      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center justify-center text-center px-6 bg-black/30 backdrop-blur-sm">
         <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-8">
           See UrbanCore in action.
         </h2>

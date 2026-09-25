@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
+import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Building2, Landmark, Users, CheckCircle2, Search, ArrowRight, Activity, Map
@@ -24,25 +25,19 @@ function SolutionsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+      <NashikBackgroundCarousel />
       <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
       
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
-        {/* Background Image with Cinematic Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Satellite Map" 
-            className="w-full h-full object-cover opacity-40 mix-blend-screen scale-105" 
-          />
+        <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Subtle grid overlay */}
           <div 
-            className="absolute inset-0 opacity-[0.2]" 
+            className="absolute inset-0 opacity-[0.10]" 
             style={{ backgroundImage: "linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px)", backgroundSize: "30px 30px" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-[#03060d]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/60 to-black" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center text-center">
@@ -65,7 +60,7 @@ function SolutionsPage() {
       </section>
 
       {/* SECTION 1 - BUILDER / DEVELOPER */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
@@ -106,7 +101,7 @@ function SolutionsPage() {
       </section>
 
       {/* SECTION 2 - MUNICIPAL AUTHORITY */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col-reverse lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 w-full relative">
             <div className="aspect-square sm:aspect-[4/3] rounded-2xl border border-white/10 bg-[#050a15] overflow-hidden relative shadow-2xl">
@@ -148,7 +143,7 @@ function SolutionsPage() {
       </section>
 
       {/* SECTION 3 - CITIZEN */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-y border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
@@ -192,7 +187,7 @@ function SolutionsPage() {
       </section>
 
       {/* SECTION 4 - ONE SHARED MAP */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-12">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">One Shared Map</h2>
           <p className="text-slate-400 font-light">Experience the same location through three distinct lenses.</p>
@@ -284,7 +279,7 @@ function SolutionsPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center justify-center text-center px-6 border-t border-white/5 bg-[#03060d]">
+      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center justify-center text-center px-6 border-t border-white/5 bg-black/30 backdrop-blur-sm">
         <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-8">
           Explore your city <br className="hidden sm:block" /> through a different lens.
         </h2>
