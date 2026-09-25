@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     gee_private_key_path: str = ""
     google_drive_folder_id: str = ""
     google_drive_folder_name: str = "UrbanCore_Data"
+    # Google Cloud Storage settings
+    gcs_bucket_name: str = "urbancore-satellite-imagery"
+    gcs_project_id: str = "final-year-project-501711"
     # Local default; set MODEL_PATH=/outputs/best_unet_urbancore.pth in Docker.
     model_path: str = "../outputs/best_unet_urbancore.pth"
     unet_checkpoint_path: str = "../outputs/best_unet_urbancore.pth"
@@ -23,6 +26,8 @@ class Settings(BaseSettings):
     enable_sam: bool = True
     device: str = "cpu"
     data_dir: str = "./data/analyses"
+    gee_poll_interval_seconds: int = 30
+    gee_export_timeout_seconds: int = 1800
 
     @property
     def origins(self) -> list[str]:
