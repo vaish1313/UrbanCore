@@ -17,7 +17,7 @@ from fastapi import HTTPException
 from .config import settings
 from .schemas import AnalysisRequest
 from .gee_service import gee_service
-from .drive_service import drive_service
+from .gcs_service import gcs_service
 from .model_service import model_service
 from .sam3d_service import sam3d_service
 
@@ -119,27 +119,140 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
         )
         print(f"[{analysis_id}] Submitted {len(exports)} export tasks to GEE")
         
-        # Step 2: Monitor export completion
-        # In production, this would be a separate polling mechanism
-        # For now, we'll mark as ready for download after a delay
+        # Step 2: Monitor export completion. Submission only queues the
+        # exports; files are not ready in Drive until every task completes.
         analyses.update(
             analysis_id,
             status="monitoring_exports",
             message="Waiting for Earth Engine exports to complete. This may take 5-15 minutes."
         )
-        
-        # Note: Actual monitoring would poll GEE task status
-        # task_ids = [exp["gee_task_id"] for exp in exports]
-        # while not all_complete:
-        #     statuses = gee_service.check_all_tasks(task_ids)
-        #     time.sleep(30)
-        
-        # For development, we'll simulate the workflow
+
+        task_ids = [export["gee_task_id"] for export in exports]
+        deadline = time.monotonic() + settings.gee_export_timeout_seconds
+        terminal_failures = {"FAILED", "CANCELLED", "CANCELED", "NOT_FOUND"}
+
+        while True:
+            task_statuses = gee_service.check_all_tasks(task_ids)
+            normalized_states = {
+                task_id: str(details.get("state", "UNKNOWN")).upper()
+                for task_id, details in task_statuses.items()
+            }
+
+            # Keep the frontend task details synchronized with Earth Engine.
+            for export in exports:
+                details = task_statuses.get(export["gee_task_id"], {})
+                export["status"] = str(details.get("state", "UNKNOWN")).lower()
+                export["progress"] = details.get("progress", 0)
+            analyses.update(analysis_id, gee_tasks=exports)
+
+            failures = {
+                task_id: state
+                for task_id, state in normalized_states.items()
+                if state in terminal_failures
+            }
+            if failures:
+                raise RuntimeError(f"Earth Engine export task failure: {failures}")
+
+            if normalized_states and all(state == "COMPLETED" for state in normalized_states.values()):
+                break
+
+            if time.monotonic() >= deadline:
+                raise TimeoutError(
+                    f"Earth Engine exports did not complete within "
+                    f"{settings.gee_export_timeout_seconds // 60} minutes"
+                )
+
+            time.sleep(settings.gee_poll_interval_seconds)
+
         analyses.update(
             analysis_id,
             status="exports_completed",
-            message="GEE exports completed. Ready for download and processing."
+            message="GEE exports completed. Files available in Google Cloud Storage."
         )
+        
+        # Step 3: Download from Google Cloud Storage
+        analyses.update(analysis_id, status="downloading")
+        print(f"[{analysis_id}] Downloading files from Google Cloud Storage...")
+        
+        # Setup directories
+        data_dir = settings.analysis_dir / analysis_id
+        download_dir = data_dir / "downloads"
+        download_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get years from the analysis record
+        analysis_record = analyses.get(analysis_id)
+        
+        downloaded_files = gcs_service.download_analysis_files(
+            analysis_id=analysis_id,
+            destination_dir=download_dir,
+            years=analysis_record["years"]
+        )
+        
+        if not downloaded_files:
+            raise RuntimeError("No files were downloaded from Google Cloud Storage")
+        
+        analyses.update(
+            analysis_id,
+            status="processing",
+            downloads={year: str(path) for year, path in downloaded_files.items()}
+        )
+        
+        # Step 4: Run UNet inference for each year
+        print(f"[{analysis_id}] Running UNet inference...")
+        inference_dir = data_dir / "inference"
+        inference_results = {}
+        
+        for year, tif_path in downloaded_files.items():
+            print(f"[{analysis_id}] Processing year {year}...")
+            
+            year_output_dir = inference_dir / str(year)
+            result = model_service.process_tif(tif_path, year_output_dir)
+            inference_results[year] = result
+        
+        analyses.update(
+            analysis_id,
+            status="visualizing",
+            inference_results=inference_results
+        )
+        
+        # Step 5: Create detailed visualizations with SAM-3D
+        viz_dir = data_dir / "visualization"
+        if sam3d_service and sam3d_service.initialized:
+            print(f"[{analysis_id}] Generating SAM-3D visualizations...")
+            viz_results = {}
+            
+            for year, tif_path in downloaded_files.items():
+                # Get construction mask and metadata from inference
+                inf_result = inference_results[year]
+                
+                # Read the mask
+                import rasterio
+                with rasterio.open(inf_result["mask_path"]) as src:
+                    construction_mask = src.read(1)
+                
+                # Generate visualization
+                year_viz_dir = viz_dir / str(year)
+                viz_result = sam3d_service.process_for_visualization(
+                    tif_path=tif_path,
+                    construction_mask=construction_mask,
+                    metadata=inf_result["metadata"],
+                    output_dir=year_viz_dir
+                )
+                viz_results[year] = viz_result
+            
+            analyses.update(
+                analysis_id,
+                visualization_results=viz_results
+            )
+        
+        # Step 6: Mark as completed
+        analyses.update(
+            analysis_id,
+            status="completed",
+            message="Analysis completed successfully"
+        )
+        
+        print(f"[{analysis_id}] Analysis completed!")
         
     except Exception as exc:
         print(f"[{analysis_id}] Error: {exc}")

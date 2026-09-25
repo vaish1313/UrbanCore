@@ -35,7 +35,9 @@ class EarthEngineService:
             )
             ee.Initialize(credentials)
             self.initialized = True
-            print(f"✓ Google Earth Engine initialized successfully")
+            # Keep startup logs ASCII-safe on Windows consoles using the
+            # legacy charmap encoding.
+            print("Google Earth Engine initialized successfully")
         except Exception as e:
             print(f"Warning: Could not initialize Google Earth Engine: {e}")
             print("GEE features will be disabled.")
@@ -50,7 +52,9 @@ class EarthEngineService:
         analysis_id: str
     ) -> list[dict]:
         """
-        Export Sentinel-2 imagery to Google Drive for multiple years.
+        Export Sentinel-2 imagery to Google Cloud Storage for multiple years.
+        
+        Service accounts cannot export to Drive, so we use GCS instead.
         
         Args:
             latitude: Center point latitude
@@ -74,9 +78,9 @@ class EarthEngineService:
         region = point.buffer(radius_m).bounds()
 
         exports = []
-        folder_name = settings.google_drive_folder_name
+        bucket_name = settings.gcs_bucket_name
 
-        # Export one image per year
+        # Export one image per year to GCS
         for year in range(start_year, end_year + 1):
             # Filter Sentinel-2 Surface Reflectance collection
             # Using harmonized dataset for consistency across years
@@ -98,13 +102,14 @@ class EarthEngineService:
 
             # Generate unique filename
             filename = f"urbancore_{analysis_id}_{year}"
+            gcs_path = f"analyses/{analysis_id}/{filename}"
 
-            # Create export task to Google Drive
-            task = ee.batch.Export.image.toDrive(
+            # Create export task to Google Cloud Storage
+            task = ee.batch.Export.image.toCloudStorage(
                 image=image,
                 description=filename,
-                folder=folder_name,
-                fileNamePrefix=filename,
+                bucket=bucket_name,
+                fileNamePrefix=gcs_path,
                 region=region.coordinates().getInfo(),
                 scale=10,  # 10m resolution for Sentinel-2
                 maxPixels=1e9,
@@ -120,7 +125,8 @@ class EarthEngineService:
                 "filename": f"{filename}.tif",
                 "gee_task_id": task.id,
                 "status": "submitted",
-                "drive_folder": folder_name
+                "gcs_bucket": bucket_name,
+                "gcs_path": f"{gcs_path}.tif"
             })
 
         return exports
@@ -185,7 +191,6 @@ class EarthEngineService:
                 results[task_id] = {"state": "NOT_FOUND"}
 
         return results
-
 
 # Singleton instance
 gee_service = EarthEngineService()

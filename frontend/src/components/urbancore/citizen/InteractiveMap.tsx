@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { Maximize2, Navigation, Crosshair, MapPin } from "lucide-react";
-import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+// @ts-expect-error react-map-gl/mapbox types are provided by the Mapbox adapter
+import Map, { Marker, Popup, NavigationControl } from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
 import type { LocationInfo } from "@/data/citizenMockData";
 import { DEFAULT_LOCATION, PINNED_LOCATION } from "@/data/citizenMockData";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const ease = [0.16, 1, 0.3, 1] as const;
 
 interface InteractiveMapProps {
@@ -195,25 +197,35 @@ export function InteractiveMap({
             className="cs-map-container"
             style={{ height: isFullscreen ? "calc(100vh - 120px)" : undefined }}
           >
-            <MapContainer center={[viewState.latitude, viewState.longitude]} zoom={viewState.zoom} className="h-full w-full" scrollWheelZoom>
-              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <MapController latitude={viewState.latitude} longitude={viewState.longitude} zoom={viewState.zoom} />
-              <MapClickHandler onClick={handleMapClick} />
+            <Map
+              {...viewState}
+              onMove={(event: { viewState: typeof viewState }) => setViewState(event.viewState)}
+              onClick={(event: { lngLat: { lat: number; lng: number } }) =>
+                handleMapClick(event.lngLat.lat, event.lngLat.lng)
+              }
+              mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+              mapboxAccessToken={MAPBOX_TOKEN}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <NavigationControl position="bottom-right" />
 
               {/* Single Pinned Marker */}
               {pinnedLoc && (
-                <Marker
-                  position={[pinnedLoc.lat, pinnedLoc.lng]}
-                  eventHandlers={{ click: (e) => {
-                    e.originalEvent?.stopPropagation();
-                    setShowPopup(true);
-                  } }}
-                >
+                <Marker longitude={pinnedLoc.lng} latitude={pinnedLoc.lat} anchor="bottom">
                   <div className="flex flex-col items-center cursor-pointer hover:scale-110 transition-transform">
-                    <MapPin
-                      className="h-8 w-8 drop-shadow-lg text-red-500"
-                      style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))" }}
-                    />
+                    <button
+                      type="button"
+                      aria-label="Show selected location"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setShowPopup(true);
+                      }}
+                    >
+                      <MapPin
+                        className="h-8 w-8 drop-shadow-lg text-red-500"
+                        style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))" }}
+                      />
+                    </button>
                   </div>
                 </Marker>
               )}
@@ -221,8 +233,11 @@ export function InteractiveMap({
               {/* Popup Dialogue Box */}
               {showPopup && pinnedLoc && (
                 <Popup
-                  position={[pinnedLoc.lat, pinnedLoc.lng]}
-                  eventHandlers={{ remove: () => setShowPopup(false) }}
+                  longitude={pinnedLoc.lng}
+                  latitude={pinnedLoc.lat}
+                  anchor="top"
+                  onClose={() => setShowPopup(false)}
+                  closeOnClick={false}
                 >
                   <div className="cs-popup-content">
                     <div
@@ -260,7 +275,7 @@ export function InteractiveMap({
                   </div>
                 </Popup>
               )}
-            </MapContainer>
+            </Map>
 
             {/* Crosshair hint */}
             <div className="cs-map-hint">
@@ -329,17 +344,6 @@ export function InteractiveMap({
       `}</style>
     </motion.section>
   );
-}
-
-function MapController({ latitude, longitude, zoom }: { latitude: number; longitude: number; zoom: number }) {
-  const map = useMap();
-  useEffect(() => { map.setView([latitude, longitude], zoom); }, [map, latitude, longitude, zoom]);
-  return null;
-}
-
-function MapClickHandler({ onClick }: { onClick: (latitude: number, longitude: number) => void }) {
-  useMapEvents({ click: (event) => onClick(event.latlng.lat, event.latlng.lng) });
-  return null;
 }
 
 function LocationField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
