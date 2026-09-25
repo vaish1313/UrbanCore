@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
+import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Satellite, BrainCircuit, Map, Clock, ArrowRight, Github, Mail, BookOpen
@@ -23,22 +24,16 @@ function AboutPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+      <NashikBackgroundCarousel />
       <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
       
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[85vh] flex items-center pt-24 pb-12 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Satellite Map" 
-            className="w-full h-full object-cover opacity-20 mix-blend-screen scale-105 grayscale" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-[#03060d]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/80 to-black" />
-          
+        <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Subtle Atmospheric Glow */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-900/10 blur-[120px] rounded-full mix-blend-screen" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center text-center">
@@ -61,7 +56,7 @@ function AboutPage() {
       </section>
 
       {/* SECTION 1 - THE IDEA */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-8">Why UrbanCore?</h2>
@@ -108,7 +103,7 @@ function AboutPage() {
       </section>
 
       {/* SECTION 2 - OUR APPROACH */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5 overflow-hidden">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-20">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white">Our Approach</h2>
         </div>
@@ -192,7 +187,7 @@ function AboutPage() {
       </section>
 
       {/* SECTION 3 - RESEARCH */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-start gap-16">
           <div className="lg:w-1/3">
             <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">Built as a research-driven system.</h2>
@@ -226,7 +221,7 @@ function AboutPage() {
       </section>
 
       {/* SECTION 4 - THE URBANCORE VISION */}
-      <section className="relative z-10 py-32 w-full bg-black border-y border-white/5 overflow-hidden">
+      <section className="relative z-10 py-32 w-full bg-black/30 backdrop-blur-sm border-y border-white/5 overflow-hidden">
         <div className="absolute inset-0">
           <img src={heroBg} alt="Vision Map" className="w-full h-full object-cover opacity-20 mix-blend-screen" />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-black" />
@@ -240,7 +235,7 @@ function AboutPage() {
       </section>
 
       {/* SECTION 5 - CONTACT */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d]">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-12">Have a question about UrbanCore?</h2>
           
@@ -267,7 +262,7 @@ function AboutPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative z-10 pb-32 sm:pb-48 pt-12 flex flex-col items-center justify-center text-center px-6 bg-[#03060d]">
+      <section className="relative z-10 pb-32 sm:pb-48 pt-12 flex flex-col items-center justify-center text-center px-6 bg-black/30 backdrop-blur-sm">
         <button className="text-[13px] font-bold uppercase tracking-wider text-black bg-cyan-400 hover:bg-cyan-300 px-10 py-4 rounded-full transition-all shadow-[0_0_30px_rgba(34,211,238,0.3)] hover:shadow-[0_0_40px_rgba(34,211,238,0.5)]">
           Explore UrbanCore ↗
         </button>

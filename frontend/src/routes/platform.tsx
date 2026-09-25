@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
 import { RoleCards } from "@/components/urbancore/RoleCards";
+import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
+import { WorkflowVisualization } from "@/components/urbancore/WorkflowVisualization";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Layers, Map, Radar, BarChart3,
@@ -26,25 +28,23 @@ function PlatformPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+      {/* ── Nashik landmark vertical sliding background — sits behind everything ── */}
+      <NashikBackgroundCarousel />
+
       <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
       
       {/* 1. HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
-        {/* Background Image with Cinematic Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Satellite Map" 
-            className="w-full h-full object-cover opacity-30 mix-blend-screen scale-105" 
-          />
-          {/* Subtle grid/scanlines overlay */}
+        {/* Subtle accent overlays on top of the global carousel background */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Scanline grid accent */}
           <div 
-            className="absolute inset-0 opacity-[0.15]" 
+            className="absolute inset-0 opacity-[0.10]" 
             style={{ backgroundImage: "linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-black" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/60 to-black" />
+          {/* Bottom fade so hero blends into next section */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center text-center">
@@ -125,7 +125,7 @@ function PlatformPage() {
       </section>
 
       {/* 3. HOW URBANCORE SEES A CITY (Visual Pipeline) */}
-      <section className="relative z-10 py-24 bg-[#03060d] border-y border-white/5 overflow-hidden">
+      <section className="relative z-10 py-24 border-y border-white/5 overflow-hidden backdrop-blur-sm bg-black/30">
         <div className="max-w-7xl mx-auto px-6 sm:px-10">
           <div className="text-center mb-16">
             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-400 mb-4">Pipeline</p>
@@ -174,20 +174,9 @@ function PlatformPage() {
             <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
             <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
           </div>
-          {/* Fake Dashboard Body */}
-          <div className="relative w-full aspect-video bg-black flex overflow-hidden">
-            <img src={heroBg} alt="App Map" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-screen" />
-            <div className="absolute inset-y-0 left-0 w-64 bg-[#050a15]/90 border-r border-white/10 backdrop-blur-md p-6 flex flex-col gap-6">
-              <div className="w-full h-8 rounded-md bg-white/5 animate-pulse" />
-              <div className="flex flex-col gap-3">
-                <div className="w-full h-24 rounded-lg border border-cyan-500/20 bg-cyan-500/5" />
-                <div className="w-full h-4 rounded-full bg-white/5 animate-pulse" />
-                <div className="w-2/3 h-4 rounded-full bg-white/5 animate-pulse" />
-              </div>
-            </div>
-            {/* Fake Change Overlay */}
-            <div className="absolute top-1/4 right-1/4 w-48 h-48 bg-orange-500/20 blur-2xl rounded-full mix-blend-screen" />
-            <div className="absolute bottom-1/4 left-1/3 w-64 h-32 bg-cyan-500/20 blur-2xl rounded-full mix-blend-screen" />
+          {/* Satellite Change Detection Map */}
+          <div className="relative w-full aspect-video overflow-hidden">
+            <WorkflowVisualization />
           </div>
         </div>
         
@@ -207,7 +196,7 @@ function PlatformPage() {
       </section>
 
       {/* 6. TECHNICAL FOUNDATION */}
-      <section className="relative z-10 py-24 bg-gradient-to-b from-[#03060d] to-black border-t border-white/5">
+      <section className="relative z-10 py-24 border-t border-white/5 backdrop-blur-sm bg-black/30">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
           <h2 className="font-display text-2xl font-light text-slate-300 mb-12 uppercase tracking-[0.2em]">Technical Foundation</h2>
           
