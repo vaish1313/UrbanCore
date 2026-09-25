@@ -52,29 +52,25 @@ const DEFAULT_LANDMARKS: LandmarkSlide[] = [
     id: "trimbak",
     label: "01 // TRIMBAKESHWAR TEMPLE & BRAHMAGIRI",
     alt: "Trimbakeshwar Shiva Temple and Brahmagiri Mountain, Nashik",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida/AEtjO1Vm4nfE4nPBkA5OnCpI9U_gth-PD3XoMaOIWjIhEWXjhLESuzkPzvank7VIV3PEpGeOx3Mz0r0vCjWjgSda5aGdQtJfSVF3WjhjGyTLvCeoXX9WTxj_1_0-K3SEp_g1KPqGWuwdmv6Sk9ShnJd3A_VRBvYy4M3pQYWiAeKdM2xg8dp3-AXYMSoYUUwMS4Mz3FHaJF_Ra3BwR1B6NY-4l76rkMpkrEyUHhiQLqDZrnW0jTV0u7y0159NqbZz",
+    imageUrl: "/nashik-trimbak.jpg",
   },
   {
     id: "ramkund",
     label: "02 // RAMKUND & GODAVARI GHATS",
     alt: "Ramkund and Godavari River Sacred Ghats, Nashik",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida/AEtjO1Xlqd1lqzJkL4Tf6nWC1PBkza2j4XqNmoTjVu1MHxZ5qM42hbK75RA4CmqAy2VhAuff1RnLc7Ga1Be-MegWfdmJbxR3Z1s3QiZWic7Gl5twK3GC1vRsNUWfpkx6CLAYt5FZduqPE-WDrPVNrQAbUyP_gCF7qQ7djKYSrbSgNHZKiYbXWjldkYY6o3xbfNmGPtxeNogxZDWrVv3mBnZ5HohhdxVL-nNSv-tDQmGs4Jwmrif-5H45Qz26U9c",
+    imageUrl: "/nashik-ramkund.jpg",
   },
   {
     id: "pandavleni",
     label: "03 // PANDAV LENI RESERVE",
     alt: "Pandav Leni Buddhist Rock-cut Caves, Nashik",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida/AEtjO1VMx4zRCCffDzB-mn9X20eX9u2u-q3LTzjdq6D2pyjMEFN7hCLlwUloScSgDAcrlIEFstR16csxPOozA4uEezWvylMRqGWPpQtkjEgureulGjcXWe9X_0NW7WhmtfwsV3oqjrfsQh-rPcj4r85slIEegWdo80eG60U6UOZdIIqXTsRPvXK6tIhPE7G-AH_fXsUSMel_8GMYwliZeu_rqsI4NrGqVvI4LqHApZe-tAIpBRVijA30m56sB7vB",
+    imageUrl: "/nashik-pandavleni.jpg",
   },
   {
     id: "gangapur",
     label: "04 // GANGAPUR BASIN RESERVOIR",
     alt: "Gangapur Dam Reservoir and Rolling Hills, Nashik",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida/AEtjO1WSQYvXcBujVXTro4BETLmbBngKPVVR2S_aSefXkQEPvl7XLZPos2KMzsMzfm0cJkoknxf4A2qr6242w8C5IssmTyWV5JjT8xlvdgWKzhsyU3S8hE_7Cx4DEZQJ8SXksMNtrgblUdGmpKjYYGYzPx1VB4p0_9vCbg_K3UL5ghMPYmWyqX2YvR_5qhC_hNq92BRG2ppPtirEhcKkppIOW06BDroc06VpAqIzTui0TIWYNTWpd3CvB232xIVX",
+    imageUrl: "/nashik-gangapur.jpg",
   },
 ];
 
