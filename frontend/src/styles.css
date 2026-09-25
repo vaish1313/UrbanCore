@@ -241,3 +241,16 @@
 @utility mc-spin-slow {
   animation: mc-spin-slow 12s linear infinite;
 }
+
+/* ─── Nashik Landmark Vertical Sliding Background ─────────────────────────── */
+
+@keyframes nashik-vertical-marquee {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+@keyframes nashik-scanline-glance {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  50%  { opacity: 0.12; }
+  100% { transform: translateY(1000%); opacity: 0; }
+}

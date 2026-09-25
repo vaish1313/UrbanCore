@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
+import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Clock, TrendingUp, Search, Sparkles, Map, Network, ArrowRight
@@ -38,23 +39,17 @@ function DataInsightsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
+      <NashikBackgroundCarousel />
       <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
       
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Satellite Map" 
-            className="w-full h-full object-cover opacity-30 mix-blend-screen scale-105" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-[#03060d]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/60 to-black" />
-          
+        <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Subtle Data Overlays */}
           <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full mix-blend-screen animate-pulse" />
           <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-orange-500/10 blur-[80px] rounded-full mix-blend-screen" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center text-center">
@@ -77,7 +72,7 @@ function DataInsightsPage() {
       </section>
 
       {/* SECTION 1 - FIVE YEARS. ONE LANDSCAPE. */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">
             Five years. One landscape.
@@ -124,7 +119,7 @@ function DataInsightsPage() {
       </section>
 
       {/* SECTION 2 - BUILT-UP CHANGE, MADE VISIBLE */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">
             Built-up change, made visible.
@@ -183,7 +178,7 @@ function DataInsightsPage() {
       </section>
 
       {/* SECTION 3 - EXPLORE AN AREA */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-[#03060d] border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-12 text-center">
             Explore an area.
@@ -228,7 +223,7 @@ function DataInsightsPage() {
       </section>
 
       {/* SECTION 4 - INSIGHT CARDS */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black border-t border-white/5">
+      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
@@ -297,7 +292,7 @@ function DataInsightsPage() {
       </section>
 
       {/* SECTION 5 - ASK THE CITY */}
-      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center text-center px-6 border-t border-white/5 bg-[#03060d]">
+      <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center text-center px-6 border-t border-white/5 bg-black/30 backdrop-blur-sm">
         <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-12">
           Ask the city.
         </h2>
