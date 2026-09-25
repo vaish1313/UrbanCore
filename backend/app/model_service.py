@@ -155,7 +155,7 @@ class ModelInferenceService:
             self.model.to(self.device)
             self.model.eval()
 
-            print(f"✓ UNet model loaded successfully on device: {self.device}")
+            print(f"UNet model loaded successfully on device: {self.device}")
         except Exception as e:
             print(f"Warning: Could not load model: {e}")
             print("Model inference will be disabled.")
