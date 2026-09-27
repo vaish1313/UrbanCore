@@ -3,7 +3,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        extra="ignore",
+        protected_namespaces=('settings_',)
+    )
     api_v1_prefix: str = "/api/v1"
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     supabase_url: str = ""
@@ -20,7 +24,8 @@ class Settings(BaseSettings):
     gcs_project_id: str = "final-year-project-501711"
     # Local default; set MODEL_PATH=/outputs/best_unet_urbancore.pth in Docker.
     model_path: str = "../outputs/best_unet_urbancore.pth"
-    unet_checkpoint_path: str = "../outputs/best_unet_urbancore.pth"
+    unet_checkpoint_path: str = "../outputs/urbancore_unet_v1.pth"
+    band_stats_path: str = "../outputs/band_stats.json"
     sam_3d_model: str = "facebook/sam-3d-body-dinov3"
     hf_token: str = ""
     enable_sam: bool = True

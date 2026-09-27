@@ -1,1 +1,2 @@
+backend/outputs/urbancore_unet_v1.pth filter=lfs diff=lfs merge=lfs -text
 backend/data/restricted_zones/boundary/district_nwic.GeoJSON filter=lfs diff=lfs merge=lfs -text
