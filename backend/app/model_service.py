@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models
+import segmentation_models_pytorch as smp
 import rasterio
 from rasterio.features import shapes
 from .config import settings
@@ -117,26 +118,83 @@ class ResNetUNet(nn.Module):
         return x
 
 
+def create_urbancore_model():
+    """Create the new UrbanCore V1 model using segmentation_models_pytorch."""
+    return smp.Unet(
+        encoder_name="resnet18",
+        encoder_weights=None,
+        in_channels=10,
+        classes=1,
+        activation=None  # Raw logits, no activation
+    )
+
+
 class ModelInferenceService:
     """Handles model loading and inference for construction detection."""
 
     def __init__(self):
         self.model = None
+        self.band_stats = None
         self.device = torch.device(settings.device if torch.cuda.is_available() else "cpu")
+        self._load_band_stats()
         self._load_model()
+
+    def _load_band_stats(self):
+        """Load the preprocessing statistics from training."""
+        # Try multiple possible paths
+        possible_paths = [
+            Path(settings.band_stats_path),
+            Path("outputs/band_stats.json"),
+            Path("backend/outputs/band_stats.json"),
+        ]
+        
+        stats_path = None
+        for path in possible_paths:
+            if path.exists():
+                stats_path = path
+                break
+        
+        if stats_path is None:
+            print(f"Warning: Band statistics not found. Tried:")
+            for path in possible_paths:
+                print(f"  - {path}")
+            print("Using fallback per-image standardization.")
+            return
+            
+        try:
+            with open(stats_path, 'r') as f:
+                self.band_stats = json.load(f)
+            print(f"Loaded band statistics from {stats_path}")
+            print(f"Band order: {self.band_stats['band_names']}")
+        except Exception as e:
+            print(f"Warning: Could not load band statistics: {e}")
+            print("Using fallback per-image standardization.")
 
     def _load_model(self):
         """Load the trained UNet model."""
-        model_path = Path(settings.unet_checkpoint_path)
-
-        if not model_path.exists():
-            print(f"Warning: Model checkpoint not found at {model_path}")
+        # Try multiple possible paths for checkpoint
+        possible_paths = [
+            Path(settings.unet_checkpoint_path),
+            Path("outputs/urbancore_unet_v1.pth"),
+            Path("backend/outputs/urbancore_unet_v1.pth"),
+        ]
+        
+        model_path = None
+        for path in possible_paths:
+            if path.exists():
+                model_path = path
+                break
+        
+        if model_path is None:
+            print(f"Warning: Model checkpoint not found. Tried:")
+            for path in possible_paths:
+                print(f"  - {path}")
             print("Model inference will be disabled until checkpoint is available.")
             return
 
         try:
-            # Initialize model architecture (ResNet-UNet with 10 input channels)
-            self.model = ResNetUNet(in_channels=10, out_channels=1)
+            # Initialize new UrbanCore V1 model architecture
+            self.model = create_urbancore_model()
 
             # Load weights
             checkpoint = torch.load(model_path, map_location=self.device)
@@ -144,18 +202,22 @@ class ModelInferenceService:
             # Handle different checkpoint formats
             if isinstance(checkpoint, dict):
                 if "model_state_dict" in checkpoint:
-                    self.model.load_state_dict(checkpoint["model_state_dict"])
+                    state_dict = checkpoint["model_state_dict"]
                 elif "state_dict" in checkpoint:
-                    self.model.load_state_dict(checkpoint["state_dict"])
+                    state_dict = checkpoint["state_dict"]
                 else:
-                    self.model.load_state_dict(checkpoint)
+                    state_dict = checkpoint
             else:
-                self.model.load_state_dict(checkpoint)
+                state_dict = checkpoint
+            
+            # Load state dict with strict=True (checkpoint is fully compatible)
+            self.model.load_state_dict(state_dict, strict=True)
 
             self.model.to(self.device)
             self.model.eval()
 
-            print(f"UNet model loaded successfully on device: {self.device}")
+            print(f"UrbanCore V1 model loaded successfully on device: {self.device}")
+            print(f"Model architecture: segmentation_models_pytorch Unet with ResNet18 encoder")
         except Exception as e:
             print(f"Warning: Could not load model: {e}")
             print("Model inference will be disabled.")
@@ -163,7 +225,13 @@ class ModelInferenceService:
 
     def preprocess_image(self, image: np.ndarray) -> torch.Tensor:
         """
-        Preprocess satellite image for inference.
+        Preprocess satellite image for inference using fixed training statistics.
+        
+        CRITICAL: The new UrbanCore V1 model was trained with FIXED Z-SCORE normalization
+        using training set statistics from band_stats.json.
+        
+        The model expects 10 channels in this exact order:
+        [B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI]
         
         Args:
             image: numpy array of shape (C, H, W) or (H, W, C)
@@ -172,25 +240,74 @@ class ModelInferenceService:
             Preprocessed tensor ready for model input (10 channels)
         """
         # Ensure channel-first format (C, H, W)
-        if image.ndim == 3 and image.shape[-1] in [4, 10]:  # (H, W, C)
+        if image.ndim == 3 and image.shape[-1] in [4, 6, 10]:  # (H, W, C)
             image = np.transpose(image, (2, 0, 1))
 
-        # Normalize to [0, 1] if needed
-        if image.max() > 1.0:
-            image = image.astype(np.float32) / 10000.0  # Sentinel-2 reflectance scale
-
-        # Clip to valid range
-        image = np.clip(image, 0, 1)
+        image = image.astype(np.float32)
         
-        # If input has only 4 bands, pad to 10 channels with zeros
-        # Your model expects 10 channels (probably includes additional indices/bands)
-        if image.shape[0] == 4:
-            # Create 10-channel array
+        # Handle 10-channel input (6 reflectance bands + 4 indices)
+        if image.shape[0] == 10:
+            # All 10 channels are present
+            pass  # Continue to normalization below
+        
+        # Handle 6-channel input (reflectance bands only - need to compute indices)
+        elif image.shape[0] == 6:
+            # Extract bands (raw values, not yet normalized)
+            B2 = image[0]
+            B3 = image[1]
+            B4 = image[2]
+            B8 = image[3]
+            B11 = image[4]
+            B12 = image[5]
+            
+            # Calculate spectral indices from RAW reflectance values
+            # Add small epsilon to avoid division by zero
+            eps = 1e-10
+            NDVI = (B8 - B4) / (B8 + B4 + eps)
+            NDBI = (B11 - B8) / (B11 + B8 + eps)
+            NDWI = (B3 - B8) / (B3 + B8 + eps)
+            BSI = ((B11 + B4) - (B8 + B2)) / ((B11 + B4) + (B8 + B2) + eps)
+            
+            # Clip indices to valid range
+            NDVI = np.clip(NDVI, -1, 1)
+            NDBI = np.clip(NDBI, -1, 1)
+            NDWI = np.clip(NDWI, -1, 1)
+            BSI = np.clip(BSI, -1, 1)
+            
+            # Stack into 10 channels: [B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI]
+            image = np.stack([B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI], axis=0)
+        
+        # Handle 4-channel input (legacy - pad with zeros)
+        elif image.shape[0] == 4:
             padded = np.zeros((10, image.shape[1], image.shape[2]), dtype=np.float32)
-            padded[:4] = image  # Copy the 4 bands
-            # Additional channels could be indices like NDVI, NDWI, etc.
-            # For now, leaving them as zeros
+            padded[:4] = image
             image = padded
+        
+        else:
+            raise ValueError(f"Unexpected number of channels: {image.shape[0]}. Expected 4, 6, or 10.")
+
+        # Apply normalization using training statistics
+        if self.band_stats is not None:
+            # Use fixed training set statistics for z-score normalization
+            means = np.array(self.band_stats['mean'], dtype=np.float32)
+            stds = np.array(self.band_stats['std'], dtype=np.float32)
+            
+            # Apply: normalized_channel = (channel - train_mean) / train_std
+            for i in range(image.shape[0]):
+                image[i] = (image[i] - means[i]) / stds[i]
+        else:
+            # Fallback to per-image standardization if stats not available
+            print("Warning: Using per-image standardization as fallback")
+            for i in range(image.shape[0]):
+                channel = image[i]
+                ch_mean = channel.mean()
+                ch_std = channel.std()
+                
+                # Avoid division by zero for constant channels
+                if ch_std > 1e-10:
+                    image[i] = (channel - ch_mean) / ch_std
+                else:
+                    image[i] = channel - ch_mean
 
         # Convert to tensor and add batch dimension
         tensor = torch.from_numpy(image).float().unsqueeze(0)
@@ -199,7 +316,14 @@ class ModelInferenceService:
 
     def infer(self, tif_path: Path) -> tuple[np.ndarray, dict]:
         """
-        Run inference on a GeoTIFF file.
+        Run inference on a GeoTIFF file using sliding-window patch processing.
+        
+        This reproduces the training inference procedure:
+        - Extract 64×64 patches with stride 16
+        - Run model on each patch
+        - Apply sigmoid to raw logits
+        - Accumulate and average overlapping probabilities
+        - Threshold at 0.5 for binary mask
         
         Args:
             tif_path: Path to the GeoTIFF file
@@ -214,7 +338,7 @@ class ModelInferenceService:
             
         # Read GeoTIFF
         with rasterio.open(tif_path) as src:
-            image = src.read()  # Shape: (bands, height, width)
+            raw_image = src.read()  # Shape: (bands, height, width)
             metadata = {
                 "crs": src.crs.to_string() if src.crs else None,
                 "transform": src.transform,
@@ -223,18 +347,193 @@ class ModelInferenceService:
                 "height": src.height
             }
 
-        # Preprocess
-        input_tensor = self.preprocess_image(image)
-
-        # Inference
-        with torch.no_grad():
-            output = self.model(input_tensor)
-
-        # Post-process: convert to binary mask
-        prediction = output.squeeze().cpu().numpy()
-        binary_mask = (prediction > 0.5).astype(np.uint8)
+        # Preprocess the full image (computes spectral indices from full domain)
+        preprocessed_image = self._preprocess_image_to_numpy(raw_image)
+        
+        # Run sliding-window inference
+        binary_mask = self._sliding_window_inference(preprocessed_image)
+        
+        # Log statistics
+        construction_pixels = binary_mask.sum()
+        total_pixels = binary_mask.size
+        construction_pct = (construction_pixels / total_pixels) * 100
+        print(f"    Construction: {construction_pixels}/{total_pixels} pixels ({construction_pct:.2f}%)")
 
         return binary_mask, metadata
+
+    def _preprocess_image_to_numpy(self, image: np.ndarray) -> np.ndarray:
+        """
+        Preprocess satellite image and return as numpy array (not tensor).
+        
+        Used internally for sliding-window inference.
+        
+        Args:
+            image: numpy array of shape (C, H, W) or (H, W, C)
+            
+        Returns:
+            Preprocessed numpy array of shape (10, H, W)
+        """
+        # Ensure channel-first format (C, H, W)
+        if image.ndim == 3 and image.shape[-1] in [4, 6, 10]:  # (H, W, C)
+            image = np.transpose(image, (2, 0, 1))
+
+        image = image.astype(np.float32)
+        
+        # Handle 10-channel input (6 reflectance bands + 4 indices)
+        if image.shape[0] == 10:
+            # All 10 channels are present
+            pass  # Continue to normalization below
+        
+        # Handle 6-channel input (reflectance bands only - need to compute indices)
+        elif image.shape[0] == 6:
+            # Extract bands (raw values, not yet normalized)
+            B2 = image[0]
+            B3 = image[1]
+            B4 = image[2]
+            B8 = image[3]
+            B11 = image[4]
+            B12 = image[5]
+            
+            # Calculate spectral indices from RAW reflectance values
+            eps = 1e-10
+            NDVI = (B8 - B4) / (B8 + B4 + eps)
+            NDBI = (B11 - B8) / (B11 + B8 + eps)
+            NDWI = (B3 - B8) / (B3 + B8 + eps)
+            BSI = ((B11 + B4) - (B8 + B2)) / ((B11 + B4) + (B8 + B2) + eps)
+            
+            # Clip indices to valid range
+            NDVI = np.clip(NDVI, -1, 1)
+            NDBI = np.clip(NDBI, -1, 1)
+            NDWI = np.clip(NDWI, -1, 1)
+            BSI = np.clip(BSI, -1, 1)
+            
+            # Stack into 10 channels: [B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI]
+            image = np.stack([B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI], axis=0)
+        
+        # Handle 4-channel input (legacy - pad with zeros)
+        elif image.shape[0] == 4:
+            padded = np.zeros((10, image.shape[1], image.shape[2]), dtype=np.float32)
+            padded[:4] = image
+            image = padded
+        
+        else:
+            raise ValueError(f"Unexpected number of channels: {image.shape[0]}. Expected 4, 6, or 10.")
+
+        # Apply normalization using training statistics
+        if self.band_stats is not None:
+            # Use fixed training set statistics for z-score normalization
+            means = np.array(self.band_stats['mean'], dtype=np.float32)
+            stds = np.array(self.band_stats['std'], dtype=np.float32)
+            
+            # Apply: normalized_channel = (channel - train_mean) / train_std
+            for i in range(image.shape[0]):
+                image[i] = (image[i] - means[i]) / stds[i]
+        else:
+            # Fallback to per-image standardization if stats not available
+            print("Warning: Using per-image standardization as fallback")
+            for i in range(image.shape[0]):
+                channel = image[i]
+                ch_mean = channel.mean()
+                ch_std = channel.std()
+                
+                # Avoid division by zero for constant channels
+                if ch_std > 1e-10:
+                    image[i] = (channel - ch_mean) / ch_std
+                else:
+                    image[i] = channel - ch_mean
+
+        return image
+
+    def _sliding_window_inference(
+        self,
+        preprocessed_image: np.ndarray,
+        patch_size: int = 64,
+        stride: int = 16
+    ) -> np.ndarray:
+        """
+        Run inference using sliding-window patch processing.
+        
+        Matches the training/evaluation inference procedure:
+        - Extract overlapping 64×64 patches
+        - Run model on each patch
+        - Apply sigmoid to raw logits
+        - Accumulate probabilities with overlap averaging
+        - Threshold at 0.5
+        
+        Args:
+            preprocessed_image: Preprocessed image of shape (10, H, W)
+            patch_size: Size of each patch (64×64)
+            stride: Stride between patches (16)
+            
+        Returns:
+            Binary mask of shape (H, W) with 0s and 1s
+        """
+        C, H, W = preprocessed_image.shape
+        
+        # Initialize accumulation maps
+        prob_accumulator = np.zeros((H, W), dtype=np.float32)
+        count_accumulator = np.zeros((H, W), dtype=np.float32)
+        
+        # Extract and process patches
+        patch_positions = []
+        patch_count = 0
+        
+        # Generate patch positions: ensure complete coverage including bottom/right edges
+        y_positions = list(range(0, H - patch_size + 1, stride))
+        # Add final position if needed to reach bottom edge
+        if y_positions[-1] + patch_size < H:
+            y_positions.append(H - patch_size)
+        
+        x_positions = list(range(0, W - patch_size + 1, stride))
+        # Add final position if needed to reach right edge
+        if x_positions[-1] + patch_size < W:
+            x_positions.append(W - patch_size)
+        
+        # Process each patch
+        with torch.inference_mode():
+            for y in y_positions:
+                for x in x_positions:
+                    # Extract patch from preprocessed image
+                    patch = preprocessed_image[:, y:y+patch_size, x:x+patch_size]
+                    
+                    # Convert to tensor [1, 10, 64, 64]
+                    tensor = torch.from_numpy(patch).float().unsqueeze(0).to(self.device)
+                    
+                    # Run model inference
+                    raw_output = self.model(tensor)
+                    
+                    # Apply sigmoid to convert raw logits to probabilities
+                    prob_output = torch.sigmoid(raw_output)
+                    
+                    # Extract probability map and convert to numpy
+                    patch_probs = prob_output.squeeze(0).squeeze(0).cpu().numpy()
+                    
+                    # Accumulate into full probability map
+                    prob_accumulator[y:y+patch_size, x:x+patch_size] += patch_probs
+                    count_accumulator[y:y+patch_size, x:x+patch_size] += 1
+                    
+                    patch_positions.append((y, x))
+                    patch_count += 1
+        
+        # Average overlapping probabilities
+        # Avoid division by zero for pixels not covered (should not happen with proper coverage)
+        count_accumulator[count_accumulator == 0] = 1
+        final_probabilities = prob_accumulator / count_accumulator
+        
+        # Threshold at 0.5 to create binary mask
+        binary_mask = (final_probabilities > 0.5).astype(np.uint8)
+        
+        # Log statistics
+        pred_min, pred_max, pred_mean = final_probabilities.min(), final_probabilities.max(), final_probabilities.mean()
+        print(f"    Sliding-window inference: {patch_count} patches")
+        print(f"    Probability stats: min={pred_min:.4f}, max={pred_max:.4f}, mean={pred_mean:.4f}")
+        
+        # Verify coverage
+        uncovered = (count_accumulator == 0).sum()
+        if uncovered > 0:
+            print(f"    Warning: {uncovered} pixels not covered by patches")
+        
+        return binary_mask
 
     def mask_to_geojson(
         self,
