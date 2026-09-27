@@ -4,15 +4,42 @@ import { Search, Mic, LocateFixed, Clock, TrendingUp, ChevronRight, X } from "lu
 import { SEARCH_SUGGESTIONS, POPULAR_SEARCHES, RECENT_SEARCHES_KEY } from "@/data/citizenMockData";
 
 const ease = [0.16, 1, 0.3, 1] as const;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 type Suggestion = { label: string; type: string; lat: number; lng: number };
 
-interface HeroSearchProps {
+export interface HeroSearchProps {
   onSearch: (suggestion: Suggestion) => void;
   onDropPin: () => void;
+  badgeText?: string;
+  titlePrefix?: string;
+  titleSuffix?: string;
+  subtitle?: string;
+  mode?: "citizen" | "builder";
 }
 
-export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
+export function HeroSearch({
+  onSearch,
+  onDropPin,
+  mode = "citizen",
+  badgeText,
+  titlePrefix,
+  titleSuffix,
+  subtitle,
+}: HeroSearchProps) {
+  const isBuilder = mode === "builder";
+
+  const resolvedBadgeText =
+    badgeText ??
+    (isBuilder ? "AI URBAN INTELLIGENCE · NASHIK 2026" : "AI Urban Intelligence · Nashik 2026");
+  const resolvedTitlePrefix = titlePrefix ?? (isBuilder ? "Builder" : "Citizen");
+  const resolvedTitleSuffix = titleSuffix ?? "Intelligence";
+  const resolvedSubtitle =
+    subtitle ??
+    (isBuilder
+      ? "Explore your site using satellite intelligence, analyze land suitability, monitor development, and generate AI-powered location insights."
+      : "Explore your locality using satellite intelligence, monitor urban development, and generate AI-powered location insights.");
+
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -42,7 +69,7 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Mapbox Autocomplete
+  // OpenStreetMap geocoding is proxied through FastAPI so no provider key is exposed.
   useEffect(() => {
     const fetchPlaces = async () => {
       if (query.trim().length < 2) {
@@ -50,29 +77,12 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
         return;
       }
       try {
-        const MAPBOX_TOKEN =
-          "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
-        // Bounding box roughly covers Nashik to improve relevance
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&bbox=73.5,19.8,74.0,20.2`,
-        );
+        const res = await fetch(`${API_BASE_URL}/locations/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-
-        if (data.features) {
-          const suggestions = data.features.map(
-            (f: {
-              text: string;
-              context?: { id: string; text: string }[];
-              center: [number, number];
-            }) => ({
-              label: f.text,
-              type:
-                f.context?.find((c: { id: string; text: string }) => c.id.startsWith("place"))
-                  ?.text || "Location",
-              lat: f.center[1],
-              lng: f.center[0],
-            }),
-          );
+        if (Array.isArray(data)) {
+          const suggestions = data.map((f: { label: string; latitude: number; longitude: number }) => ({
+            label: f.label, type: "OpenStreetMap", lat: f.latitude, lng: f.longitude,
+          }));
           setLiveSuggestions(suggestions);
         }
       } catch (e) {
@@ -137,14 +147,10 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
         let placeName = "Your Current Location";
 
         try {
-          const MAPBOX_TOKEN =
-            "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
-          const res = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${MAPBOX_TOKEN}`,
-          );
+          const res = await fetch(`${API_BASE_URL}/locations/search?q=${latitude},${longitude}`);
           const data = await res.json();
-          if (data.features && data.features.length > 0) {
-            placeName = data.features[0].place_name;
+          if (Array.isArray(data) && data.length > 0) {
+            placeName = data[0].label;
           }
         } catch (error) {
           console.error("Geocoding failed:", error);
@@ -177,20 +183,17 @@ export function HeroSearch({ onSearch, onDropPin }: HeroSearchProps) {
           className="cs-hero-badge"
         >
           <span className="cs-badge-dot" />
-          AI Urban Intelligence · Nashik 2026
+          {resolvedBadgeText}
         </motion.div>
 
         {/* Heading */}
         <h1 className="cs-hero-heading">
-          <span className="text-white">Citizen </span>
-          <span className="cs-heading-gradient">Intelligence</span>
+          <span className="text-white">{resolvedTitlePrefix} </span>
+          <span className="cs-heading-gradient">{resolvedTitleSuffix}</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="cs-hero-subtitle">
-          Explore your locality using satellite intelligence, monitor urban development, and
-          generate AI-powered location insights.
-        </p>
+        <p className="cs-hero-subtitle">{resolvedSubtitle}</p>
 
         {/* Search bar */}
         <div ref={wrapperRef} className="cs-search-wrapper">

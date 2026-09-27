@@ -10,33 +10,306 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as DataRouteImport } from './routes/data'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as MunicipalRouteRouteImport } from './routes/municipal/route'
+import { Route as PlatformRouteImport } from './routes/platform'
+import { Route as SolutionsRouteImport } from './routes/solutions'
+import { Route as BuilderIndexRouteImport } from './routes/builder/index'
+import { Route as BuilderConstructionHistoryRouteImport } from './routes/builder/construction-history'
+import { Route as BuilderLandReportsRouteImport } from './routes/builder/land-reports'
+import { Route as BuilderLandSuitabilityRouteImport } from './routes/builder/land-suitability'
+import { Route as BuilderOverviewRouteImport } from './routes/builder/overview'
+import { Route as BuilderRiskAssessmentRouteImport } from './routes/builder/risk-assessment'
+import { Route as BuilderTerrainAnalysisRouteImport } from './routes/builder/terrain-analysis'
+import { Route as BuilderZoningConstraintsRouteImport } from './routes/builder/zoning-constraints'
+import { Route as MunicipalIndexRouteImport } from './routes/municipal/index'
+import { Route as MunicipalDistrictMapRouteImport } from './routes/municipal/district-map'
+import { Route as MunicipalEncroachmentRouteImport } from './routes/municipal/encroachment'
+import { Route as MunicipalExportRouteImport } from './routes/municipal/export'
+import { Route as MunicipalForensicsRouteImport } from './routes/municipal/forensics'
+import { Route as MunicipalHeatmapRouteImport } from './routes/municipal/heatmap'
+import { Route as MunicipalLegalRouteImport } from './routes/municipal/legal'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataRoute = DataRouteImport.update({
+  id: '/data',
+  path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MunicipalRouteRoute = MunicipalRouteRouteImport.update({
+  id: '/municipal',
+  path: '/municipal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsRoute = SolutionsRouteImport.update({
+  id: '/solutions',
+  path: '/solutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderIndexRoute = BuilderIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderConstructionHistoryRoute =
+  BuilderConstructionHistoryRouteImport.update({
+    id: '/construction-history',
+    path: '/construction-history',
+    getParentRoute: () => BuilderRoute,
+  } as any)
+const BuilderLandReportsRoute = BuilderLandReportsRouteImport.update({
+  id: '/land-reports',
+  path: '/land-reports',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderLandSuitabilityRoute = BuilderLandSuitabilityRouteImport.update({
+  id: '/land-suitability',
+  path: '/land-suitability',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderOverviewRoute = BuilderOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderRiskAssessmentRoute = BuilderRiskAssessmentRouteImport.update({
+  id: '/risk-assessment',
+  path: '/risk-assessment',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderTerrainAnalysisRoute = BuilderTerrainAnalysisRouteImport.update({
+  id: '/terrain-analysis',
+  path: '/terrain-analysis',
+  getParentRoute: () => BuilderRoute,
+} as any)
+const BuilderZoningConstraintsRoute =
+  BuilderZoningConstraintsRouteImport.update({
+    id: '/zoning-constraints',
+    path: '/zoning-constraints',
+    getParentRoute: () => BuilderRoute,
+  } as any)
+const MunicipalIndexRoute = MunicipalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalDistrictMapRoute = MunicipalDistrictMapRouteImport.update({
+  id: '/district-map',
+  path: '/district-map',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalEncroachmentRoute = MunicipalEncroachmentRouteImport.update({
+  id: '/encroachment',
+  path: '/encroachment',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalExportRoute = MunicipalExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalForensicsRoute = MunicipalForensicsRouteImport.update({
+  id: '/forensics',
+  path: '/forensics',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalHeatmapRoute = MunicipalHeatmapRouteImport.update({
+  id: '/heatmap',
+  path: '/heatmap',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalLegalRoute = MunicipalLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/municipal': typeof MunicipalRouteRouteWithChildren
+  '/about': typeof AboutRoute
+  '/builder': typeof BuilderRouteWithChildren
+  '/data': typeof DataRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/platform': typeof PlatformRoute
+  '/solutions': typeof SolutionsRoute
+  '/builder/construction-history': typeof BuilderConstructionHistoryRoute
+  '/builder/land-reports': typeof BuilderLandReportsRoute
+  '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
+  '/builder/overview': typeof BuilderOverviewRoute
+  '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
+  '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
+  '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/district-map': typeof MunicipalDistrictMapRoute
+  '/municipal/encroachment': typeof MunicipalEncroachmentRoute
+  '/municipal/export': typeof MunicipalExportRoute
+  '/municipal/forensics': typeof MunicipalForensicsRoute
+  '/municipal/heatmap': typeof MunicipalHeatmapRoute
+  '/municipal/legal': typeof MunicipalLegalRoute
+  '/builder/': typeof BuilderIndexRoute
+  '/municipal/': typeof MunicipalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/data': typeof DataRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/platform': typeof PlatformRoute
+  '/solutions': typeof SolutionsRoute
+  '/builder/construction-history': typeof BuilderConstructionHistoryRoute
+  '/builder/land-reports': typeof BuilderLandReportsRoute
+  '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
+  '/builder/overview': typeof BuilderOverviewRoute
+  '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
+  '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
+  '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/district-map': typeof MunicipalDistrictMapRoute
+  '/municipal/encroachment': typeof MunicipalEncroachmentRoute
+  '/municipal/export': typeof MunicipalExportRoute
+  '/municipal/forensics': typeof MunicipalForensicsRoute
+  '/municipal/heatmap': typeof MunicipalHeatmapRoute
+  '/municipal/legal': typeof MunicipalLegalRoute
+  '/builder': typeof BuilderIndexRoute
+  '/municipal': typeof MunicipalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/municipal': typeof MunicipalRouteRouteWithChildren
+  '/about': typeof AboutRoute
+  '/builder': typeof BuilderRouteWithChildren
+  '/data': typeof DataRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/platform': typeof PlatformRoute
+  '/solutions': typeof SolutionsRoute
+  '/builder/construction-history': typeof BuilderConstructionHistoryRoute
+  '/builder/land-reports': typeof BuilderLandReportsRoute
+  '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
+  '/builder/overview': typeof BuilderOverviewRoute
+  '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
+  '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
+  '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/district-map': typeof MunicipalDistrictMapRoute
+  '/municipal/encroachment': typeof MunicipalEncroachmentRoute
+  '/municipal/export': typeof MunicipalExportRoute
+  '/municipal/forensics': typeof MunicipalForensicsRoute
+  '/municipal/heatmap': typeof MunicipalHeatmapRoute
+  '/municipal/legal': typeof MunicipalLegalRoute
+  '/builder/': typeof BuilderIndexRoute
+  '/municipal/': typeof MunicipalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/municipal'
+    | '/about'
+    | '/builder'
+    | '/data'
+    | '/how-it-works'
+    | '/platform'
+    | '/solutions'
+    | '/builder/construction-history'
+    | '/builder/land-reports'
+    | '/builder/land-suitability'
+    | '/builder/overview'
+    | '/builder/risk-assessment'
+    | '/builder/terrain-analysis'
+    | '/builder/zoning-constraints'
+    | '/municipal/district-map'
+    | '/municipal/encroachment'
+    | '/municipal/export'
+    | '/municipal/forensics'
+    | '/municipal/heatmap'
+    | '/municipal/legal'
+    | '/builder/'
+    | '/municipal/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/data'
+    | '/how-it-works'
+    | '/platform'
+    | '/solutions'
+    | '/builder/construction-history'
+    | '/builder/land-reports'
+    | '/builder/land-suitability'
+    | '/builder/overview'
+    | '/builder/risk-assessment'
+    | '/builder/terrain-analysis'
+    | '/builder/zoning-constraints'
+    | '/municipal/district-map'
+    | '/municipal/encroachment'
+    | '/municipal/export'
+    | '/municipal/forensics'
+    | '/municipal/heatmap'
+    | '/municipal/legal'
+    | '/builder'
+    | '/municipal'
+  id:
+    | '__root__'
+    | '/'
+    | '/municipal'
+    | '/about'
+    | '/builder'
+    | '/data'
+    | '/how-it-works'
+    | '/platform'
+    | '/solutions'
+    | '/builder/construction-history'
+    | '/builder/land-reports'
+    | '/builder/land-suitability'
+    | '/builder/overview'
+    | '/builder/risk-assessment'
+    | '/builder/terrain-analysis'
+    | '/builder/zoning-constraints'
+    | '/municipal/district-map'
+    | '/municipal/encroachment'
+    | '/municipal/export'
+    | '/municipal/forensics'
+    | '/municipal/heatmap'
+    | '/municipal/legal'
+    | '/builder/'
+    | '/municipal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MunicipalRouteRoute: typeof MunicipalRouteRouteWithChildren
+  AboutRoute: typeof AboutRoute
+  BuilderRoute: typeof BuilderRouteWithChildren
+  DataRoute: typeof DataRoute
+  HowItWorksRoute: typeof HowItWorksRoute
+  PlatformRoute: typeof PlatformRoute
+  SolutionsRoute: typeof SolutionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +321,221 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data': {
+      id: '/data'
+      path: '/data'
+      fullPath: '/data'
+      preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/municipal': {
+      id: '/municipal'
+      path: '/municipal'
+      fullPath: '/municipal'
+      preLoaderRoute: typeof MunicipalRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions': {
+      id: '/solutions'
+      path: '/solutions'
+      fullPath: '/solutions'
+      preLoaderRoute: typeof SolutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder/': {
+      id: '/builder/'
+      path: '/'
+      fullPath: '/builder/'
+      preLoaderRoute: typeof BuilderIndexRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/construction-history': {
+      id: '/builder/construction-history'
+      path: '/construction-history'
+      fullPath: '/builder/construction-history'
+      preLoaderRoute: typeof BuilderConstructionHistoryRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/land-reports': {
+      id: '/builder/land-reports'
+      path: '/land-reports'
+      fullPath: '/builder/land-reports'
+      preLoaderRoute: typeof BuilderLandReportsRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/land-suitability': {
+      id: '/builder/land-suitability'
+      path: '/land-suitability'
+      fullPath: '/builder/land-suitability'
+      preLoaderRoute: typeof BuilderLandSuitabilityRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/overview': {
+      id: '/builder/overview'
+      path: '/overview'
+      fullPath: '/builder/overview'
+      preLoaderRoute: typeof BuilderOverviewRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/risk-assessment': {
+      id: '/builder/risk-assessment'
+      path: '/risk-assessment'
+      fullPath: '/builder/risk-assessment'
+      preLoaderRoute: typeof BuilderRiskAssessmentRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/terrain-analysis': {
+      id: '/builder/terrain-analysis'
+      path: '/terrain-analysis'
+      fullPath: '/builder/terrain-analysis'
+      preLoaderRoute: typeof BuilderTerrainAnalysisRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/builder/zoning-constraints': {
+      id: '/builder/zoning-constraints'
+      path: '/zoning-constraints'
+      fullPath: '/builder/zoning-constraints'
+      preLoaderRoute: typeof BuilderZoningConstraintsRouteImport
+      parentRoute: typeof BuilderRoute
+    }
+    '/municipal/': {
+      id: '/municipal/'
+      path: '/'
+      fullPath: '/municipal/'
+      preLoaderRoute: typeof MunicipalIndexRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/district-map': {
+      id: '/municipal/district-map'
+      path: '/district-map'
+      fullPath: '/municipal/district-map'
+      preLoaderRoute: typeof MunicipalDistrictMapRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/encroachment': {
+      id: '/municipal/encroachment'
+      path: '/encroachment'
+      fullPath: '/municipal/encroachment'
+      preLoaderRoute: typeof MunicipalEncroachmentRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/export': {
+      id: '/municipal/export'
+      path: '/export'
+      fullPath: '/municipal/export'
+      preLoaderRoute: typeof MunicipalExportRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/forensics': {
+      id: '/municipal/forensics'
+      path: '/forensics'
+      fullPath: '/municipal/forensics'
+      preLoaderRoute: typeof MunicipalForensicsRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/heatmap': {
+      id: '/municipal/heatmap'
+      path: '/heatmap'
+      fullPath: '/municipal/heatmap'
+      preLoaderRoute: typeof MunicipalHeatmapRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/legal': {
+      id: '/municipal/legal'
+      path: '/legal'
+      fullPath: '/municipal/legal'
+      preLoaderRoute: typeof MunicipalLegalRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
   }
 }
 
+interface MunicipalRouteRouteChildren {
+  MunicipalDistrictMapRoute: typeof MunicipalDistrictMapRoute
+  MunicipalEncroachmentRoute: typeof MunicipalEncroachmentRoute
+  MunicipalExportRoute: typeof MunicipalExportRoute
+  MunicipalForensicsRoute: typeof MunicipalForensicsRoute
+  MunicipalHeatmapRoute: typeof MunicipalHeatmapRoute
+  MunicipalLegalRoute: typeof MunicipalLegalRoute
+  MunicipalIndexRoute: typeof MunicipalIndexRoute
+}
+
+const MunicipalRouteRouteChildren: MunicipalRouteRouteChildren = {
+  MunicipalDistrictMapRoute: MunicipalDistrictMapRoute,
+  MunicipalEncroachmentRoute: MunicipalEncroachmentRoute,
+  MunicipalExportRoute: MunicipalExportRoute,
+  MunicipalForensicsRoute: MunicipalForensicsRoute,
+  MunicipalHeatmapRoute: MunicipalHeatmapRoute,
+  MunicipalLegalRoute: MunicipalLegalRoute,
+  MunicipalIndexRoute: MunicipalIndexRoute,
+}
+
+const MunicipalRouteRouteWithChildren = MunicipalRouteRoute._addFileChildren(
+  MunicipalRouteRouteChildren,
+)
+
+interface BuilderRouteChildren {
+  BuilderConstructionHistoryRoute: typeof BuilderConstructionHistoryRoute
+  BuilderLandReportsRoute: typeof BuilderLandReportsRoute
+  BuilderLandSuitabilityRoute: typeof BuilderLandSuitabilityRoute
+  BuilderOverviewRoute: typeof BuilderOverviewRoute
+  BuilderRiskAssessmentRoute: typeof BuilderRiskAssessmentRoute
+  BuilderTerrainAnalysisRoute: typeof BuilderTerrainAnalysisRoute
+  BuilderZoningConstraintsRoute: typeof BuilderZoningConstraintsRoute
+  BuilderIndexRoute: typeof BuilderIndexRoute
+}
+
+const BuilderRouteChildren: BuilderRouteChildren = {
+  BuilderConstructionHistoryRoute: BuilderConstructionHistoryRoute,
+  BuilderLandReportsRoute: BuilderLandReportsRoute,
+  BuilderLandSuitabilityRoute: BuilderLandSuitabilityRoute,
+  BuilderOverviewRoute: BuilderOverviewRoute,
+  BuilderRiskAssessmentRoute: BuilderRiskAssessmentRoute,
+  BuilderTerrainAnalysisRoute: BuilderTerrainAnalysisRoute,
+  BuilderZoningConstraintsRoute: BuilderZoningConstraintsRoute,
+  BuilderIndexRoute: BuilderIndexRoute,
+}
+
+const BuilderRouteWithChildren =
+  BuilderRoute._addFileChildren(BuilderRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MunicipalRouteRoute: MunicipalRouteRouteWithChildren,
+  AboutRoute: AboutRoute,
+  BuilderRoute: BuilderRouteWithChildren,
+  DataRoute: DataRoute,
+  HowItWorksRoute: HowItWorksRoute,
+  PlatformRoute: PlatformRoute,
+  SolutionsRoute: SolutionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

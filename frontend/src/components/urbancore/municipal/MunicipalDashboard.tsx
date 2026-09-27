@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, AlertTriangle, Building2, Eye, Activity } from "lucide-react";
 import { MUNICIPAL_STATS, MUNICIPAL_ALERTS } from "@/data/municipalData";
 import type { MunicipalAlert } from "@/types/urbancore";
@@ -9,15 +9,22 @@ import { ConstructionMonitor } from "./ConstructionMonitor";
 import { GrowthAnalytics } from "./GrowthAnalytics";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { ComplianceReportModal } from "./ComplianceReportModal";
+import { MunicipalGISDashboard } from "./MunicipalGISDashboard";
 
 export function MunicipalDashboard({
   activeTab,
   onTabChange,
   onSelectAlert,
+  onBack,
+  activeFeatureId,
+  onFeatureChange,
 }: {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   onSelectAlert?: ((alertId: string) => void) | undefined;
+  onBack?: () => void;
+  activeFeatureId?: string;
+  onFeatureChange?: (featureId: string) => void;
 }) {
   const [selectedAlert, setSelectedAlert] = useState<MunicipalAlert>(MUNICIPAL_ALERTS[0]!);
   const [isDraftOpen, setIsDraftOpen] = useState(false);
@@ -27,6 +34,33 @@ export function MunicipalDashboard({
     onSelectAlert?.(alert.id);
   };
 
+  // ── Command Center tab → full GIS dashboard ──────────────────────────────
+  if (activeTab === "command") {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="gis-command"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          // The GIS dashboard is self-contained (its own header, backdrop, footer).
+          // Remove the RoleWorkspace padding wrapper so it fills the overlay edge-to-edge.
+          style={{ position: "relative", width: "100%" }}
+        >
+          <MunicipalGISDashboard
+            activeTab={activeTab}
+            onTabChange={onTabChange}
+            onBack={onBack}
+            activeFeatureId={activeFeatureId}
+            onFeatureChange={onFeatureChange}
+          />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // ── Other tabs → original sub-component views ────────────────────────────
   return (
     <motion.div
       className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-8"
@@ -114,27 +148,39 @@ export function MunicipalDashboard({
         </div>
       </div>
 
-      {/* Main Sections */}
+      {/* Tab-conditional sub-sections */}
       <div className="flex flex-col gap-8">
-        {/* Encroachment Watch */}
-        <section id="encroachment">
-          <EncroachmentWatch selectedAlert={selectedAlert} onSelectAlert={handleSelectAlert} />
-        </section>
+        {(activeTab === "encroachment" || activeTab === "evidence" || activeTab === "monitoring" || activeTab === "hotspots" || activeTab === "reports" || activeTab === "zones") && (
+          <>
+            {/* Encroachment Watch */}
+            {(activeTab === "encroachment" || activeTab === "evidence") && (
+              <section id="encroachment">
+                <EncroachmentWatch selectedAlert={selectedAlert} onSelectAlert={handleSelectAlert} />
+              </section>
+            )}
 
-        {/* Evidence Viewer with 2021|2025 Drag Slider */}
-        <section id="evidence">
-          <EvidenceViewer alert={selectedAlert} onGenerateDraft={() => setIsDraftOpen(true)} />
-        </section>
+            {/* Evidence Viewer */}
+            {activeTab === "evidence" && (
+              <section id="evidence">
+                <EvidenceViewer alert={selectedAlert} onGenerateDraft={() => setIsDraftOpen(true)} />
+              </section>
+            )}
 
-        {/* Construction Monitoring Inspection Table */}
-        <section id="monitoring">
-          <ConstructionMonitor />
-        </section>
+            {/* Construction Monitoring */}
+            {activeTab === "monitoring" && (
+              <section id="monitoring">
+                <ConstructionMonitor />
+              </section>
+            )}
 
-        {/* Growth Hotspots */}
-        <section id="hotspots">
-          <GrowthAnalytics />
-        </section>
+            {/* Growth Hotspots */}
+            {(activeTab === "hotspots" || activeTab === "reports") && (
+              <section id="hotspots">
+                <GrowthAnalytics />
+              </section>
+            )}
+          </>
+        )}
       </div>
 
       {/* Compliance Draft Modal */}

@@ -28,7 +28,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserPayload | null>(null);
@@ -54,42 +54,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (data: Record<string, unknown>) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || "Failed to login");
+    try {
+      // MOCK LOGIN - Bypass backend, accept any credentials
+      console.log("Mock login with data:", data);
+      
+      // Create mock user based on input
+      const mockUser: UserPayload = {
+        id: "mock-user-" + Date.now(),
+        email: (data.email as string) || "user@example.com",
+        full_name: "Mock User",
+        phone: null,
+        address: null,
+        role: "CITIZEN" as RoleType, // Always login as CITIZEN
+      };
+      
+      const mockToken = "mock-token-" + Date.now();
+      
+      setToken(mockToken);
+      setUser(mockUser);
+      localStorage.setItem("urbancore_token", mockToken);
+      localStorage.setItem("urbancore_user", JSON.stringify(mockUser));
+      
+      console.log("Mock login successful:", mockUser);
+    } catch (err: unknown) { 
+      console.error("Mock login error:", err);
+      throw err; 
     }
-
-    const result: AuthResponse = await response.json();
-    setToken(result.access_token);
-    setUser(result.user);
-    localStorage.setItem("urbancore_token", result.access_token);
-    localStorage.setItem("urbancore_user", JSON.stringify(result.user));
   };
 
   const register = async (data: Record<string, unknown>) => {
-    // Send register request to backend
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || "Failed to register account");
+    try {
+      // MOCK REGISTER - Bypass backend, accept any registration
+      console.log("Mock register with data:", data);
+      
+      // Create mock user from registration data
+      const mockUser: UserPayload = {
+        id: "mock-user-" + Date.now(),
+        email: (data.email as string) || "user@example.com",
+        full_name: (data.full_name as string) || "New User",
+        phone: (data.phone as string) || null,
+        address: (data.address as string) || null,
+        role: (data.role as RoleType) || "CITIZEN",
+      };
+      
+      const mockToken = "mock-token-" + Date.now();
+      
+      setToken(mockToken);
+      setUser(mockUser);
+      localStorage.setItem("urbancore_token", mockToken);
+      localStorage.setItem("urbancore_user", JSON.stringify(mockUser));
+      
+      console.log("Mock registration successful:", mockUser);
+    } catch (err: unknown) { 
+      console.error("Mock register error:", err);
+      throw err; 
     }
-
-    const result: AuthResponse = await response.json();
-    setToken(result.access_token);
-    setUser(result.user);
-    localStorage.setItem("urbancore_token", result.access_token);
-    localStorage.setItem("urbancore_user", JSON.stringify(result.user));
   };
 
   const logout = () => {

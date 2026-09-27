@@ -30,12 +30,33 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-backend/.env
-.env
-backend/gee_key.json
+
+# Python
 *.pth
 *.pt
 __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+.venv/
+venv/
+env/
+ENV/
+
+# Backend sensitive files
+backend/gee_key.json
+backend/*.json
+!backend/package.json
+backend/data/
+backend/.env
+
+# Model checkpoints (large files)
+outputs/*.pth
+outputs/*.pt
+*.pth
+*.pt
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

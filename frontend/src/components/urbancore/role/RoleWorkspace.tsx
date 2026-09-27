@@ -1,27 +1,49 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useNavigate } from "@tanstack/react-router";
 import type { RoleType, AOI } from "@/types/urbancore";
 import { RoleNavigation } from "./RoleNavigation";
+import type { RoleFeatureMenuItem } from "./RoleFeaturesDropdown";
+import { BUILDER_FEATURE_MENU } from "./roleFeatureMenus";
 import { BuilderDashboard } from "../builder/BuilderDashboard";
-import { MunicipalDashboard } from "../municipal/MunicipalDashboard";
 import { CitizenDashboard } from "../citizen/CitizenDashboard";
 
 export function RoleWorkspace({
   role,
   onBack,
   onSelectAoi,
-  onSelectAlert,
 }: {
   role: RoleType;
   onBack: () => void;
   onSelectAoi?: ((aoi: AOI) => void) | undefined;
   onSelectAlert?: ((alertId: string) => void) | undefined;
 }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(
-    role === "builder" ? "overview" : role === "municipal" ? "command" : "explore",
+    role === "builder" ? "overview" : "explore",
   );
+  const [builderFeatureId, setBuilderFeatureId] = useState("overview");
 
-  if (!role) return null;
+  // Municipal is a full routed workspace — navigate to /municipal immediately
+  useEffect(() => {
+    if (role === "municipal") {
+      navigate({ to: "/municipal" });
+    }
+  }, [role, navigate]);
+
+  // Render nothing while the navigation is in flight
+  if (!role || role === "municipal") return null;
+
+  const featureMenu =
+    role === "builder"
+      ? {
+          menuLabel: "BUILDER FEATURES",
+          features: BUILDER_FEATURE_MENU,
+          activeFeatureId: builderFeatureId,
+          onSelectFeature: (feature: RoleFeatureMenuItem) =>
+            setBuilderFeatureId(feature.id),
+        }
+      : undefined;
 
   return (
     <motion.div
@@ -36,6 +58,11 @@ export function RoleWorkspace({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onBack={onBack}
+        workspaceFeatureId={role === "builder" ? builderFeatureId : undefined}
+        onResetWorkspaceFeature={() => {
+          if (role === "builder") setBuilderFeatureId("overview");
+        }}
+        featureMenu={featureMenu}
       />
 
       <AnimatePresence mode="wait">
@@ -45,14 +72,8 @@ export function RoleWorkspace({
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onSelectAoi={onSelectAoi}
-          />
-        )}
-        {role === "municipal" && (
-          <MunicipalDashboard
-            key="municipal"
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onSelectAlert={onSelectAlert}
+            activeFeatureId={builderFeatureId}
+            onFeatureChange={setBuilderFeatureId}
           />
         )}
         {role === "citizen" && (

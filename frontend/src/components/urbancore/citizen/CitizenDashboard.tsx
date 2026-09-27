@@ -4,12 +4,15 @@ import { BarChart3 } from "lucide-react";
 
 import { HeroSearch } from "./HeroSearch";
 import { InteractiveMap } from "./InteractiveMap";
+import { AnalysisProgress } from "./AnalysisProgress";
 import { ConstructionTimeline } from "./ConstructionTimeline";
 import { MyReports } from "./MyReports";
 import { ComplaintReportModal } from "./ComplaintReportModal";
 
 import type { LocationInfo } from "@/data/citizenMockData";
 import { DEFAULT_LOCATION } from "@/data/citizenMockData";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -74,12 +77,15 @@ export function CitizenDashboard({
 }) {
   const [selectedLocation, setSelectedLocation] = useState<LocationInfo | null>(null);
   const [analysisTriggered, setAnalysisTriggered] = useState(false);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
   const [searchLocation, setSearchLocation] = useState<{
     label: string;
     lat: number;
     lng: number;
   } | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
 
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
@@ -107,14 +113,40 @@ export function CitizenDashboard({
     setSelectedLocation(loc);
   }, []);
 
-  const handleAnalyse = useCallback((loc: LocationInfo) => {
+  const handleAnalyse = useCallback(async (loc: LocationInfo) => {
     setSelectedLocation(loc);
     setAnalysisTriggered(true);
-    setTimeout(() => {
-      document
-        .getElementById("construction-timeline-section")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 300);
+    setAnalysisCompleted(false);
+    setAnalysisStatus("Submitting six-year satellite analysis…");
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/analyses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          latitude: loc.lat, 
+          longitude: loc.lng, 
+          radius_m: 2000,
+          end_year: new Date().getFullYear()
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Unable to submit analysis");
+      
+      const analysis = await response.json();
+      setAnalysisId(analysis.id);
+      setAnalysisStatus(`Analysis started! ID: ${analysis.id}`);
+      
+      // Scroll to progress section
+      setTimeout(() => {
+        document
+          .getElementById("construction-timeline-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    } catch (error) {
+      setAnalysisStatus(error instanceof Error ? error.message : "Unable to submit analysis.");
+      console.error("Analysis error:", error);
+    }
   }, []);
 
   return (
@@ -183,8 +215,9 @@ export function CitizenDashboard({
                   externalSearchLocation={searchLocation}
                 />
               </div>
+              {analysisStatus && <p className="mb-6 text-center text-sm text-cyan-300">{analysisStatus}</p>}
 
-              {/* ── 4. Construction Timeline (conditional) ── */}
+              {/* ── 4. Construction Timeline or Analysis Progress ── */}
               <AnimatePresence>
                 {(selectedLocation || analysisTriggered) && (
                   <motion.div
@@ -196,8 +229,17 @@ export function CitizenDashboard({
                     transition={{ duration: 0.5 }}
                     style={{ width: "100%" }}
                   >
-                    <SectionDivider label="Construction Timeline 2021 – 2025" />
-                    <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
+                    {analysisTriggered && analysisId && !analysisCompleted ? (
+                      <AnalysisProgress 
+                        analysisId={analysisId}
+                        onComplete={() => setAnalysisCompleted(true)}
+                      />
+                    ) : analysisCompleted || !analysisId ? (
+                      <>
+                        <SectionDivider label="Construction Timeline 2021 – 2025" />
+                        <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
+                      </>
+                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>

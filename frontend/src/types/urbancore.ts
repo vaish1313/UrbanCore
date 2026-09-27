@@ -3,6 +3,11 @@ export type RoleType = "builder" | "municipal" | "citizen" | null;
 export type AOI = {
   id: string;
   name: string;
+  location?: string;
+  geometry?: {
+    type: "Polygon";
+    coordinates: number[][][];
+  };
   category: "residential" | "commercial" | "industrial" | "protected" | "highway" | "dam";
   coords: { lat: number; lng: number; x: number; y: number };
   suitabilityScore: number;

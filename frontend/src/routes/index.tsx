@@ -15,6 +15,8 @@ import { LogoReveal } from "@/components/urbancore/LogoReveal";
 import type { Feature } from "@/components/urbancore/MapOverlays";
 import { RoleWorkspace } from "@/components/urbancore/role/RoleWorkspace";
 import { AuthModal } from "@/components/urbancore/AuthModal";
+import { Footer } from "@/components/urbancore/Footer";
+import { Navbar } from "@/components/urbancore/Navbar";
 import type { RoleType } from "@/types/urbancore";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -133,6 +135,10 @@ function Index() {
     on: boolean,
   ) => on && !inStack;
 
+  const handleLoginClick = () => {
+    document.getElementById("login-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <main className="relative bg-background">
       {/* The city never leaves — it is the whole experience */}
@@ -214,20 +220,12 @@ function Index() {
         </div>
       </div>
 
-      {/* Ambient status rail */}
-      <motion.header
-        className="fixed inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-6 sm:px-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: entered && !activeRole ? 1 : 0 }}
-        transition={{ duration: 1.6, ease }}
-      >
-        <span className="font-display text-[13px] font-medium tracking-[0.22em] text-foreground/80">
-          URBANCORE
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          <span className="text-accent">●</span> Nashik · 19.99°N 73.79°E
-        </span>
-      </motion.header>
+      {/* Navbar replacing ambient status rail */}
+      <Navbar 
+        entered={entered} 
+        activeRole={activeRole} 
+        onLoginClick={handleLoginClick} 
+      />
 
       {/* Layer rail — materialises around the map */}
       <motion.aside
@@ -268,12 +266,12 @@ function Index() {
 
       {/* Workspace — grows out of the map, never a new page */}
       <div
-        className={`fixed inset-0 z-20 flex flex-col items-center overflow-y-auto px-6 py-24 sm:py-32 scrollbar-none ${
+        className={`fixed inset-0 z-20 flex flex-col items-center overflow-x-hidden overflow-y-auto pt-24 sm:pt-32 scrollbar-none ${
           inWorkspace && !activeRole && !pendingAuthRole ? "pointer-events-auto" : "pointer-events-none"
         }`}
       >
         <motion.div
-          className="flex w-full max-w-3xl flex-col items-center text-center my-auto"
+          className="flex w-full max-w-3xl flex-col items-center text-center my-auto px-6 pb-24 sm:pb-32"
           initial={false}
           animate={
             inWorkspace && !activeRole && !pendingAuthRole
@@ -306,13 +304,42 @@ function Index() {
             />
           </div>
 
-          <div className="mt-12 w-full max-w-3xl">
+          <div id="login-section" className="mt-12 w-full max-w-3xl scroll-mt-32 flex flex-col items-center">
             <RoleCards
               pointer={pointer}
               visible={inWorkspace && !activeRole && !pendingAuthRole}
               onSelectRole={setPendingAuthRole}
             />
+            
+            {/* Technical Indicators */}
+            <motion.div 
+              className="mt-12 flex flex-wrap items-center justify-center gap-4 text-[10px] font-mono font-medium tracking-[0.25em] text-slate-500 uppercase"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: (inWorkspace && !activeRole && !pendingAuthRole) ? 0.6 : 0 }}
+              transition={{ duration: 1.3, delay: 0.8, ease }}
+            >
+              <span>SENTINEL-2</span>
+              <span className="text-cyan-500/50">•</span>
+              <span>U-NET</span>
+              <span className="text-cyan-500/50">•</span>
+              <span>MULTI-TEMPORAL</span>
+              <span className="text-cyan-500/50">•</span>
+              <span>2021 — 2025</span>
+            </motion.div>
           </div>
+        </motion.div>
+
+        <motion.div 
+           className="w-full mt-auto"
+           initial={false}
+           animate={
+            inWorkspace && !activeRole && !pendingAuthRole
+              ? { opacity: 1, y: 0, filter: "blur(0px)" }
+              : { opacity: 0, y: 34, filter: "blur(16px)" }
+          }
+          transition={{ duration: 1.6, ease }}
+        >
+          <Footer />
         </motion.div>
       </div>
 

@@ -4,6 +4,19 @@ export const NASHIK_AOIS: AOI[] = [
   {
     id: "gangapur-road",
     name: "Gangapur Road",
+    location: "Nashik, Maharashtra",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [73.7585, 20.0124],
+          [73.7685, 20.0124],
+          [73.7685, 20.0064],
+          [73.7585, 20.0064],
+          [73.7585, 20.0124],
+        ],
+      ],
+    },
     category: "residential",
     coords: { lat: 20.0094, lng: 73.7635, x: 32, y: 38 },
     suitabilityScore: 82,
@@ -38,6 +51,19 @@ export const NASHIK_AOIS: AOI[] = [
   {
     id: "pathardi-phata",
     name: "Pathardi Phata",
+    location: "Nashik, Maharashtra",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [73.7662, 19.9542],
+          [73.7762, 19.9542],
+          [73.7762, 19.9482],
+          [73.7662, 19.9482],
+          [73.7662, 19.9542],
+        ],
+      ],
+    },
     category: "residential",
     coords: { lat: 19.9512, lng: 73.7712, x: 62, y: 72 },
     suitabilityScore: 88,
@@ -72,6 +98,19 @@ export const NASHIK_AOIS: AOI[] = [
   {
     id: "cidco",
     name: "CIDCO",
+    location: "Nashik, Maharashtra",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [73.7498, 19.9715],
+          [73.7598, 19.9715],
+          [73.7598, 19.9655],
+          [73.7498, 19.9655],
+          [73.7498, 19.9715],
+        ],
+      ],
+    },
     category: "residential",
     coords: { lat: 19.9685, lng: 73.7548, x: 48, y: 64 },
     suitabilityScore: 79,
@@ -106,6 +145,19 @@ export const NASHIK_AOIS: AOI[] = [
   {
     id: "panchavati",
     name: "Panchavati",
+    location: "Nashik, Maharashtra",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [73.7874, 20.0121],
+          [73.7974, 20.0121],
+          [73.7974, 20.0061],
+          [73.7874, 20.0061],
+          [73.7874, 20.0121],
+        ],
+      ],
+    },
     category: "commercial",
     coords: { lat: 20.0091, lng: 73.7924, x: 65, y: 36 },
     suitabilityScore: 68,
