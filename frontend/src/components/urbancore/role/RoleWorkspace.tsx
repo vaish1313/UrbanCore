@@ -19,9 +19,7 @@ export function RoleWorkspace({
   onSelectAlert?: ((alertId: string) => void) | undefined;
 }) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(
-    role === "builder" ? "overview" : "explore",
-  );
+  const [activeTab, setActiveTab] = useState(role === "builder" ? "overview" : "explore");
   const [builderFeatureId, setBuilderFeatureId] = useState("overview");
 
   // Municipal is a full routed workspace — navigate to /municipal immediately
@@ -40,8 +38,7 @@ export function RoleWorkspace({
           menuLabel: "BUILDER FEATURES",
           features: BUILDER_FEATURE_MENU,
           activeFeatureId: builderFeatureId,
-          onSelectFeature: (feature: RoleFeatureMenuItem) =>
-            setBuilderFeatureId(feature.id),
+          onSelectFeature: (feature: RoleFeatureMenuItem) => setBuilderFeatureId(feature.id),
         }
       : undefined;
 

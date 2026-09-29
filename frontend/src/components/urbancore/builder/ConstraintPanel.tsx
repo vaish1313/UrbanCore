@@ -121,7 +121,10 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
       type: "river_buffer",
       name: "River Buffer Zone",
       status: aoi.constraints.floodZoneOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha: aoi.constraints.floodZoneOverlapPercent > 0 ? Math.round((aoi.constraints.floodZoneOverlapPercent * 0.2) * 10) / 10 : 0,
+      affected_area_ha:
+        aoi.constraints.floodZoneOverlapPercent > 0
+          ? Math.round(aoi.constraints.floodZoneOverlapPercent * 0.2 * 10) / 10
+          : 0,
       affected_percentage: aoi.constraints.floodZoneOverlapPercent,
       description: "Godavari river tributary 100m blue line & flood return zone.",
     },
@@ -129,7 +132,10 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
       type: "forest",
       name: "Forest Boundary & Buffer",
       status: aoi.constraints.forestBoundaryOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha: aoi.constraints.forestBoundaryOverlapPercent > 0 ? Math.round((aoi.constraints.forestBoundaryOverlapPercent * 0.2) * 10) / 10 : 0,
+      affected_area_ha:
+        aoi.constraints.forestBoundaryOverlapPercent > 0
+          ? Math.round(aoi.constraints.forestBoundaryOverlapPercent * 0.2 * 10) / 10
+          : 0,
       affected_percentage: aoi.constraints.forestBoundaryOverlapPercent,
       description: "Demarcated reserve forest boundary & eco-sensitive buffer.",
     },
@@ -137,7 +143,10 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
       type: "green_belt",
       name: "Agricultural Green Belt",
       status: aoi.constraints.greenBeltOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha: aoi.constraints.greenBeltOverlapPercent > 0 ? Math.round((aoi.constraints.greenBeltOverlapPercent * 0.2) * 10) / 10 : 0,
+      affected_area_ha:
+        aoi.constraints.greenBeltOverlapPercent > 0
+          ? Math.round(aoi.constraints.greenBeltOverlapPercent * 0.2 * 10) / 10
+          : 0,
       affected_percentage: aoi.constraints.greenBeltOverlapPercent,
       description: "Zonal DP masterplan agricultural land-use restriction.",
     },
@@ -148,14 +157,11 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
   // Compute summary metrics dynamically
   const layersAnalyzed = backendData?.layers_analyzed ?? constraintsList.length;
   const overlappingLayers =
-    backendData?.overlapping_layers ??
-    constraintsList.filter((c) => c.status === "OVERLAP").length;
+    backendData?.overlapping_layers ?? constraintsList.filter((c) => c.status === "OVERLAP").length;
   const clearLayers =
-    backendData?.clear_layers ??
-    constraintsList.filter((c) => c.status === "CLEAR").length;
+    backendData?.clear_layers ?? constraintsList.filter((c) => c.status === "CLEAR").length;
   const noDataLayers =
-    backendData?.no_data_layers ??
-    constraintsList.filter((c) => c.status === "NO_DATA").length;
+    backendData?.no_data_layers ?? constraintsList.filter((c) => c.status === "NO_DATA").length;
 
   // Construct dynamic factual summary text
   const overlapNames = constraintsList.filter((c) => c.status === "OVERLAP").map((c) => c.name);
@@ -172,7 +178,8 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
       factualSummaryText += ` No spatial overlap was detected with ${clearNames.join(" or ")}.`;
     }
     if (noDataLayers > 0) {
-      factualSummaryText += " Coastal Regulation Zone (CRZ) data is unavailable for this inland region.";
+      factualSummaryText +=
+        " Coastal Regulation Zone (CRZ) data is unavailable for this inland region.";
     }
   }
 
@@ -183,13 +190,15 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
         return {
           label: "OVERLAP",
           icon: AlertTriangle,
-          className: "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(251,113,133,0.2)]",
+          className:
+            "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(251,113,133,0.2)]",
         };
       case "CLEAR":
         return {
           label: "CLEAR",
           icon: CheckCircle2,
-          className: "text-cyan-400 bg-cyan-400/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.2)]",
+          className:
+            "text-cyan-400 bg-cyan-400/10 border-cyan-400/30 shadow-[0_0_15px_rgba(34,211,238,0.2)]",
         };
       case "NO_DATA":
         return {
@@ -226,7 +235,9 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
           <h3 className="font-display text-xl font-bold tracking-tight text-foreground flex items-center gap-2 mt-1">
             <MapPin className="h-4.5 w-4.5 text-primary shrink-0" />
             <span>{aoi.name}</span>
-            <span className="text-muted-foreground font-normal text-base">— Zoning & Environmental Constraints</span>
+            <span className="text-muted-foreground font-normal text-base">
+              — Zoning & Environmental Constraints
+            </span>
           </h3>
         </div>
 
@@ -314,19 +325,31 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                 <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-1.5">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">Layers Analyzed</span>
-                  <span className="font-mono text-xs font-bold text-foreground">{layersAnalyzed}</span>
+                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
+                    Layers Analyzed
+                  </span>
+                  <span className="font-mono text-xs font-bold text-foreground">
+                    {layersAnalyzed}
+                  </span>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-1.5">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">Overlapping</span>
-                  <span className="font-mono text-xs font-bold text-rose-400">{overlappingLayers}</span>
+                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
+                    Overlapping
+                  </span>
+                  <span className="font-mono text-xs font-bold text-rose-400">
+                    {overlappingLayers}
+                  </span>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-1.5">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">Clear</span>
+                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
+                    Clear
+                  </span>
                   <span className="font-mono text-xs font-bold text-cyan-400">{clearLayers}</span>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-foreground/[0.02] px-3 py-1.5">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">No Data</span>
+                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
+                    No Data
+                  </span>
                   <span className="font-mono text-xs font-bold text-slate-400">{noDataLayers}</span>
                 </div>
               </div>
@@ -384,11 +407,17 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
 
                     {/* Affected Metrics */}
                     <div className="mt-3.5 flex items-baseline justify-between border-t border-border/30 pt-2.5">
-                      <span className="font-mono text-[11px] text-muted-foreground">Spatial Intersect:</span>
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        Spatial Intersect:
+                      </span>
                       {c.status === "NO_DATA" ? (
-                        <span className="font-mono text-xs text-slate-400 italic">Data unavailable</span>
+                        <span className="font-mono text-xs text-slate-400 italic">
+                          Data unavailable
+                        </span>
                       ) : c.status === "CLEAR" ? (
-                        <span className="font-mono text-xs font-bold text-cyan-400">0% overlap (0 ha)</span>
+                        <span className="font-mono text-xs font-bold text-cyan-400">
+                          0% overlap (0 ha)
+                        </span>
                       ) : (
                         <span className="font-mono text-xs font-bold text-rose-400">
                           {c.affected_percentage}% affected
@@ -424,8 +453,12 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] p-4 text-[11px] text-amber-200/80 leading-relaxed font-light flex items-start gap-2.5">
               <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
               <div>
-                <span className="font-semibold text-amber-300 block mb-0.5">LEGAL & ZONING DISCLAIMER</span>
-                Spatial screening based on available GIS layers. This analysis does not constitute legal, zoning, environmental, or construction approval. Verify applicable regulations and permissions with the relevant authority before development.
+                <span className="font-semibold text-amber-300 block mb-0.5">
+                  LEGAL & ZONING DISCLAIMER
+                </span>
+                Spatial screening based on available GIS layers. This analysis does not constitute
+                legal, zoning, environmental, or construction approval. Verify applicable
+                regulations and permissions with the relevant authority before development.
               </div>
             </div>
           </motion.div>

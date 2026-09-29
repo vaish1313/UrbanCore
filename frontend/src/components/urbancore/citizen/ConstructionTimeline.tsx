@@ -1,259 +1,348 @@
-import { TIMELINE_YEARS, TIMELINE_DATA } from "@/data/citizenMockData";
-import { Building2, MapPin } from "lucide-react";
-import { motion, type Variants } from "motion/react";
+import { useState, useEffect } from "react";
+import { Building2, Loader2, AlertCircle, TrendingUp, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
 interface ConstructionTimelineProps {
+  analysisId?: string;
   onReportConcern?: () => void;
 }
 
-export function ConstructionTimeline({ onReportConcern }: ConstructionTimelineProps) {
-  // --- Animation Variants ---
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.6, // Stagger each card appearance
-      },
-    },
-  };
+interface YearData {
+  year: number;
+  construction_percentage: number;
+  construction_pixels: number;
+  total_pixels: number;
+  geojson_path?: string;
+  mask_path?: string;
+}
 
-  const lineVariants: Variants = {
-    hidden: { scaleX: 0 },
-    show: {
-      scaleX: 1,
-      transition: { duration: 3.5, ease: "linear" }, // Slow line connecting the cards
-    },
-  };
+export function ConstructionTimeline({ analysisId, onReportConcern }: ConstructionTimelineProps) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [yearlyData, setYearlyData] = useState<Record<number, YearData>>({});
+  const [selectedYear, setSelectedYear] = useState<number>(2025);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 40, scale: 0.95 },
-    show: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { duration: 0.8, type: "spring", bounce: 0.4 },
-    },
-  };
+  useEffect(() => {
+    if (!analysisId) {
+      setLoading(false);
+      setError("No analysis ID provided");
+      return;
+    }
 
-  return (
-    <div className="w-full max-w-[1440px] mx-auto px-4 mb-16">
-      {/* Outer true glassmorphic container */}
-      <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
-        {/* Top ambient glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-white/5 blur-[100px] pointer-events-none" />
+    const fetchAnalysisResults = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/analyses/${analysisId}`);
 
-        {/* Header & Legend */}
-        <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-8 gap-4 relative z-10">
-          <div>
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-white tracking-wide">
-              <span className="text-[#38bdf8]">Multi-Year</span> Construction Timeline{" "}
-              <span className="text-[#38bdf8]">(2021-2025)</span>
-            </h2>
-            <p className="text-sm md:text-base text-slate-400 mt-2">
-              Observe how the region has been developed over the last 5 years.
-            </p>
-          </div>
+        if (!response.ok) {
+          throw new Error("Failed to fetch analysis results");
+        }
 
-          {/* Legend */}
-          <div className="flex items-center flex-wrap gap-4 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-3 shadow-lg">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-              <span className="text-xs text-slate-300 font-medium">No Construction</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#facc15] shadow-[0_0_8px_rgba(250,204,21,0.5)]"></div>
-              <span className="text-xs text-slate-300 font-medium">Low</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div>
-              <span className="text-xs text-slate-300 font-medium">Moderate</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#dc2626] shadow-[0_0_8px_rgba(220,38,38,0.5)]"></div>
-              <span className="text-xs text-slate-300 font-medium">High</span>
-            </div>
-          </div>
-        </div>
+        const analysis = await response.json();
 
-        {/* Timeline Scrolling Container */}
-        <div className="w-full overflow-x-auto pb-8 hide-scrollbar relative z-10 cursor-grab active:cursor-grabbing">
-          <div className="relative min-w-[max-content] pt-12 px-2">
-            {/* Background Timeline Axis */}
-            <div className="absolute top-4 left-0 w-full h-1 bg-slate-800 rounded-full" />
+        if (analysis.status !== "completed") {
+          setError("Analysis is not yet completed");
+          setLoading(false);
+          return;
+        }
 
-            {/* Animated Active Timeline Axis */}
-            <motion.div
-              variants={lineVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-100px" }}
-              className="absolute top-4 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-full origin-left shadow-[0_0_15px_rgba(6,182,212,0.6)]"
-            />
+        // Extract yearly data from inference_results
+        const inference = analysis.inference_results || {};
+        const years = analysis.years || [];
 
-            {/* Cards Flex Row */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-100px" }}
-              className="flex gap-6 md:gap-8 items-start"
-            >
-              {TIMELINE_YEARS.map((year) => {
-                const data = TIMELINE_DATA[year]!;
-                const intensity = year - 2021; // 0 to 4
+        const yearData: Record<number, YearData> = {};
 
-                // Seeded random positions for the heatmap blobs
-                const basePositions = [
-                  { top: "35%", left: "25%" },
-                  { top: "65%", left: "75%" },
-                  { top: "45%", left: "85%" },
-                  { top: "75%", left: "35%" },
-                  { top: "25%", left: "55%" },
-                  { top: "85%", left: "55%" },
-                  { top: "50%", left: "50%" },
-                  { top: "20%", left: "80%" },
-                ];
+        years.forEach((year: number) => {
+          const inferenceResult = inference[year.toString()];
+          if (inferenceResult) {
+            yearData[year] = {
+              year,
+              construction_percentage: inferenceResult.construction_percentage || 0,
+              construction_pixels: inferenceResult.construction_pixels || 0,
+              total_pixels: inferenceResult.total_pixels || 0,
+              geojson_path: inferenceResult.geojson_path,
+              mask_path: inferenceResult.mask_path,
+            };
+          }
+        });
 
-                const blobs = [];
+        setYearlyData(yearData);
+        setAvailableYears(years.sort());
 
-                for (let i = 0; i <= intensity + 3; i++) {
-                  const pos = basePositions[i % basePositions.length];
-                  // Green base
-                  blobs.push({
-                    ...pos,
-                    size: "80px",
-                    color: "bg-[#22c55e]/30",
-                    blur: "blur-xl",
-                    z: 1,
-                  });
-                  if (intensity >= 1 || i < 2) {
-                    // Yellow mid
-                    blobs.push({
-                      ...pos,
-                      size: "60px",
-                      color: "bg-[#facc15]/40",
-                      blur: "blur-lg",
-                      z: 2,
-                    });
-                  }
-                  if (intensity >= 2 && i < intensity + 2) {
-                    // Orange focused
-                    blobs.push({
-                      ...pos,
-                      size: "40px",
-                      color: "bg-[#f97316]/50",
-                      blur: "blur-md",
-                      z: 3,
-                    });
-                  }
-                  if (intensity >= 3 && i < intensity + 1) {
-                    // Red hotspot
-                    blobs.push({
-                      ...pos,
-                      size: "20px",
-                      color: "bg-[#dc2626]/80",
-                      blur: "blur-sm",
-                      z: 4,
-                    });
-                  }
-                }
+        // Set default selected year to the most recent
+        if (years.length > 0) {
+          setSelectedYear(years[years.length - 1]);
+        }
 
-                return (
-                  <motion.div
-                    key={year}
-                    variants={cardVariants}
-                    className="relative flex-shrink-0 w-[300px] md:w-[320px] flex flex-col bg-black/40 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl hover:border-white/30 transition-all duration-300 hover:-translate-y-1"
-                  >
-                    {/* Timeline Node Connector */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-slate-900 border-2 border-white/50 shadow-[0_0_12px_rgba(255,255,255,0.5)] z-20" />
-                    {/* Vertical Connector Line */}
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[2px] h-10 bg-gradient-to-b from-white/30 to-transparent z-10" />
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching analysis results:", err);
+        setError(err instanceof Error ? err.message : "Failed to load analysis results");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-                    {/* Image Section */}
-                    <div className="aspect-[4/3] w-full relative bg-[url('/src/assets/city-nashik.jpg')] bg-cover bg-center overflow-hidden border-b border-white/10">
-                      <div className="absolute inset-0 bg-black/30" />
+    fetchAnalysisResults();
+  }, [analysisId]);
 
-                      {/* Year Badge */}
-                      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-xl text-white font-bold text-sm border border-white/20 shadow-lg z-10">
-                        {year}
-                      </div>
+  const currentYearData = yearlyData[selectedYear];
 
-                      {/* Heatmap Overlay */}
-                      <div className="absolute inset-0 overflow-hidden mix-blend-screen">
-                        {blobs.map((blob, idx) => (
-                          <div
-                            key={idx}
-                            className={`absolute rounded-full transform -translate-x-1/2 -translate-y-1/2 ${blob.color} ${blob.blur}`}
-                            style={{
-                              top: blob.top,
-                              left: blob.left,
-                              width: blob.size,
-                              height: blob.size,
-                              zIndex: blob.z,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Stats Section */}
-                    <div className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-xl">
-                      {/* New Constructions */}
-                      <div className="flex items-center gap-3 w-1/2">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-900/30 border border-cyan-800/50 text-cyan-400 flex-shrink-0">
-                          <Building2 className="w-5 h-5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5 leading-tight">
-                            New
-                            <br />
-                            Constructions
-                          </span>
-                          <span className="text-xl font-bold text-white leading-none mt-1">
-                            {data.newConstructions}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Divider Line */}
-                      <div className="w-[1px] h-10 bg-slate-800 mx-1"></div>
-
-                      {/* Area Covered */}
-                      <div className="flex items-center gap-3 w-1/2 pl-2">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-900/30 border border-orange-800/50 text-orange-400 flex-shrink-0">
-                          <MapPin className="w-5 h-5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-0.5 leading-tight">
-                            Area
-                            <br />
-                            Covered
-                          </span>
-                          <span className="text-xl font-bold text-white leading-none mt-1">
-                            {data.areaCovered}{" "}
-                            <span className="text-xs font-normal text-slate-300">sq km</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+  // Loading state
+  if (loading) {
+    return (
+      <div className="w-full max-w-[1440px] mx-auto px-4 mb-16">
+        <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-10 shadow-2xl">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+            <span className="ml-3 text-slate-400">Loading construction timeline...</span>
           </div>
         </div>
       </div>
+    );
+  }
 
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+  // Error state
+  if (error) {
+    return (
+      <div className="w-full max-w-[1440px] mx-auto px-4 mb-16">
+        <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-10 shadow-2xl">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Unable to Load Timeline</h3>
+            <p className="text-slate-400">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (availableYears.length === 0) {
+    return (
+      <div className="w-full max-w-[1440px] mx-auto px-4 mb-16">
+        <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-10 shadow-2xl">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <AlertCircle className="w-12 h-12 text-yellow-400 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Data Available</h3>
+            <p className="text-slate-400">No construction analysis data found for this location.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-[1440px] mx-auto px-4 mb-16">
+      <div className="w-full bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden">
+        {/* Top ambient glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-cyan-500/10 blur-[100px] pointer-events-none" />
+
+        {/* Header */}
+        <div className="relative z-10 mb-8">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-white tracking-wide mb-2">
+            <span className="text-cyan-400">Construction Timeline</span>{" "}
+            <span className="text-slate-400">
+              {availableYears[0]} – {availableYears[availableYears.length - 1]}
+            </span>
+          </h2>
+          <p className="text-sm md:text-base text-slate-400">
+            U-Net model analysis showing construction development over {availableYears.length} years
+          </p>
+        </div>
+
+        {/* Year Slider */}
+        <div className="relative z-10 mb-8">
+          <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                <Calendar className="w-4 h-4 text-cyan-400" />
+                Select Year
+              </span>
+              <motion.span
+                key={selectedYear}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-2xl font-bold text-cyan-400"
+              >
+                {selectedYear}
+              </motion.span>
+            </div>
+
+            {/* Year Pills */}
+            <div className="flex gap-2 flex-wrap justify-center">
+              {availableYears.map((year) => (
+                <motion.button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`
+                    px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300
+                    ${
+                      selectedYear === year
+                        ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.5)] border-2 border-cyan-400"
+                        : "bg-black/60 text-slate-400 border border-white/10 hover:border-cyan-400/50 hover:text-cyan-300"
+                    }
+                  `}
+                >
+                  {year}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Year Range Slider */}
+            <div className="mt-6">
+              <input
+                type="range"
+                min={availableYears[0]}
+                max={availableYears[availableYears.length - 1]}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                style={{
+                  background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((selectedYear - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%, rgb(30 41 59) ${((selectedYear - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%, rgb(30 41 59) 100%)`,
+                }}
+              />
+              <div className="flex justify-between mt-2 text-xs text-slate-500">
+                <span>{availableYears[0]}</span>
+                <span>{availableYears[availableYears.length - 1]}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Year Data Display */}
+        <AnimatePresence mode="wait">
+          {currentYearData && (
+            <motion.div
+              key={selectedYear}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10"
+            >
+              {/* Statistics Cards */}
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                {/* Construction Percentage */}
+                <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Construction Area
+                    </span>
+                    <Building2 className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-white">
+                      {currentYearData.construction_percentage.toFixed(1)}
+                    </span>
+                    <span className="text-2xl text-cyan-400">%</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">of analyzed region</p>
+                </div>
+
+                {/* Construction Pixels */}
+                <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Construction Pixels
+                    </span>
+                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-white">
+                      {currentYearData.construction_pixels.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    of {currentYearData.total_pixels.toLocaleString()} total pixels
+                  </p>
+                </div>
+
+                {/* Year Label */}
+                <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 backdrop-blur-xl border border-orange-500/30 rounded-2xl p-6 shadow-lg flex flex-col justify-center">
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                    Analysis Year
+                  </span>
+                  <span className="text-5xl font-bold text-white">{currentYearData.year}</span>
+                  <p className="text-xs text-slate-400 mt-2">Sentinel-2 Satellite Data</p>
+                </div>
+              </div>
+
+              {/* Model Information */}
+              <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  U-Net Model Analysis
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Model Architecture:</span>
+                    <span className="text-white font-medium">ResNet34 U-Net</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Input Channels:</span>
+                    <span className="text-white font-medium">
+                      10 (B2, B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI)
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Segmentation Type:</span>
+                    <span className="text-white font-medium">Binary (Built-up / Non-built-up)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Threshold:</span>
+                    <span className="text-white font-medium">0.5 (50%)</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Growth Comparison (if multiple years available) */}
+        {availableYears.length > 1 && (
+          <div className="relative z-10 mt-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Construction Growth Overview</h3>
+            <div className="space-y-3">
+              {availableYears.map((year) => {
+                const data = yearlyData[year];
+                if (!data) return null;
+
+                const maxPercentage = Math.max(
+                  ...availableYears.map((y) => yearlyData[y]?.construction_percentage || 0),
+                );
+                const barWidth = (data.construction_percentage / maxPercentage) * 100;
+
+                return (
+                  <div key={year} className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-slate-300 w-16">{year}</span>
+                    <div className="flex-1 bg-slate-800 rounded-full h-8 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${barWidth}%` }}
+                        transition={{ duration: 0.8, delay: year * 0.1 }}
+                        className={`h-full rounded-full ${
+                          year === selectedYear
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-500"
+                            : "bg-gradient-to-r from-slate-600 to-slate-500"
+                        }`}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-white w-20 text-right">
+                      {data.construction_percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,8 +4,7 @@ import { ArrowUpRight, Search } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 import { ComparativeVisualization } from "./ComparativeVisualization";
 
-const TARGET_QUERY =
-  "Show built-up growth near Panchavati from 2021 to 2025.";
+const TARGET_QUERY = "Show built-up growth near Panchavati from 2021 to 2025.";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -88,8 +87,8 @@ export function IntelligenceSearch({
                 disabled
                 aria-label="Search"
                 className={`flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white whitespace-nowrap transition-all duration-300 ${
-                  isCompleted 
-                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-blue-500/20" 
+                  isCompleted
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-blue-500/20"
                     : "bg-gradient-to-br from-cyan-500 to-blue-500 opacity-80"
                 }`}
               >

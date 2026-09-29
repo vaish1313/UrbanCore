@@ -9,32 +9,92 @@ interface AnalysisProgressProps {
   onComplete?: () => void;
 }
 
+interface GEETask {
+  year: number;
+  filename: string;
+}
+
+interface AnalysisData {
+  status: string;
+  error?: string;
+  message?: string;
+  gee_tasks?: GEETask[];
+}
+
 const STATUS_CONFIG = {
-  queued: { icon: Loader2, label: "Queued", description: "Waiting to start...", color: "text-slate-400" },
-  exporting: { icon: Satellite, label: "Exporting", description: "Submitting satellite export tasks...", color: "text-blue-400" },
-  exports_submitted: { icon: Satellite, label: "GEE Processing", description: "Google Earth Engine is exporting imagery...", color: "text-cyan-400" },
-  monitoring_exports: { icon: Database, label: "Monitoring", description: "Checking export progress...", color: "text-indigo-400" },
-  exports_completed: { icon: CheckCircle2, label: "Exports Done", description: "Imagery ready, starting download...", color: "text-green-400" },
-  downloading: { icon: Download, label: "Downloading", description: "Retrieving GeoTIFF files from Google Drive...", color: "text-purple-400" },
-  processing: { icon: Cpu, label: "Running AI", description: "UNet model analyzing imagery...", color: "text-pink-400" },
-  visualizing: { icon: Cpu, label: "Visualizing", description: "Creating SAM-3D segmentation maps...", color: "text-orange-400" },
-  completed: { icon: CheckCircle2, label: "Complete", description: "Analysis ready!", color: "text-green-500" },
-  failed: { icon: XCircle, label: "Failed", description: "An error occurred", color: "text-red-500" },
+  queued: {
+    icon: Loader2,
+    label: "Queued",
+    description: "Waiting to start...",
+    color: "text-slate-400",
+  },
+  exporting: {
+    icon: Satellite,
+    label: "Exporting",
+    description: "Submitting satellite export tasks...",
+    color: "text-blue-400",
+  },
+  exports_submitted: {
+    icon: Satellite,
+    label: "GEE Processing",
+    description: "Google Earth Engine is exporting imagery...",
+    color: "text-cyan-400",
+  },
+  monitoring_exports: {
+    icon: Database,
+    label: "Monitoring",
+    description: "Checking export progress...",
+    color: "text-indigo-400",
+  },
+  exports_completed: {
+    icon: CheckCircle2,
+    label: "Exports Done",
+    description: "Imagery ready, starting download...",
+    color: "text-green-400",
+  },
+  downloading: {
+    icon: Download,
+    label: "Downloading",
+    description: "Retrieving GeoTIFF files from Google Drive...",
+    color: "text-purple-400",
+  },
+  processing: {
+    icon: Cpu,
+    label: "Running AI",
+    description: "UNet model analyzing imagery...",
+    color: "text-pink-400",
+  },
+  visualizing: {
+    icon: Cpu,
+    label: "Visualizing",
+    description: "Creating SAM-3D segmentation maps...",
+    color: "text-orange-400",
+  },
+  completed: {
+    icon: CheckCircle2,
+    label: "Complete",
+    description: "Analysis ready!",
+    color: "text-green-500",
+  },
+  failed: {
+    icon: XCircle,
+    label: "Failed",
+    description: "An error occurred",
+    color: "text-red-500",
+  },
 };
 
 export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressProps) {
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
     const fetchStatus = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/analyses/${analysisId}`);
         if (!response.ok) throw new Error("Failed to fetch analysis status");
-        
+
         const data = await response.json();
         setAnalysis(data);
         setLoading(false);
@@ -58,7 +118,7 @@ export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressPro
     fetchStatus();
 
     // Poll every 5 seconds
-    intervalId = setInterval(fetchStatus, 5000);
+    const intervalId = setInterval(fetchStatus, 5000);
 
     return () => clearInterval(intervalId);
   }, [analysisId, onComplete]);
@@ -85,7 +145,8 @@ export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressPro
     );
   }
 
-  const statusConfig = STATUS_CONFIG[analysis?.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.queued;
+  const statusConfig =
+    STATUS_CONFIG[analysis?.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.queued;
   const StatusIcon = statusConfig.icon;
   const isProcessing = !["completed", "failed"].includes(analysis?.status);
 
@@ -106,7 +167,9 @@ export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressPro
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 mb-6"
           >
-            <StatusIcon className={`w-10 h-10 ${statusConfig.color} ${isProcessing ? "animate-pulse" : ""}`} />
+            <StatusIcon
+              className={`w-10 h-10 ${statusConfig.color} ${isProcessing ? "animate-pulse" : ""}`}
+            />
           </motion.div>
 
           <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-3">
@@ -185,9 +248,7 @@ export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressPro
                 {isActive && isProcessing && (
                   <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
                 )}
-                {isComplete && !isActive && (
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                )}
+                {isComplete && !isActive && <CheckCircle2 className="w-5 h-5 text-green-500" />}
               </motion.div>
             );
           })}
@@ -201,7 +262,7 @@ export function AnalysisProgress({ analysisId, onComplete }: AnalysisProgressPro
               Earth Engine Export Tasks
             </h3>
             <div className="space-y-2">
-              {analysis.gee_tasks.map((task: any, index: number) => (
+              {analysis.gee_tasks.map((task: GEETask, index: number) => (
                 <div key={index} className="flex items-center justify-between text-sm">
                   <span className="text-slate-300">Year {task.year}</span>
                   <span className="text-slate-500 font-mono text-xs">{task.filename}</span>

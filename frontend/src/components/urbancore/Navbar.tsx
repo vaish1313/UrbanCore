@@ -1,17 +1,30 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState } from "react";
 import {
-  Layers, Map, BarChart3, Radar,
-  Building2, Landmark, Users,
-  Satellite, BrainCircuit, ScanSearch,
-  Clock, TrendingUp, Search, FileText,
-  Info, Target, BookOpen, Mail,
-  ChevronDown
+  Layers,
+  Map,
+  BarChart3,
+  Radar,
+  Building2,
+  Landmark,
+  Users,
+  Satellite,
+  BrainCircuit,
+  ScanSearch,
+  Clock,
+  TrendingUp,
+  Search,
+  FileText,
+  Info,
+  Target,
+  BookOpen,
+  Mail,
+  ChevronDown,
 } from "lucide-react";
 
 interface NavbarProps {
   entered: boolean;
-  activeRole: any;
+  activeRole: string | null;
   onLoginClick: () => void;
 }
 
@@ -24,7 +37,7 @@ const NAV_ITEMS = [
       { name: "Land Monitoring", icon: Map },
       { name: "Multi-Temporal Analysis", icon: Radar },
       { name: "Urban Insights", icon: BarChart3 },
-    ]
+    ],
   },
   {
     label: "Solutions",
@@ -33,7 +46,7 @@ const NAV_ITEMS = [
       { name: "Builder / Developer", icon: Building2 },
       { name: "Municipal Authority", icon: Landmark },
       { name: "Citizen", icon: Users },
-    ]
+    ],
   },
   {
     label: "How It Works",
@@ -42,7 +55,7 @@ const NAV_ITEMS = [
       { name: "Satellite Data", icon: Satellite },
       { name: "AI-Powered Detection", icon: BrainCircuit },
       { name: "Change Analysis", icon: ScanSearch },
-    ]
+    ],
   },
   {
     label: "Data & Insights",
@@ -52,7 +65,7 @@ const NAV_ITEMS = [
       { name: "Urban Growth", icon: TrendingUp },
       { name: "Satellite Insights", icon: Search },
       { name: "Reports & Analytics", icon: FileText },
-    ]
+    ],
   },
   {
     label: "About Us",
@@ -62,8 +75,8 @@ const NAV_ITEMS = [
       { name: "Our Mission", icon: Target },
       { name: "Research", icon: BookOpen },
       { name: "Contact Us", icon: Mail },
-    ]
-  }
+    ],
+  },
 ];
 
 export function Navbar({ entered, activeRole, onLoginClick }: NavbarProps) {
@@ -78,7 +91,10 @@ export function Navbar({ entered, activeRole, onLoginClick }: NavbarProps) {
       onMouseLeave={() => setHoveredNav(null)}
     >
       <div className="flex items-center gap-12">
-        <a href="/" className="text-2xl font-bold tracking-tight text-white cursor-pointer z-10 hover:opacity-90 transition-opacity">
+        <a
+          href="/"
+          className="text-2xl font-bold tracking-tight text-white cursor-pointer z-10 hover:opacity-90 transition-opacity"
+        >
           Urban<span className="text-blue-500">Core</span>
         </a>
 
@@ -91,37 +107,66 @@ export function Navbar({ entered, activeRole, onLoginClick }: NavbarProps) {
               onMouseEnter={() => setHoveredNav(item.label)}
             >
               {item.label === "Platform" ? (
-                <a href="/platform" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+                <a
+                  href="/platform"
+                  className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
+                >
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </a>
               ) : item.label === "Solutions" ? (
-                <a href="/solutions" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+                <a
+                  href="/solutions"
+                  className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
+                >
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </a>
               ) : item.label === "How It Works" ? (
-                <a href="/how-it-works" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+                <a
+                  href="/how-it-works"
+                  className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
+                >
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </a>
               ) : item.label === "Data & Insights" ? (
-                <a href="/data" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+                <a
+                  href="/data"
+                  className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
+                >
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </a>
               ) : item.label === "About Us" ? (
-                <a href="/about" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+                <a
+                  href="/about"
+                  className="flex items-center gap-1 hover:text-cyan-400 transition-colors"
+                >
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </a>
               ) : (
                 <div className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
                   {item.label}
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform duration-300 ${hoveredNav === item.label ? "rotate-180 text-cyan-400" : "text-slate-500"}`}
+                  />
                 </div>
               )}
-              <span className={`absolute bottom-0 left-0 h-[2px] bg-cyan-400 transition-all duration-300 shadow-[0_0_8px_rgba(34,211,238,0.6)] ${hoveredNav === item.label ? "w-full" : "w-0"}`}></span>
+              <span
+                className={`absolute bottom-0 left-0 h-[2px] bg-cyan-400 transition-all duration-300 shadow-[0_0_8px_rgba(34,211,238,0.6)] ${hoveredNav === item.label ? "w-full" : "w-0"}`}
+              ></span>
 
               {/* Mega Menu Dropdown */}
               <AnimatePresence>
@@ -134,7 +179,9 @@ export function Navbar({ entered, activeRole, onLoginClick }: NavbarProps) {
                     className="absolute left-0 top-[calc(100%+8px)] w-64 rounded-2xl border border-white/10 bg-black/95 p-2 backdrop-blur-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]"
                   >
                     <div className="mb-2 px-3 pb-2 pt-2 border-b border-white/5">
-                      <p className="text-[11px] leading-relaxed text-slate-400 font-light">{item.desc}</p>
+                      <p className="text-[11px] leading-relaxed text-slate-400 font-light">
+                        {item.desc}
+                      </p>
                     </div>
                     <div className="flex flex-col gap-1">
                       {item.items.map((subItem, idx) => {

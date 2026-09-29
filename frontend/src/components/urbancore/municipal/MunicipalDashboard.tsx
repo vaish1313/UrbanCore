@@ -150,19 +150,30 @@ export function MunicipalDashboard({
 
       {/* Tab-conditional sub-sections */}
       <div className="flex flex-col gap-8">
-        {(activeTab === "encroachment" || activeTab === "evidence" || activeTab === "monitoring" || activeTab === "hotspots" || activeTab === "reports" || activeTab === "zones") && (
+        {(activeTab === "encroachment" ||
+          activeTab === "evidence" ||
+          activeTab === "monitoring" ||
+          activeTab === "hotspots" ||
+          activeTab === "reports" ||
+          activeTab === "zones") && (
           <>
             {/* Encroachment Watch */}
             {(activeTab === "encroachment" || activeTab === "evidence") && (
               <section id="encroachment">
-                <EncroachmentWatch selectedAlert={selectedAlert} onSelectAlert={handleSelectAlert} />
+                <EncroachmentWatch
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={handleSelectAlert}
+                />
               </section>
             )}
 
             {/* Evidence Viewer */}
             {activeTab === "evidence" && (
               <section id="evidence">
-                <EvidenceViewer alert={selectedAlert} onGenerateDraft={() => setIsDraftOpen(true)} />
+                <EvidenceViewer
+                  alert={selectedAlert}
+                  onGenerateDraft={() => setIsDraftOpen(true)}
+                />
               </section>
             )}
 

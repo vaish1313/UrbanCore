@@ -118,25 +118,25 @@ export function CitizenDashboard({
     setAnalysisTriggered(true);
     setAnalysisCompleted(false);
     setAnalysisStatus("Submitting six-year satellite analysis…");
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/analyses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          latitude: loc.lat, 
-          longitude: loc.lng, 
+        body: JSON.stringify({
+          latitude: loc.lat,
+          longitude: loc.lng,
           radius_m: 2000,
-          end_year: new Date().getFullYear()
+          end_year: new Date().getFullYear(),
         }),
       });
-      
+
       if (!response.ok) throw new Error("Unable to submit analysis");
-      
+
       const analysis = await response.json();
       setAnalysisId(analysis.id);
       setAnalysisStatus(`Analysis started! ID: ${analysis.id}`);
-      
+
       // Scroll to progress section
       setTimeout(() => {
         document
@@ -215,7 +215,9 @@ export function CitizenDashboard({
                   externalSearchLocation={searchLocation}
                 />
               </div>
-              {analysisStatus && <p className="mb-6 text-center text-sm text-cyan-300">{analysisStatus}</p>}
+              {analysisStatus && (
+                <p className="mb-6 text-center text-sm text-cyan-300">{analysisStatus}</p>
+              )}
 
               {/* ── 4. Construction Timeline or Analysis Progress ── */}
               <AnimatePresence>
@@ -230,14 +232,17 @@ export function CitizenDashboard({
                     style={{ width: "100%" }}
                   >
                     {analysisTriggered && analysisId && !analysisCompleted ? (
-                      <AnalysisProgress 
+                      <AnalysisProgress
                         analysisId={analysisId}
                         onComplete={() => setAnalysisCompleted(true)}
                       />
-                    ) : analysisCompleted || !analysisId ? (
+                    ) : analysisCompleted && analysisId ? (
                       <>
                         <SectionDivider label="Construction Timeline 2021 – 2025" />
-                        <ConstructionTimeline onReportConcern={() => setIsEvidenceModalOpen(true)} />
+                        <ConstructionTimeline
+                          analysisId={analysisId}
+                          onReportConcern={() => setIsEvidenceModalOpen(true)}
+                        />
                       </>
                     ) : null}
                   </motion.div>

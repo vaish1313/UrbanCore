@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
-
 export const Route = createFileRoute("/how-it-works")({
   component: HowItWorksPage,
 });
@@ -27,8 +26,8 @@ function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
       <NashikBackgroundCarousel />
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
-      
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
         <div className="absolute inset-0 z-0 pointer-events-none">
@@ -48,7 +47,8 @@ function HowItWorksPage() {
               From satellite pixels <br className="hidden sm:block" /> to urban intelligence.
             </h1>
             <p className="max-w-2xl mx-auto text-[14px] sm:text-[15px] font-light leading-relaxed text-slate-300 mb-10">
-              UrbanCore combines multispectral satellite imagery, spectral features, AI segmentation and multi-temporal analysis to reveal urban change.
+              UrbanCore combines multispectral satellite imagery, spectral features, AI segmentation
+              and multi-temporal analysis to reveal urban change.
             </p>
           </motion.div>
         </div>
@@ -59,25 +59,30 @@ function HowItWorksPage() {
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-mono text-xs text-cyan-400 border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 rounded-full">STEP 01</span>
+              <span className="font-mono text-xs text-cyan-400 border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 rounded-full">
+                STEP 01
+              </span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">Start with Earth observation.</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">
+              Start with Earth observation.
+            </h2>
             <p className="text-slate-400 font-light leading-relaxed mb-10">
-              UrbanCore uses Sentinel-2 multispectral satellite imagery to observe selected areas across multiple years.
+              UrbanCore uses Sentinel-2 multispectral satellite imagery to observe selected areas
+              across multiple years.
             </p>
           </div>
-          
+
           <div className="lg:w-1/2 w-full relative">
             {/* 6-band grid with horizontal timeline connectors */}
             <div className="flex flex-col gap-3">
               {[
                 [
-                  { band: "B2",  file: "b2.png",  title: "B2 (Blue Band)",    sub: "Water Bodies",                  color: "#38bdf8" },
-                  { band: "B3",  file: "b3.png",  title: "B3 (Green Band)",   sub: "Vegetation",                    color: "#4ade80" },
-                  { band: "B4",  file: "b4.png",  title: "B4 (Red Band)",     sub: "Urban and Built-up Areas",      color: "#f87171" },
+                  { band: "B2", file: "b2.png", title: "B2 (Blue Band)", sub: "Water Bodies", color: "#38bdf8" },
+                  { band: "B3", file: "b3.png", title: "B3 (Green Band)", sub: "Vegetation", color: "#4ade80" },
+                  { band: "B4", file: "b4.png", title: "B4 (Red Band)", sub: "Urban and Built-up Areas", color: "#f87171" },
                 ],
                 [
-                  { band: "B8",  file: "b8.png",  title: "B8 (NIR Band)",     sub: "Vegetation and Biomass",        color: "#4ade80" },
+                  { band: "B8", file: "b8.png", title: "B8 (NIR Band)", sub: "Vegetation and Biomass", color: "#4ade80" },
                   { band: "B11", file: "b11.png", title: "B11 (SWIR 1 Band)", sub: "Dry Areas, Soil and Materials", color: "#fb923c" },
                   { band: "B12", file: "b12.png", title: "B12 (SWIR 2 Band)", sub: "Soil, City and Infrastructure", color: "#e879f9" },
                 ],
@@ -173,18 +178,37 @@ function HowItWorksPage() {
 
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-mono text-xs text-orange-400 border border-orange-500/20 bg-orange-500/10 px-3 py-1 rounded-full">STEP 02</span>
+              <span className="font-mono text-xs text-orange-400 border border-orange-500/20 bg-orange-500/10 px-3 py-1 rounded-full">
+                STEP 02
+              </span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">Give every pixel more context.</h2>
-            
+            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">
+              Give every pixel more context.
+            </h2>
+
             <div className="grid grid-cols-1 gap-4">
               {[
-                { name: "NDVI", desc: "Normalized Difference Vegetation Index — highlights vegetation health and density." },
-                { name: "NDBI", desc: "Normalized Difference Built-up Index — maps urban, concrete, and built environments." },
-                { name: "NDWI", desc: "Normalized Difference Water Index — isolates water bodies and moisture levels." },
-                { name: "BSI", desc: "Bare Soil Index — identifies barren land and unpaved soil variations." }
+                {
+                  name: "NDVI",
+                  desc: "Normalized Difference Vegetation Index — highlights vegetation health and density.",
+                },
+                {
+                  name: "NDBI",
+                  desc: "Normalized Difference Built-up Index — maps urban, concrete, and built environments.",
+                },
+                {
+                  name: "NDWI",
+                  desc: "Normalized Difference Water Index — isolates water bodies and moisture levels.",
+                },
+                {
+                  name: "BSI",
+                  desc: "Bare Soil Index — identifies barren land and unpaved soil variations.",
+                },
               ].map((item) => (
-                <div key={item.name} className="flex gap-4 items-start p-4 bg-white/5 border border-white/10 rounded-xl">
+                <div
+                  key={item.name}
+                  className="flex gap-4 items-start p-4 bg-white/5 border border-white/10 rounded-xl"
+                >
                   <span className="font-mono text-sm text-orange-400 mt-1">{item.name}</span>
                   <p className="text-sm font-light text-slate-300">{item.desc}</p>
                 </div>
@@ -199,18 +223,23 @@ function HowItWorksPage() {
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2">
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-mono text-xs text-purple-400 border border-purple-500/20 bg-purple-500/10 px-3 py-1 rounded-full">STEP 03</span>
+              <span className="font-mono text-xs text-purple-400 border border-purple-500/20 bg-purple-500/10 px-3 py-1 rounded-full">
+                STEP 03
+              </span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">Let the model see the built environment.</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-6">
+              Let the model see the built environment.
+            </h2>
             <p className="text-slate-400 font-light leading-relaxed mb-6">
-              The trained segmentation model classifies pixels into built-up and non-built-up regions using advanced neural networks.
+              The trained segmentation model classifies pixels into built-up and non-built-up
+              regions using advanced neural networks.
             </p>
             <div className="flex gap-3 mb-10">
               <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">U-Net</span>
               <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">ResNet18 Encoder</span>
             </div>
           </div>
-          
+
           <div className="lg:w-1/2 w-full relative">
             <div className="rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
               style={{ boxShadow: "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)" }}>
@@ -228,10 +257,14 @@ function HowItWorksPage() {
       <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <span className="font-mono text-xs text-blue-400 border border-blue-500/20 bg-blue-500/10 px-3 py-1 rounded-full">STEP 04</span>
+            <span className="font-mono text-xs text-blue-400 border border-blue-500/20 bg-blue-500/10 px-3 py-1 rounded-full">
+              STEP 04
+            </span>
           </div>
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">
-            One year tells a story.<br/>Multiple years reveal change.
+            One year tells a story.
+            <br />
+            Multiple years reveal change.
           </h2>
           <p className="text-slate-400 font-light text-sm max-w-xl mx-auto">
             Only 5–10% of the city changes each year. The rest stays identical — that's what makes urban growth visible.
@@ -249,7 +282,9 @@ function HowItWorksPage() {
 
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-mono text-xs text-rose-400 border border-rose-500/20 bg-rose-500/10 px-3 py-1 rounded-full">STEP 05</span>
+              <span className="font-mono text-xs text-rose-400 border border-rose-500/20 bg-rose-500/10 px-3 py-1 rounded-full">
+                STEP 05
+              </span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-light text-white">Reveal where the city moved.</h2>
           </div>
@@ -263,32 +298,30 @@ function HowItWorksPage() {
               draggable={false}
             />
           </div>
-
         </div>
       </section>
-
 
       {/* TECHNICAL STRIP */}
       <section className="relative z-10 py-12 bg-white/[0.02] border-y border-white/5 overflow-hidden">
         <div className="flex items-center whitespace-nowrap overflow-hidden opacity-40">
-           <motion.div 
-             className="flex gap-16 px-8 font-mono text-sm tracking-[0.2em] uppercase text-white"
-             animate={{ x: ["0%", "-50%"] }}
-             transition={{ ease: "linear", duration: 20, repeat: Infinity }}
-           >
-             <span>Sentinel-2</span><span>•</span>
-             <span>Google Earth Engine</span><span>•</span>
-             <span>10-channel input</span><span>•</span>
-             <span>U-Net</span><span>•</span>
-             <span>ResNet18</span><span>•</span>
-             <span>Multi-temporal analysis</span><span>•</span>
-             <span>Sentinel-2</span><span>•</span>
-             <span>Google Earth Engine</span><span>•</span>
-             <span>10-channel input</span><span>•</span>
-             <span>U-Net</span><span>•</span>
-             <span>ResNet18</span><span>•</span>
-             <span>Multi-temporal analysis</span>
-           </motion.div>
+          <motion.div
+            className="flex gap-16 px-8 font-mono text-sm tracking-[0.2em] uppercase text-white"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ ease: "linear", duration: 20, repeat: Infinity }}
+          >
+            <span>Sentinel-2</span><span>•</span>
+            <span>Google Earth Engine</span><span>•</span>
+            <span>10-channel input</span><span>•</span>
+            <span>U-Net</span><span>•</span>
+            <span>ResNet18</span><span>•</span>
+            <span>Multi-temporal analysis</span><span>•</span>
+            <span>Sentinel-2</span><span>•</span>
+            <span>Google Earth Engine</span><span>•</span>
+            <span>10-channel input</span><span>•</span>
+            <span>U-Net</span><span>•</span>
+            <span>ResNet18</span><span>•</span>
+            <span>Multi-temporal analysis</span>
+          </motion.div>
         </div>
       </section>
 

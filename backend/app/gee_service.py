@@ -92,13 +92,34 @@ class EarthEngineService:
             )
 
             # Calculate median composite to reduce clouds
-            # Select key bands: B2(Blue), B3(Green), B4(Red), B8(NIR)
-            image = (
-                collection
-                .median()
-                .select(["B2", "B3", "B4", "B8"])
-                .clip(region)
-            )
+            # Select all required bands for U-Net model
+            median = collection.median().clip(region)
+            
+            # Extract spectral bands
+            B2 = median.select("B2")    # Blue
+            B3 = median.select("B3")    # Green
+            B4 = median.select("B4")    # Red
+            B8 = median.select("B8")    # NIR
+            B11 = median.select("B11")  # SWIR1
+            B12 = median.select("B12")  # SWIR2
+            
+            # Calculate spectral indices
+            # NDVI (Normalized Difference Vegetation Index)
+            NDVI = B8.subtract(B4).divide(B8.add(B4)).rename("NDVI")
+            
+            # NDBI (Normalized Difference Built-up Index)
+            NDBI = B11.subtract(B8).divide(B11.add(B8)).rename("NDBI")
+            
+            # NDWI (Normalized Difference Water Index)
+            NDWI = B3.subtract(B8).divide(B3.add(B8)).rename("NDWI")
+            
+            # BSI (Bare Soil Index)
+            BSI = (B11.add(B4)).subtract(B8.add(B2)).divide(
+                (B11.add(B4)).add(B8.add(B2))
+            ).rename("BSI")
+            
+            # Combine all bands and indices (10 channels total)
+            image = B2.addBands([B3, B4, B8, B11, B12, NDVI, NDBI, NDWI, BSI])
 
             # Generate unique filename
             filename = f"urbancore_{analysis_id}_{year}"

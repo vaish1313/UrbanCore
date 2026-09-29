@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { FileText, Download, X, ShieldCheck, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import {
+  FileText,
+  Download,
+  X,
+  ShieldCheck,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+} from "lucide-react";
 import type { AOI } from "@/types/urbancore";
 import { jsPDF } from "jspdf";
 import { NASHIK_AOIS } from "@/data/nashikAois";
@@ -51,7 +59,9 @@ function generateClientPdfBlob(aoi: AOI): Blob {
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
     doc.text("Confidential — UrbanCore Spatial Intelligence Workspace", 12, pageHeight - 7);
-    doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - 12, pageHeight - 7, { align: "right" });
+    doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - 12, pageHeight - 7, {
+      align: "right",
+    });
   };
 
   // Header Banner
@@ -182,9 +192,24 @@ function generateClientPdfBlob(aoi: AOI): Blob {
 
   const constraintRows: [string, string, string, string][] = [
     ["CRZ (Coastal Regulation Zone)", "NO_DATA", "Data unavailable", "Data unavailable"],
-    ["River Buffer Zone", aoi.constraints.floodZoneOverlapPercent > 0 ? "OVERLAP" : "CLEAR", `${(aoi.constraints.floodZoneOverlapPercent * 0.2).toFixed(1)} ha`, `${aoi.constraints.floodZoneOverlapPercent}%`],
-    ["Forest Boundary & Buffer", aoi.constraints.forestBoundaryOverlapPercent > 0 ? "OVERLAP" : "CLEAR", `${(aoi.constraints.forestBoundaryOverlapPercent * 0.2).toFixed(1)} ha`, `${aoi.constraints.forestBoundaryOverlapPercent}%`],
-    ["Agricultural Green Belt", aoi.constraints.greenBeltOverlapPercent > 0 ? "OVERLAP" : "CLEAR", `${(aoi.constraints.greenBeltOverlapPercent * 0.2).toFixed(1)} ha`, `${aoi.constraints.greenBeltOverlapPercent}%`],
+    [
+      "River Buffer Zone",
+      aoi.constraints.floodZoneOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
+      `${(aoi.constraints.floodZoneOverlapPercent * 0.2).toFixed(1)} ha`,
+      `${aoi.constraints.floodZoneOverlapPercent}%`,
+    ],
+    [
+      "Forest Boundary & Buffer",
+      aoi.constraints.forestBoundaryOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
+      `${(aoi.constraints.forestBoundaryOverlapPercent * 0.2).toFixed(1)} ha`,
+      `${aoi.constraints.forestBoundaryOverlapPercent}%`,
+    ],
+    [
+      "Agricultural Green Belt",
+      aoi.constraints.greenBeltOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
+      `${(aoi.constraints.greenBeltOverlapPercent * 0.2).toFixed(1)} ha`,
+      `${aoi.constraints.greenBeltOverlapPercent}%`,
+    ],
   ];
 
   doc.setFillColor(30, 41, 59);
@@ -345,7 +370,10 @@ export function BuilderReportModal({
           blob = await response.blob();
         }
       } catch (backendErr) {
-        console.warn("Backend report API unreachable, utilizing browser jsPDF compilation fallback.", backendErr);
+        console.warn(
+          "Backend report API unreachable, utilizing browser jsPDF compilation fallback.",
+          backendErr,
+        );
       }
 
       if (!blob) {
@@ -362,9 +390,9 @@ export function BuilderReportModal({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to generate PDF report:", err);
-      setError(err?.message || "Failed to compile intelligence report.");
+      setError(err instanceof Error ? err.message : "Failed to compile intelligence report.");
     } finally {
       clearInterval(stepInterval);
       setIsGenerating(false);
@@ -402,7 +430,8 @@ export function BuilderReportModal({
               GENERATING INTELLIGENCE REPORT
             </h4>
             <p className="mt-1 text-xs text-muted-foreground">
-              Compiling multi-module GIS screening for <strong className="text-foreground">{aoi.name}</strong>...
+              Compiling multi-module GIS screening for{" "}
+              <strong className="text-foreground">{aoi.name}</strong>...
             </p>
             <div className="mt-6 flex items-center gap-2 font-mono text-xs text-primary bg-primary/10 px-4 py-2 rounded-xl border border-primary/20">
               <span>{STEPS[stepIndex]}</span>
@@ -455,11 +484,10 @@ export function BuilderReportModal({
                   URBANCORE · LAND INTELLIGENCE REPORT
                 </span>
               </div>
-              <h2 className="font-display text-2xl font-bold text-foreground mt-1">
-                REPORT READY
-              </h2>
+              <h2 className="font-display text-2xl font-bold text-foreground mt-1">REPORT READY</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Land Intelligence Report generated successfully for <strong className="text-foreground">{aoi.name}</strong>.
+                Land Intelligence Report generated successfully for{" "}
+                <strong className="text-foreground">{aoi.name}</strong>.
               </p>
             </div>
 
@@ -504,7 +532,9 @@ export function BuilderReportModal({
             <div className="rounded-xl border border-border/40 bg-foreground/[0.01] p-3 text-[10px] text-muted-foreground flex items-start gap-2">
               <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
               <span>
-                Spatial screening based on available GIS layers. This report does not constitute legal, zoning, environmental, financial, or construction approval. Verify applicable regulations with relevant authorities.
+                Spatial screening based on available GIS layers. This report does not constitute
+                legal, zoning, environmental, financial, or construction approval. Verify applicable
+                regulations with relevant authorities.
               </span>
             </div>
 
