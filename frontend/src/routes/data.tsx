@@ -4,10 +4,10 @@ import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
 import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
-import { MapComparisonSlider } from "@/components/urbancore/MapComparisonSlider";
+import { ComparativeVisualization } from "@/components/urbancore/ComparativeVisualization";
 import { NashikLiveMap } from "@/components/urbancore/NashikLiveMap";
 import { UrbanTimeline } from "@/components/urbancore/UrbanTimeline";
-import heroBg from "@/assets/hero-bg.png"; // kept for potential future use
+import heroBg from "@/assets/hero-bg.png";
 import {
   Clock, TrendingUp, Search, Sparkles, Map, Network, ArrowRight
 } from "lucide-react";
@@ -21,7 +21,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 function DataInsightsPage() {
   const [activeRole, setActiveRole] = useState<RoleType>(null);
-  
+
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
@@ -29,8 +29,8 @@ function DataInsightsPage() {
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
       <NashikBackgroundCarousel />
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
-      
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
         <div className="absolute inset-0 z-0 pointer-events-none">
@@ -53,7 +53,8 @@ function DataInsightsPage() {
               Watch the urban footprint <br className="hidden sm:block" /> evolve.
             </h1>
             <p className="max-w-2xl mx-auto text-[14px] sm:text-[15px] font-light leading-relaxed text-slate-300 mb-10">
-              Explore multi-temporal satellite observations to understand where and how built-up areas change.
+              Explore multi-temporal satellite observations to understand where and how built-up
+              areas change.
             </p>
           </motion.div>
         </div>
@@ -80,11 +81,13 @@ function DataInsightsPage() {
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">
             Built-up change, made visible.
           </h2>
-          <p className="text-slate-400 font-light">Drag the slider to compare historical and current footprints.</p>
+          <p className="text-slate-400 font-light">
+            See how Nashik's urban footprint evolved from 2021 to 2025 through satellite analysis.
+          </p>
         </div>
 
         <div className="w-full max-w-5xl mx-auto px-6 sm:px-10">
-          <MapComparisonSlider />
+          <ComparativeVisualization onComplete={() => { }} />
         </div>
       </section>
 
@@ -103,19 +106,35 @@ function DataInsightsPage() {
       <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
             {/* Built-up Expansion */}
             <div className="p-8 rounded-2xl bg-[#03060d] border border-white/5 hover:border-cyan-500/30 transition-colors group">
               <div className="h-40 mb-6 flex items-end justify-center pb-4 relative">
                 <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/20 to-transparent rounded-lg" />
                 <div className="w-full max-w-[200px] h-32 border-b border-l border-white/20 relative flex items-end gap-2 px-2">
-                  <motion.div initial={{ height: "30%" }} whileInView={{ height: "40%" }} transition={{ duration: 1 }} className="w-full bg-cyan-500/40 border-t border-cyan-400" />
-                  <motion.div initial={{ height: "30%" }} whileInView={{ height: "60%" }} transition={{ duration: 1, delay: 0.2 }} className="w-full bg-cyan-500/60 border-t border-cyan-400" />
-                  <motion.div initial={{ height: "30%" }} whileInView={{ height: "90%" }} transition={{ duration: 1, delay: 0.4 }} className="w-full bg-cyan-500/80 border-t border-cyan-400" />
+                  <motion.div
+                    initial={{ height: "30%" }}
+                    whileInView={{ height: "40%" }}
+                    transition={{ duration: 1 }}
+                    className="w-full bg-cyan-500/40 border-t border-cyan-400"
+                  />
+                  <motion.div
+                    initial={{ height: "30%" }}
+                    whileInView={{ height: "60%" }}
+                    transition={{ duration: 1, delay: 0.2 }}
+                    className="w-full bg-cyan-500/60 border-t border-cyan-400"
+                  />
+                  <motion.div
+                    initial={{ height: "30%" }}
+                    whileInView={{ height: "90%" }}
+                    transition={{ duration: 1, delay: 0.4 }}
+                    className="w-full bg-cyan-500/80 border-t border-cyan-400"
+                  />
                 </div>
               </div>
               <h3 className="font-mono text-sm text-cyan-400 mb-2">Built-up Expansion</h3>
-              <p className="text-slate-400 font-light text-sm">Track the outward sprawl of urban boundaries year-over-year.</p>
+              <p className="text-slate-400 font-light text-sm">
+                Track the outward sprawl of urban boundaries year-over-year.
+              </p>
             </div>
 
             {/* Temporal Change */}
@@ -134,7 +153,9 @@ function DataInsightsPage() {
                 </div>
               </div>
               <h3 className="font-mono text-sm text-orange-400 mb-2">Temporal Change</h3>
-              <p className="text-slate-400 font-light text-sm">Isolate newly developed zones between specific date ranges.</p>
+              <p className="text-slate-400 font-light text-sm">
+                Isolate newly developed zones between specific date ranges.
+              </p>
             </div>
 
             {/* Area Comparison */}
@@ -151,7 +172,9 @@ function DataInsightsPage() {
                 </div>
               </div>
               <h3 className="font-mono text-sm text-purple-400 mb-2">Area Comparison</h3>
-              <p className="text-slate-400 font-light text-sm">Compare development rates across different municipal wards or zones.</p>
+              <p className="text-slate-400 font-light text-sm">
+                Compare development rates across different municipal wards or zones.
+              </p>
             </div>
 
             {/* Urban Growth Pattern */}
@@ -161,9 +184,10 @@ function DataInsightsPage() {
                 <Network className="w-16 h-16 text-emerald-400 opacity-80" />
               </div>
               <h3 className="font-mono text-sm text-emerald-400 mb-2">Urban Growth Pattern</h3>
-              <p className="text-slate-400 font-light text-sm">Visualize clustering and dispersion patterns in new construction.</p>
+              <p className="text-slate-400 font-light text-sm">
+                Visualize clustering and dispersion patterns in new construction.
+              </p>
             </div>
-
           </div>
         </div>
       </section>
@@ -173,7 +197,7 @@ function DataInsightsPage() {
         <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-12">
           Ask the city.
         </h2>
-        
+
         <div className="w-full max-w-3xl mx-auto mb-16">
           <div className="relative group w-full">
             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>

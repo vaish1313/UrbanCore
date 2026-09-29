@@ -221,11 +221,7 @@ function Index() {
       </div>
 
       {/* Navbar replacing ambient status rail */}
-      <Navbar 
-        entered={entered} 
-        activeRole={activeRole} 
-        onLoginClick={handleLoginClick} 
-      />
+      <Navbar entered={entered} activeRole={activeRole} onLoginClick={handleLoginClick} />
 
       {/* Layer rail — materialises around the map */}
       <motion.aside
@@ -267,7 +263,9 @@ function Index() {
       {/* Workspace — grows out of the map, never a new page */}
       <div
         className={`fixed inset-0 z-20 flex flex-col items-center overflow-x-hidden overflow-y-auto pt-24 sm:pt-32 scrollbar-none ${
-          inWorkspace && !activeRole && !pendingAuthRole ? "pointer-events-auto" : "pointer-events-none"
+          inWorkspace && !activeRole && !pendingAuthRole
+            ? "pointer-events-auto"
+            : "pointer-events-none"
         }`}
       >
         <motion.div
@@ -304,18 +302,21 @@ function Index() {
             />
           </div>
 
-          <div id="login-section" className="mt-12 w-full max-w-3xl scroll-mt-32 flex flex-col items-center">
+          <div
+            id="login-section"
+            className="mt-12 w-full max-w-3xl scroll-mt-32 flex flex-col items-center"
+          >
             <RoleCards
               pointer={pointer}
               visible={inWorkspace && !activeRole && !pendingAuthRole}
               onSelectRole={setPendingAuthRole}
             />
-            
+
             {/* Technical Indicators */}
-            <motion.div 
+            <motion.div
               className="mt-12 flex flex-wrap items-center justify-center gap-4 text-[10px] font-mono font-medium tracking-[0.25em] text-slate-500 uppercase"
               initial={{ opacity: 0 }}
-              animate={{ opacity: (inWorkspace && !activeRole && !pendingAuthRole) ? 0.6 : 0 }}
+              animate={{ opacity: inWorkspace && !activeRole && !pendingAuthRole ? 0.6 : 0 }}
               transition={{ duration: 1.3, delay: 0.8, ease }}
             >
               <span>SENTINEL-2</span>
@@ -329,10 +330,10 @@ function Index() {
           </div>
         </motion.div>
 
-        <motion.div 
-           className="w-full mt-auto"
-           initial={false}
-           animate={
+        <motion.div
+          className="w-full mt-auto"
+          initial={false}
+          animate={
             inWorkspace && !activeRole && !pendingAuthRole
               ? { opacity: 1, y: 0, filter: "blur(0px)" }
               : { opacity: 0, y: 34, filter: "blur(16px)" }

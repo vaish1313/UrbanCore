@@ -8,9 +8,18 @@ import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroun
 import { WorkflowVisualization } from "@/components/urbancore/WorkflowVisualization";
 import heroBg from "@/assets/hero-bg.png";
 import {
-  Layers, Map, Radar, BarChart3,
-  ArrowRight, Activity, ScanSearch, MapPin, Database, Binary,
-  Clock, Satellite
+  Layers,
+  Map,
+  Radar,
+  BarChart3,
+  ArrowRight,
+  Activity,
+  ScanSearch,
+  MapPin,
+  Database,
+  Binary,
+  Clock,
+  Satellite,
 } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
@@ -22,7 +31,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 function PlatformPage() {
   const [activeRole, setActiveRole] = useState<RoleType>(null);
-  
+
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
@@ -32,16 +41,20 @@ function PlatformPage() {
       {/* ── Nashik landmark vertical sliding background — sits behind everything ── */}
       <NashikBackgroundCarousel />
 
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
-      
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+
       {/* 1. HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
         {/* Subtle accent overlays on top of the global carousel background */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Scanline grid accent */}
-          <div 
-            className="absolute inset-0 opacity-[0.10]" 
-            style={{ backgroundImage: "linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px)", backgroundSize: "40px 40px" }}
+          <div
+            className="absolute inset-0 opacity-[0.10]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(34, 211, 238, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.1) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
           />
           {/* Bottom fade so hero blends into next section */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
@@ -60,9 +73,10 @@ function PlatformPage() {
               See the city <br className="hidden sm:block" /> beneath the surface.
             </h1>
             <p className="max-w-2xl mx-auto text-[14px] sm:text-[15px] font-light leading-relaxed text-slate-300 mb-10">
-              UrbanCore transforms satellite imagery into spatial intelligence, helping reveal how built-up areas evolve across time.
+              UrbanCore transforms satellite imagery into spatial intelligence, helping reveal how
+              built-up areas evolve across time.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button className="w-full sm:w-auto text-[12px] font-bold uppercase tracking-wider text-black bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 rounded-full transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] hover:-translate-y-0.5">
                 Launch UrbanCore <span className="text-[11px] leading-none mb-[1px]">↗</span>
@@ -78,31 +92,33 @@ function PlatformPage() {
       {/* 2. CORE PLATFORM CAPABILITIES */}
       <section className="relative z-10 py-24 sm:py-32 w-full max-w-7xl mx-auto px-6 sm:px-10">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl font-light text-white">One platform. A changing city.</h2>
+          <h2 className="font-display text-3xl sm:text-4xl font-light text-white">
+            One platform. A changing city.
+          </h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             {
               title: "Urban Change Detection",
               desc: "Identify where built-up areas have expanded or transformed across time.",
-              icon: Layers
+              icon: Layers,
             },
             {
               title: "Multi-Temporal Analysis",
               desc: "Compare satellite observations across multiple years to reveal urban evolution.",
-              icon: Radar
+              icon: Radar,
             },
             {
               title: "Land Monitoring",
               desc: "Observe changes in the built environment using consistent satellite-derived data.",
-              icon: Map
+              icon: Map,
             },
             {
               title: "Urban Insights",
               desc: "Turn spatial change into interpretable visual insights.",
-              icon: BarChart3
-            }
+              icon: BarChart3,
+            },
           ].map((item, i) => (
             <motion.div
               key={i}
@@ -116,7 +132,9 @@ function PlatformPage() {
                 <item.icon className="h-5 w-5" strokeWidth={1.5} />
               </span>
               <div>
-                <h3 className="text-lg font-medium text-white mb-2 group-hover:text-cyan-400 transition-colors">{item.title}</h3>
+                <h3 className="text-lg font-medium text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                  {item.title}
+                </h3>
                 <p className="text-sm font-light text-slate-400 leading-relaxed">{item.desc}</p>
               </div>
             </motion.div>
@@ -128,20 +146,24 @@ function PlatformPage() {
       <section className="relative z-10 py-24 border-y border-white/5 overflow-hidden backdrop-blur-sm bg-black/30">
         <div className="max-w-7xl mx-auto px-6 sm:px-10">
           <div className="text-center mb-16">
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-400 mb-4">Pipeline</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-light text-white">How UrbanCore sees a city</h2>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-cyan-400 mb-4">
+              Pipeline
+            </p>
+            <h2 className="font-display text-3xl sm:text-4xl font-light text-white">
+              How UrbanCore sees a city
+            </h2>
           </div>
-          
+
           <div className="flex flex-col lg:flex-row items-center justify-center lg:justify-between w-full max-w-5xl mx-auto gap-4 lg:gap-0 relative">
             {/* Desktop connecting line */}
             <div className="hidden lg:block absolute top-1/2 left-[5%] right-[5%] h-px bg-white/10 -translate-y-1/2 overflow-hidden">
-              <motion.div 
+              <motion.div
                 className="w-full h-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
                 animate={{ x: ["-100%", "100%"] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
               />
             </div>
-            
+
             {[
               { label: "Sentinel-2", icon: Satellite },
               { label: "Preprocessing", icon: Binary },
@@ -149,7 +171,7 @@ function PlatformPage() {
               { label: "U-Net / ResNet18", icon: Database },
               { label: "Built-up Seg.", icon: ScanSearch },
               { label: "Temporal Comp.", icon: Clock },
-              { label: "Urban Change", icon: Layers }
+              { label: "Urban Change", icon: Layers },
             ].map((step, i) => (
               <div key={i} className="flex flex-col items-center gap-3 relative z-10">
                 {i > 0 && <div className="h-6 w-px bg-white/10 lg:hidden" />}
@@ -179,7 +201,7 @@ function PlatformPage() {
             <WorkflowVisualization />
           </div>
         </div>
-        
+
         <div className="mt-12 text-center">
           <button className="text-[12px] font-bold uppercase tracking-wider text-black bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 rounded-full transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)]">
             Explore UrbanCore ↗
@@ -190,16 +212,20 @@ function PlatformPage() {
       {/* 5. BUILT FOR DIFFERENT USERS */}
       <section className="relative z-10 py-24 sm:py-32 w-full max-w-7xl mx-auto px-6 sm:px-10">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl sm:text-4xl font-light text-white">Built for different users</h2>
+          <h2 className="font-display text-3xl sm:text-4xl font-light text-white">
+            Built for different users
+          </h2>
         </div>
-        <RoleCards pointer={{x:0, y:0}} visible={true} />
+        <RoleCards pointer={{ x: 0, y: 0 }} visible={true} />
       </section>
 
       {/* 6. TECHNICAL FOUNDATION */}
       <section className="relative z-10 py-24 border-t border-white/5 backdrop-blur-sm bg-black/30">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
-          <h2 className="font-display text-2xl font-light text-slate-300 mb-12 uppercase tracking-[0.2em]">Technical Foundation</h2>
-          
+          <h2 className="font-display text-2xl font-light text-slate-300 mb-12 uppercase tracking-[0.2em]">
+            Technical Foundation
+          </h2>
+
           <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-16">
             {["Sentinel-2", "Google Earth Engine", "U-Net", "ResNet18", "GIS", "Multi-temporal Analysis"].map(tech => (
               <span key={tech} className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-[12px] text-slate-300 font-mono tracking-wide backdrop-blur-md">
@@ -209,7 +235,9 @@ function PlatformPage() {
           </div>
 
           <div className="flex flex-col items-center text-center">
-            <p className="text-[11px] font-mono text-cyan-500/70 uppercase tracking-[0.3em] mb-6">10 Spectral Inputs</p>
+            <p className="text-[11px] font-mono text-cyan-500/70 uppercase tracking-[0.3em] mb-6">
+              10 Spectral Inputs
+            </p>
             <div className="flex flex-col items-center gap-3 font-mono text-sm sm:text-lg text-slate-400 font-light tracking-[0.2em]">
               <p>B2 · B3 · B4 · B8 · B11 · B12</p>
               <p className="text-cyan-400/80">NDVI · NDBI · NDWI · BSI</p>

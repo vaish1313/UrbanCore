@@ -55,11 +55,9 @@ export function RoleNavigation({
   const RoleIcon = role === "builder" ? Building2 : role === "municipal" ? Landmark : Users;
   const showFeatureMenu = (role === "builder" || role === "municipal") && !!featureMenu;
 
-  const homeTab =
-    role === "builder" ? "overview" : role === "municipal" ? "command" : "explore";
+  const homeTab = role === "builder" ? "overview" : role === "municipal" ? "command" : "explore";
 
-  const roleTitle =
-    role === "builder" || role === "municipal" ? "CITY EXPLORER" : "CITY EXPLORER";
+  const roleTitle = role === "builder" || role === "municipal" ? "CITY EXPLORER" : "CITY EXPLORER";
 
   const userInitial = user?.full_name ? user.full_name.charAt(0).toUpperCase() : "M";
   const username = user?.full_name || "mankar purva8";
@@ -79,11 +77,7 @@ export function RoleNavigation({
             <button
               type="button"
               onClick={() => {
-                if (
-                  showFeatureMenu &&
-                  workspaceFeatureId &&
-                  workspaceFeatureId !== "overview"
-                ) {
+                if (showFeatureMenu && workspaceFeatureId && workspaceFeatureId !== "overview") {
                   onResetWorkspaceFeature?.();
                 } else if (activeTab === "my-reports") {
                   onTabChange(homeTab);

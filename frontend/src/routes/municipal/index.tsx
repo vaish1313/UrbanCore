@@ -15,9 +15,5 @@ export const Route = createFileRoute("/municipal/")({
 
 function CommandOverviewPage() {
   const navigate = useNavigate();
-  return (
-    <MunicipalGISDashboard
-      onBack={() => navigate({ to: "/" })}
-    />
-  );
+  return <MunicipalGISDashboard onBack={() => navigate({ to: "/" })} />;
 }

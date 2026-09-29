@@ -80,9 +80,14 @@ export function HeroSearch({
         const res = await fetch(`${API_BASE_URL}/locations/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         if (Array.isArray(data)) {
-          const suggestions = data.map((f: { label: string; latitude: number; longitude: number }) => ({
-            label: f.label, type: "OpenStreetMap", lat: f.latitude, lng: f.longitude,
-          }));
+          const suggestions = data.map(
+            (f: { label: string; latitude: number; longitude: number }) => ({
+              label: f.label,
+              type: "OpenStreetMap",
+              lat: f.latitude,
+              lng: f.longitude,
+            }),
+          );
           setLiveSuggestions(suggestions);
         }
       } catch (e) {

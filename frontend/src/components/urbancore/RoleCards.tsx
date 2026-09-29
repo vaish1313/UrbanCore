@@ -60,7 +60,8 @@ export function RoleCards({
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-40"
             style={{
-              background: "radial-gradient(120% 90% at 50% 120%, rgba(34,211,238,0.1) 0%, transparent 65%)",
+              background:
+                "radial-gradient(120% 90% at 50% 120%, rgba(34,211,238,0.1) 0%, transparent 65%)",
               mixBlendMode: "screen",
             }}
           />

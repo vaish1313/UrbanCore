@@ -166,7 +166,9 @@ export function BuilderDashboard({
             {isFeatureOnlyPage ? (
               /* FEATURE-ONLY PAGE: Renders ONLY the selected feature page */
               <div className="w-full pt-4">
-                <SectionDivider label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`} />
+                <SectionDivider
+                  label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`}
+                />
 
                 {activeFeatureId === "suitability" && <SuitabilityScore aoi={selectedAoi} />}
                 {activeFeatureId === "terrain" && <SiteReadiness aoi={selectedAoi} />}
@@ -174,7 +176,10 @@ export function BuilderDashboard({
                 {activeFeatureId === "history" && <ConstructionHistory aoi={selectedAoi} />}
                 {activeFeatureId === "risk" && <AreaComparison aoi={selectedAoi} />}
                 {activeFeatureId === "reports" && (
-                  <LandReportsPanel aoi={selectedAoi} onGenerateReport={() => setIsReportOpen(true)} />
+                  <LandReportsPanel
+                    aoi={selectedAoi}
+                    onGenerateReport={() => setIsReportOpen(true)}
+                  />
                 )}
               </div>
             ) : (

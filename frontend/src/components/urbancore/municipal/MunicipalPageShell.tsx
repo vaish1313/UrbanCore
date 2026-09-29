@@ -75,20 +75,31 @@ export function MunicipalPageShell({
         <div className="mg-content">
           {/* Page section header */}
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
-              fontSize: "0.65rem", letterSpacing: "0.15em",
-              textTransform: "uppercase", color: T.cyan,
-            }}>
-              {eyebrowIcon}{eyebrow}
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                fontSize: "0.65rem",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                color: T.cyan,
+              }}
+            >
+              {eyebrowIcon}
+              {eyebrow}
             </span>
-            <h1 style={{
-              fontFamily: "var(--font-display,'Sora',sans-serif)",
-              fontSize: "clamp(1.4rem, 3vw, 1.85rem)",
-              fontWeight: 700, color: T.slate100,
-              letterSpacing: "-0.02em", margin: 0,
-            }}>
+            <h1
+              style={{
+                fontFamily: "var(--font-display,'Sora',sans-serif)",
+                fontSize: "clamp(1.4rem, 3vw, 1.85rem)",
+                fontWeight: 700,
+                color: T.slate100,
+                letterSpacing: "-0.02em",
+                margin: 0,
+              }}
+            >
               {title}
             </h1>
           </div>

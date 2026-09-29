@@ -80,43 +80,53 @@ export function WorkspaceSidebar({
             }}
           >
             {/* Header */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "20px 20px 16px",
-              borderBottom: "1px solid rgba(255,255,255,0.07)",
-              flexShrink: 0,
-            }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "20px 20px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.07)",
+                flexShrink: 0,
+              }}
+            >
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {roleLabel && (
-                  <span style={{
-                    fontFamily: "var(--font-display,'Sora',sans-serif)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#f1f5f9",
-                    letterSpacing: "0.01em",
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display,'Sora',sans-serif)",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: "#f1f5f9",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
                     {roleLabel}
                   </span>
                 )}
-                <span style={{
-                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
-                  fontSize: "0.6rem",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "#22d3ee",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}>
-                  <span style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    background: "#22d3ee",
-                    boxShadow: "0 0 6px #22d3ee",
-                    display: "inline-block",
-                    animation: "ws-pulse 2s ease-in-out infinite",
-                  }} />
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                    fontSize: "0.6rem",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "#22d3ee",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#22d3ee",
+                      boxShadow: "0 0 6px #22d3ee",
+                      display: "inline-block",
+                      animation: "ws-pulse 2s ease-in-out infinite",
+                    }}
+                  />
                   {menuLabel}
                 </span>
               </div>
@@ -127,7 +137,8 @@ export function WorkspaceSidebar({
                 onClick={onClose}
                 aria-label="Close sidebar"
                 style={{
-                  width: 32, height: 32,
+                  width: 32,
+                  height: 32,
                   borderRadius: "50%",
                   border: "1px solid rgba(255,255,255,0.12)",
                   background: "rgba(255,255,255,0.05)",
@@ -139,24 +150,38 @@ export function WorkspaceSidebar({
                   flexShrink: 0,
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={e => {
+                onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.1)";
                   (e.currentTarget as HTMLButtonElement).style.color = "#f1f5f9";
                 }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)";
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(255,255,255,0.05)";
                   (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8";
                 }}
               >
                 {/* ✕ icon */}
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  <path
+                    d="M1 1l10 10M11 1L1 11"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
 
             {/* Feature list */}
-            <nav style={{ flex: 1, padding: "12px 12px 24px", display: "flex", flexDirection: "column", gap: 2 }}>
+            <nav
+              style={{
+                flex: 1,
+                padding: "12px 12px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 const isActive = activeFeatureId === feature.id;
@@ -167,7 +192,7 @@ export function WorkspaceSidebar({
                     type="button"
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.22, delay: index * 0.04, ease: [0.16,1,0.3,1] }}
+                    transition={{ duration: 0.22, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() => {
                       onClose();
                       onSelectFeature(feature);
@@ -182,9 +207,7 @@ export function WorkspaceSidebar({
                       border: isActive
                         ? "1px solid rgba(34,211,238,0.35)"
                         : "1px solid transparent",
-                      background: isActive
-                        ? "rgba(34,211,238,0.12)"
-                        : "transparent",
+                      background: isActive ? "rgba(34,211,238,0.12)" : "transparent",
                       color: isActive ? "#22d3ee" : "#cbd5e1",
                       cursor: "pointer",
                       textAlign: "left",
@@ -195,9 +218,7 @@ export function WorkspaceSidebar({
                       position: "relative",
                     }}
                     whileHover={{
-                      background: isActive
-                        ? "rgba(34,211,238,0.16)"
-                        : "rgba(255,255,255,0.05)",
+                      background: isActive ? "rgba(34,211,238,0.16)" : "rgba(255,255,255,0.05)",
                     }}
                   >
                     {/* Active indicator bar */}
@@ -214,45 +235,60 @@ export function WorkspaceSidebar({
                           background: "linear-gradient(180deg,#06b6d4,#3b82f6)",
                           boxShadow: "0 0 10px rgba(34,211,238,0.5)",
                         }}
-                        transition={{ duration: 0.25, ease: [0.16,1,0.3,1] }}
+                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       />
                     )}
 
                     {/* Icon */}
-                    <span style={{
-                      width: 34, height: 34,
-                      borderRadius: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      background: isActive
-                        ? "rgba(34,211,238,0.15)"
-                        : "rgba(255,255,255,0.04)",
-                      border: isActive
-                        ? "1px solid rgba(34,211,238,0.3)"
-                        : "1px solid rgba(255,255,255,0.06)",
-                      color: isActive ? "#22d3ee" : "#64748b",
-                      transition: "all 0.15s",
-                    }}>
+                    <span
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        background: isActive ? "rgba(34,211,238,0.15)" : "rgba(255,255,255,0.04)",
+                        border: isActive
+                          ? "1px solid rgba(34,211,238,0.3)"
+                          : "1px solid rgba(255,255,255,0.06)",
+                        color: isActive ? "#22d3ee" : "#64748b",
+                        transition: "all 0.15s",
+                      }}
+                    >
                       <Icon className="h-4 w-4" />
                     </span>
 
                     {/* Label */}
-                    <span style={{
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      color: isActive ? "#f1f5f9" : "#cbd5e1",
-                    }}>
+                    <span
+                      style={{
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        color: isActive ? "#f1f5f9" : "#cbd5e1",
+                      }}
+                    >
                       {feature.label}
                     </span>
 
                     {/* Active chevron */}
                     {isActive && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: "#22d3ee" }}>
-                        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        style={{ flexShrink: 0, color: "#22d3ee" }}
+                      >
+                        <path
+                          d="M5 3l4 4-4 4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </motion.button>
@@ -261,18 +297,22 @@ export function WorkspaceSidebar({
             </nav>
 
             {/* Footer */}
-            <div style={{
-              padding: "16px 20px",
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              flexShrink: 0,
-            }}>
-              <span style={{
-                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
-                fontSize: "0.6rem",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                color: "#334155",
-              }}>
+            <div
+              style={{
+                padding: "16px 20px",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                  fontSize: "0.6rem",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "#334155",
+                }}
+              >
                 UrbanCore · AI Urban Intelligence
               </span>
             </div>
