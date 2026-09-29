@@ -27,18 +27,18 @@ export const Route = createFileRoute("/municipal")({
 
 // Map feature-menu ids → nested route paths (relative to /municipal)
 const FEATURE_ROUTE_MAP: Record<string, string> = {
-  "overview":      "/municipal",
-  "district-map":  "/municipal/district-map",
-  "encroachment":  "/municipal/encroachment",
-  "forensics":     "/municipal/forensics",
-  "heatmap":       "/municipal/heatmap",
-  "legal":         "/municipal/legal",
-  "export":        "/municipal/export",
+  overview: "/municipal",
+  "district-map": "/municipal/district-map",
+  encroachment: "/municipal/encroachment",
+  forensics: "/municipal/forensics",
+  heatmap: "/municipal/heatmap",
+  legal: "/municipal/legal",
+  export: "/municipal/export",
 };
 
 function MunicipalLayout() {
-  const navigate    = useNavigate();
-  const matchRoute  = useMatchRoute();
+  const navigate = useNavigate();
+  const matchRoute = useMatchRoute();
   const [isDraftOpen, setIsDraftOpen] = useState(false);
 
   // Derive activeFeatureId from the current URL so the sidebar
@@ -89,9 +89,7 @@ function MunicipalLayout() {
       </motion.div>
 
       {/* Compliance draft modal — available from any sub-page */}
-      {isDraftOpen && (
-        <ComplianceDraftPortal onClose={() => setIsDraftOpen(false)} />
-      )}
+      {isDraftOpen && <ComplianceDraftPortal onClose={() => setIsDraftOpen(false)} />}
     </div>
   );
 }
@@ -109,11 +107,7 @@ const ComplianceReportModal = lazy(() =>
 function ComplianceDraftPortal({ onClose }: { onClose: () => void }) {
   return (
     <Suspense fallback={null}>
-      <ComplianceReportModal
-        alert={MUNICIPAL_ALERTS[0]!}
-        isOpen
-        onClose={onClose}
-      />
+      <ComplianceReportModal alert={MUNICIPAL_ALERTS[0]!} isOpen onClose={onClose} />
     </Suspense>
   );
 }

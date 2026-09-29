@@ -139,9 +139,7 @@ export function BuilderMap({ aoi }: BuilderMapProps) {
               <span className="mb-1 rounded-md bg-background/90 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary shadow-lg border border-primary/40 backdrop-blur-md">
                 {aoi.name}
               </span>
-              <MapPin
-                className="h-8 w-8 text-primary drop-shadow-[0_4px_10px_rgba(56,189,248,0.8)]"
-              />
+              <MapPin className="h-8 w-8 text-primary drop-shadow-[0_4px_10px_rgba(56,189,248,0.8)]" />
             </div>
           </Marker>
         </Map>

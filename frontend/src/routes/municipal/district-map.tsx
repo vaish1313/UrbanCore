@@ -52,45 +52,71 @@ function DistrictMapPage() {
         style={{ ...PANEL, overflow: "hidden", position: "relative", height: 560 }}
       >
         {/* Layer toggles */}
-        <div style={{
-          position: "absolute", top: 14, left: 14, zIndex: 10,
-          display: "flex", gap: 8, flexWrap: "wrap",
-        }}>
-          {([
-            { id: "heatmap",   icon: <Flame size={13} />,    label: "Heatmap" },
-            { id: "satellite", icon: <Satellite size={13} />, label: "Satellite" },
-            { id: "zoning",    icon: <Layers size={13} />,   label: "Zoning Layer" },
-          ] as const).map(l => (
-            <button key={l.id} type="button" onClick={() => setActiveLayer(l.id)}
+        <div
+          style={{
+            position: "absolute",
+            top: 14,
+            left: 14,
+            zIndex: 10,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          {(
+            [
+              { id: "heatmap", icon: <Flame size={13} />, label: "Heatmap" },
+              { id: "satellite", icon: <Satellite size={13} />, label: "Satellite" },
+              { id: "zoning", icon: <Layers size={13} />, label: "Zoning Layer" },
+            ] as const
+          ).map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => setActiveLayer(l.id)}
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 14px", borderRadius: 999, cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 14px",
+                borderRadius: 999,
+                cursor: "pointer",
                 backdropFilter: "blur(12px)",
                 fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
-                fontSize: "0.78rem", letterSpacing: "0.04em",
-                border: activeLayer === l.id
-                  ? "1px solid rgba(34,211,238,0.5)"
-                  : "1px solid rgba(255,255,255,0.1)",
-                background: activeLayer === l.id
-                  ? "rgba(34,211,238,0.15)"
-                  : "rgba(13,20,40,0.72)",
+                fontSize: "0.78rem",
+                letterSpacing: "0.04em",
+                border:
+                  activeLayer === l.id
+                    ? "1px solid rgba(34,211,238,0.5)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                background: activeLayer === l.id ? "rgba(34,211,238,0.15)" : "rgba(13,20,40,0.72)",
                 color: activeLayer === l.id ? "#22d3ee" : "#94a3b8",
                 fontWeight: activeLayer === l.id ? 700 : 500,
                 boxShadow: activeLayer === l.id ? "0 0 14px rgba(34,211,238,0.18)" : "none",
-              }}>
-              {l.icon}{l.label}
+              }}
+            >
+              {l.icon}
+              {l.label}
             </button>
           ))}
-          <button type="button" onClick={() => setViewState(v => ({ ...v, zoom: 11 }))}
+          <button
+            type="button"
+            onClick={() => setViewState((v) => ({ ...v, zoom: 11 }))}
             style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "6px 12px", borderRadius: 999, cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 999,
+              cursor: "pointer",
               backdropFilter: "blur(12px)",
               fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
               fontSize: "0.78rem",
               border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(13,20,40,0.72)", color: "#64748b",
-            }}>
+              background: "rgba(13,20,40,0.72)",
+              color: "#64748b",
+            }}
+          >
             <RefreshCw size={13} /> Reset View
           </button>
         </div>
@@ -106,15 +132,28 @@ function DistrictMapPage() {
         </Map>
 
         {/* Status bar */}
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10,
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          background: "rgba(13,20,40,0.82)", backdropFilter: "blur(12px)",
-          padding: "10px 20px", display: "flex", gap: 20, flexWrap: "wrap",
-          fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
-          fontSize: 11, color: "#64748b",
-        }}>
-          <span>CENTER: {viewState.latitude.toFixed(4)}° N, {viewState.longitude.toFixed(4)}° E</span>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(13,20,40,0.82)",
+            backdropFilter: "blur(12px)",
+            padding: "10px 20px",
+            display: "flex",
+            gap: 20,
+            flexWrap: "wrap",
+            fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+            fontSize: 11,
+            color: "#64748b",
+          }}
+        >
+          <span>
+            CENTER: {viewState.latitude.toFixed(4)}° N, {viewState.longitude.toFixed(4)}° E
+          </span>
           <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>
           <span>ZOOM: {viewState.zoom.toFixed(1)}</span>
           <span style={{ color: "rgba(255,255,255,0.1)" }}>|</span>

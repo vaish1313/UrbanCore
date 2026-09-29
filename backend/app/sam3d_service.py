@@ -92,7 +92,25 @@ class SAM3DService:
         
         This provides a reasonable approximation when SAM-3D is not available.
         """
-        height, width = construction_mask.shape
+        # Ensure image is in correct format (H, W, C)
+        if len(image.shape) == 3 and image.shape[0] < image.shape[-1]:
+            image = np.transpose(image, (1, 2, 0))
+
+        # Normalize if needed
+        if image.max() > 1.0:
+            image = image.astype(np.float32) / 10000.0
+        
+        # Get dimensions from construction mask
+        mask_height, mask_width = construction_mask.shape
+        img_height, img_width = image.shape[0], image.shape[1]
+        
+        # Resize image to match construction_mask if shapes don't match
+        if img_height != mask_height or img_width != mask_width:
+            # Simple nearest-neighbor resize using numpy
+            import cv2
+            image = cv2.resize(image, (mask_width, mask_height), interpolation=cv2.INTER_LINEAR)
+        
+        height, width = mask_height, mask_width
         
         # Initialize masks
         masks = {
@@ -102,14 +120,6 @@ class SAM3DService:
             "vegetation": np.zeros((height, width), dtype=np.uint8),
             "water": np.zeros((height, width), dtype=np.uint8)
         }
-
-        # Ensure image is in correct format (H, W, C)
-        if len(image.shape) == 3 and image.shape[0] < image.shape[-1]:
-            image = np.transpose(image, (1, 2, 0))
-
-        # Normalize if needed
-        if image.max() > 1.0:
-            image = image.astype(np.float32) / 10000.0
 
         # Extract bands (assuming B2, B3, B4, B8 = Blue, Green, Red, NIR)
         if image.shape[-1] >= 4:

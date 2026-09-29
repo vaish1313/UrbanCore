@@ -18,9 +18,7 @@ export function SelectedSiteCard({ aoi, onChangeLocation }: SelectedSiteCardProp
             <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary">
               SELECTED SITE / AOI
             </span>
-            <h2 className="font-display text-xl font-bold text-foreground">
-              {aoi.name}
-            </h2>
+            <h2 className="font-display text-xl font-bold text-foreground">{aoi.name}</h2>
             <p className="text-xs text-muted-foreground font-light">
               {aoi.location || "Nashik, Maharashtra"}
             </p>
@@ -64,9 +62,7 @@ export function SelectedSiteCard({ aoi, onChangeLocation }: SelectedSiteCardProp
             <Hash className="h-3.5 w-3.5 text-primary" />
             <span className="font-mono text-[10px] uppercase tracking-wider">AOI ID</span>
           </div>
-          <span className="font-mono text-sm font-semibold text-foreground">
-            {aoi.id}
-          </span>
+          <span className="font-mono text-sm font-semibold text-foreground">{aoi.id}</span>
         </div>
 
         <div className="rounded-2xl border border-border/50 bg-foreground/[0.02] p-3.5">

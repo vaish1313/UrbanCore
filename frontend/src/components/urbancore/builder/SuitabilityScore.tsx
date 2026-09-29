@@ -101,7 +101,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
   // Smooth score counting animation when switching AOIs
   useEffect(() => {
     if (isLoading || targetScore === undefined || targetScore === null) return;
-    
+
     let startTimestamp: number | null = null;
     const startScore = displayScore;
     const duration = 600; // ms
@@ -112,7 +112,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
       // Ease out cubic
       const easedProgress = 1 - Math.pow(1 - progress, 3);
       const currentScore = Math.round(startScore + (targetScore - startScore) * easedProgress);
-      
+
       setDisplayScore(currentScore);
 
       if (progress < 1) {
@@ -146,9 +146,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
           : "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(251,113,133,0.25)]";
 
   // Calculate terrain factor score from slope
-  const terrainFactorScore = Math.round(
-    Math.max(20, Math.min(100, 100 - aoi.terrain.slope * 2.5))
-  );
+  const terrainFactorScore = Math.round(Math.max(20, Math.min(100, 100 - aoi.terrain.slope * 2.5)));
 
   // Construct factors array using backend data or fallback to AOI props
   const defaultFactors: FactorItem[] = [
@@ -240,7 +238,9 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
           <h3 className="font-display text-xl font-bold tracking-tight text-foreground flex items-center gap-2 mt-1">
             <MapPin className="h-4.5 w-4.5 text-primary shrink-0" />
             <span>{aoi.name}</span>
-            <span className="text-muted-foreground font-normal text-base">— Land Suitability Index</span>
+            <span className="text-muted-foreground font-normal text-base">
+              — Land Suitability Index
+            </span>
           </h3>
         </div>
 
@@ -455,9 +455,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
                       </div>
                       <span className="font-mono text-xs font-bold text-primary">
                         {f.score}{" "}
-                        <span className="text-[10px] text-muted-foreground font-normal">
-                          / 100
-                        </span>
+                        <span className="text-[10px] text-muted-foreground font-normal">/ 100</span>
                       </span>
                     </div>
 

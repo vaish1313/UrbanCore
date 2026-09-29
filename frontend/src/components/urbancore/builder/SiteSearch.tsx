@@ -44,65 +44,69 @@ export function SiteSearch({
 
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/aois/search?q=${encodeURIComponent(query.trim())}`);
+        const response = await fetch(
+          `${API_BASE_URL}/aois/search?q=${encodeURIComponent(query.trim())}`,
+        );
         if (response.ok) {
           const data = await response.json();
           const apiResults = data.results || [];
 
           // Map backend items to frontend AOI objects or find matching NASHIK_AOIS
-          const mappedResults: AOI[] = apiResults.map((item: {
-            id: string;
-            name: string;
-            location?: string;
-            latitude?: number;
-            longitude?: number;
-            geometry?: { type: "Polygon"; coordinates: number[][][] };
-            category?: string;
-            suitability_score?: number;
-          }) => {
-            const existing = NASHIK_AOIS.find((a) => a.id === item.id);
-            if (existing) {
+          const mappedResults: AOI[] = apiResults.map(
+            (item: {
+              id: string;
+              name: string;
+              location?: string;
+              latitude?: number;
+              longitude?: number;
+              geometry?: { type: "Polygon"; coordinates: number[][][] };
+              category?: string;
+              suitability_score?: number;
+            }) => {
+              const existing = NASHIK_AOIS.find((a) => a.id === item.id);
+              if (existing) {
+                return {
+                  ...existing,
+                  location: item.location || existing.location || "Nashik, Maharashtra",
+                  geometry: item.geometry || existing.geometry,
+                };
+              }
               return {
-                ...existing,
-                location: item.location || existing.location || "Nashik, Maharashtra",
-                geometry: item.geometry || existing.geometry,
+                id: item.id || `aoi-${Date.now()}`,
+                name: item.name || "Unknown Plot",
+                location: item.location || "Nashik, Maharashtra",
+                category: (item.category as AOI["category"]) || "residential",
+                coords: {
+                  lat: item.latitude || 20.0094,
+                  lng: item.longitude || 73.7635,
+                  x: 50,
+                  y: 50,
+                },
+                geometry: item.geometry,
+                suitabilityScore: item.suitability_score || 80,
+                terrain: {
+                  elevation: 600,
+                  slope: 5,
+                  roughness: "Flat Plains",
+                  flatLandPercent: 85,
+                  readiness: "HIGH",
+                },
+                accessibilityScore: 85,
+                waterAvailabilityScore: 80,
+                environmentalRiskScore: 85,
+                developmentPotentialScore: 85,
+                constructionHistory: [],
+                constraints: {
+                  floodZoneOverlapPercent: 0,
+                  forestBoundaryOverlapPercent: 0,
+                  greenBeltOverlapPercent: 0,
+                  protectedAreaOverlapPercent: 0,
+                  environmentalRestriction: "Low",
+                },
+                summary: "Location retrieved from backend query.",
               };
-            }
-            return {
-              id: item.id || `aoi-${Date.now()}`,
-              name: item.name || "Unknown Plot",
-              location: item.location || "Nashik, Maharashtra",
-              category: (item.category as AOI["category"]) || "residential",
-              coords: {
-                lat: item.latitude || 20.0094,
-                lng: item.longitude || 73.7635,
-                x: 50,
-                y: 50,
-              },
-              geometry: item.geometry,
-              suitabilityScore: item.suitability_score || 80,
-              terrain: {
-                elevation: 600,
-                slope: 5,
-                roughness: "Flat Plains",
-                flatLandPercent: 85,
-                readiness: "HIGH",
-              },
-              accessibilityScore: 85,
-              waterAvailabilityScore: 80,
-              environmentalRiskScore: 85,
-              developmentPotentialScore: 85,
-              constructionHistory: [],
-              constraints: {
-                floodZoneOverlapPercent: 0,
-                forestBoundaryOverlapPercent: 0,
-                greenBeltOverlapPercent: 0,
-                protectedAreaOverlapPercent: 0,
-                environmentalRestriction: "Low",
-              },
-              summary: "Location retrieved from backend query.",
-            };
-          });
+            },
+          );
 
           setResults(mappedResults);
         } else {
@@ -220,7 +224,9 @@ export function SiteSearch({
                     <MapPin className="h-4 w-4 text-primary shrink-0" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="block text-xs font-medium text-foreground">{aoi.name}</span>
+                        <span className="block text-xs font-medium text-foreground">
+                          {aoi.name}
+                        </span>
                         {isSelected && (
                           <span className="rounded bg-primary/30 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-primary">
                             ✓ Selected
@@ -241,7 +247,9 @@ export function SiteSearch({
           ) : (
             <div className="p-4 text-center font-mono text-xs text-muted-foreground">
               <p className="font-medium text-foreground/80">No matching locations found</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">Try another AOI or location name.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Try another AOI or location name.
+              </p>
             </div>
           )}
         </div>

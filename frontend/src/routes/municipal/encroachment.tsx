@@ -31,14 +31,8 @@ function EncroachmentPage() {
       title="Detected Encroachment Flags"
       onBack={() => navigate({ to: "/municipal" })}
     >
-      <EncroachmentWatch
-        selectedAlert={selectedAlert}
-        onSelectAlert={setSelectedAlert}
-      />
-      <EvidenceViewer
-        alert={selectedAlert}
-        onGenerateDraft={() => setIsDraftOpen(true)}
-      />
+      <EncroachmentWatch selectedAlert={selectedAlert} onSelectAlert={setSelectedAlert} />
+      <EvidenceViewer alert={selectedAlert} onGenerateDraft={() => setIsDraftOpen(true)} />
       <ComplianceReportModal
         alert={selectedAlert}
         isOpen={isDraftOpen}
