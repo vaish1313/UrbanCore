@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
@@ -9,6 +9,98 @@ import {
   Satellite, BrainCircuit, Map, Clock, ArrowRight, Github, Mail, BookOpen
 } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
+
+// ─── SatelliteOrbitPanel ─────────────────────────────────────────────────────
+// Static Nashik map + dashed ellipse orbit + satellite moving around it via rAF
+function SatelliteOrbitPanel() {
+  const [angle, setAngle] = useState(0);
+  const rafRef = useRef<number>(0);
+  const lastRef = useRef<number>(0);
+
+  useEffect(() => {
+    // ~28 seconds per full orbit
+    const SPEED = (2 * Math.PI) / 28000; // radians per ms
+    const tick = (now: number) => {
+      const delta = lastRef.current ? now - lastRef.current : 0;
+      lastRef.current = now;
+      setAngle(a => a + SPEED * delta);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  // Ellipse in % units matching the SVG viewBox 0-100
+  // cx=50 cy=50 rx=44 ry=15
+  const cx = 50, cy = 50, rx = 44, ry = 15;
+  const satX = cx + rx * Math.cos(angle);       // % of width
+  const satY = cy + ry * Math.sin(angle);       // % of height
+  // Tilt angle for rotate="auto" equivalent
+  const tiltDeg = Math.atan2(ry * Math.cos(angle), -rx * Math.sin(angle)) * (180 / Math.PI);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Map image */}
+      <img
+        src="/citizen map.png"
+        alt="Nashik city satellite map"
+        className="absolute inset-0 w-full h-full object-cover select-none"
+        draggable={false}
+        style={{ filter: "brightness(0.42) saturate(0.82) blur(0.8px)", transform: "scale(1.01)" }}
+      />
+
+      {/* Edge vignette */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/80 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/20 to-black/65 pointer-events-none" />
+
+      {/* GIS grid */}
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        style={{
+          backgroundImage: "linear-gradient(to right,#38bdf8 1px,transparent 1px),linear-gradient(to bottom,#38bdf8 1px,transparent 1px)",
+          backgroundSize: "4rem 4rem",
+        }}
+      />
+
+      {/* Orbit path + satellite — pure SVG, 100% × 100% overlay */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        {/* Dashed orbit ellipse */}
+        <ellipse
+          cx={cx} cy={cy} rx={rx} ry={ry}
+          fill="none"
+          stroke="rgba(34,211,238,0.25)"
+          strokeWidth="0.3"
+          strokeDasharray="1.2 1.6"
+        />
+
+        {/* Satellite — positioned via JS-computed angle */}
+        <g transform={`translate(${satX}, ${satY}) rotate(${tiltDeg})`}>
+          {/* Scale down: satellite drawn at ±5 units, scale to ~1.8 SVG units */}
+          <g transform="scale(0.32)">
+            {/* Body */}
+            <rect x="-5" y="-3" width="10" height="6" rx="1" fill="#0ea5e9" opacity="0.95" />
+            {/* Left solar panel */}
+            <rect x="-11" y="-2" width="5.5" height="4" rx="0.6" fill="#38bdf8" opacity="0.85" />
+            {/* Right solar panel */}
+            <rect x="5.5"  y="-2" width="5.5" height="4" rx="0.6" fill="#38bdf8" opacity="0.85" />
+            {/* Antenna */}
+            <line x1="0" y1="-3" x2="0" y2="-6" stroke="#22d3ee" strokeWidth="0.8" />
+            <circle cx="0" cy="-6.5" r="0.8" fill="#22d3ee" />
+            {/* Scan beam (points "down" = away from earth in local coords) */}
+            <line x1="0" y1="3" x2="0" y2="7" stroke="rgba(34,211,238,0.7)" strokeWidth="0.6" />
+            <line x1="-2" y1="7" x2="2" y2="7" stroke="rgba(34,211,238,0.4)" strokeWidth="0.5" />
+          </g>
+          {/* Glow halo */}
+          <circle cx="0" cy="0" r="1.2" fill="rgba(34,211,238,0.15)" />
+        </g>
+      </svg>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/about")({
   component: AboutPage,
@@ -207,7 +299,7 @@ function AboutPage() {
                 "Sentinel-2 Imagery",
                 "Google Earth Engine",
                 "U-Net Architecture",
-                "ResNet34 Encoder",
+                "ResNet18 Encoder",
                 "Spectral Indices",
                 "Multi-temporal Analysis"
               ].map(tech => (
@@ -221,11 +313,9 @@ function AboutPage() {
       </section>
 
       {/* SECTION 4 - THE URBANCORE VISION */}
-      <section className="relative z-10 py-32 w-full bg-black/30 backdrop-blur-sm border-y border-white/5 overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={heroBg} alt="Vision Map" className="w-full h-full object-cover opacity-20 mix-blend-screen" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-black" />
-        </div>
+      <section className="relative z-10 py-32 w-full border-y border-white/5 overflow-hidden">
+        <SatelliteOrbitPanel />
+
         <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-10 text-center">
           <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-6">A clearer view of how cities evolve.</h2>
           <p className="text-lg text-slate-400 font-light max-w-2xl mx-auto">
