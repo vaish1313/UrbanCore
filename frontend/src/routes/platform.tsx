@@ -146,7 +146,7 @@ function PlatformPage() {
               { label: "Sentinel-2", icon: Satellite },
               { label: "Preprocessing", icon: Binary },
               { label: "Spectral Features", icon: Activity },
-              { label: "U-Net / ResNet34", icon: Database },
+              { label: "U-Net / ResNet18", icon: Database },
               { label: "Built-up Seg.", icon: ScanSearch },
               { label: "Temporal Comp.", icon: Clock },
               { label: "Urban Change", icon: Layers }
@@ -201,7 +201,7 @@ function PlatformPage() {
           <h2 className="font-display text-2xl font-light text-slate-300 mb-12 uppercase tracking-[0.2em]">Technical Foundation</h2>
           
           <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-16">
-            {["Sentinel-2", "Google Earth Engine", "U-Net", "ResNet34", "GIS", "Multi-temporal Analysis"].map(tech => (
+            {["Sentinel-2", "Google Earth Engine", "U-Net", "ResNet18", "GIS", "Multi-temporal Analysis"].map(tech => (
               <span key={tech} className="px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-[12px] text-slate-300 font-mono tracking-wide backdrop-blur-md">
                 {tech}
               </span>
