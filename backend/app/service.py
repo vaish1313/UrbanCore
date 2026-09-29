@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +21,7 @@ from .gee_service import gee_service
 from .gcs_service import gcs_service
 from .model_service import model_service
 from .sam3d_service import sam3d_service
+from .gee_cache_service import gee_tiff_cache
 
 
 class AnalysisStore:
@@ -91,7 +93,8 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
     Complete analysis pipeline running in background.
     
     Steps:
-    1. Export imagery from Google Earth Engine to Drive (last 5 years)
+    0. Check TIFF cache for all requested years (NEW - cache-first orchestration)
+    1. Export imagery from Google Earth Engine to Drive (only for missing years)
     2. Monitor export tasks until complete
     3. Download GeoTIFF files from Drive
     4. Run UNet inference for construction detection
@@ -99,18 +102,62 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
     6. Generate visualization GeoJSON for UI
     """
     try:
-        # Step 1: Submit Earth Engine export tasks
-        analyses.update(analysis_id, status="exporting")
-        print(f"[{analysis_id}] Starting Earth Engine exports...")
+        # Get years from the analysis record
+        analysis_record = analyses.get(analysis_id)
+        requested_years = analysis_record["years"]
         
-        exports = gee_service.export_imagery_to_drive(
-            latitude=request.latitude,
-            longitude=request.longitude,
-            radius_m=request.radius_m,
-            start_year=request.end_year - 5,
-            end_year=request.end_year,
-            analysis_id=analysis_id
-        )
+        # Step 0: Check TIFF cache BEFORE submitting GEE exports
+        analyses.update(analysis_id, status="checking_cache")
+        print(f"[{analysis_id}] Checking TIFF cache for years: {requested_years}...")
+        
+        cached_years = []
+        missing_years = []
+        cached_tiff_paths = {}  # year -> local path to cached TIFF
+        
+        for year in requested_years:
+            # Generate cache key and check if TIFF is cached
+            cache_key = gee_tiff_cache.generate_cache_key(
+                latitude=request.latitude,
+                longitude=request.longitude,
+                radius_m=request.radius_m,
+                year=year,
+                gee_version=settings.gee_version
+            )
+            
+            cached_data = gee_tiff_cache.get(cache_key)
+            
+            if cached_data and cached_data.get("tif_path"):
+                cached_years.append(year)
+                cached_tiff_paths[year] = cached_data["tif_path"]
+                print(f"[{analysis_id}] Year {year}: CACHED (reusing)")
+            else:
+                missing_years.append(year)
+                print(f"[{analysis_id}] Year {year}: CACHE MISS (will export from GEE)")
+        
+        print(f"[{analysis_id}] Cache summary: {len(cached_years)} cached, {len(missing_years)} missing")
+        
+        # Step 1: Submit Earth Engine export tasks ONLY for missing years
+        analyses.update(analysis_id, status="exporting")
+        print(f"[{analysis_id}] Starting Earth Engine exports for missing years...")
+        
+        exports = []
+        if missing_years:
+            # Calculate start_year/end_year for missing years range
+            min_year = min(missing_years)
+            max_year = max(missing_years)
+            
+            exports = gee_service.export_imagery_to_drive(
+                latitude=request.latitude,
+                longitude=request.longitude,
+                radius_m=request.radius_m,
+                start_year=min_year,
+                end_year=max_year,
+                analysis_id=analysis_id
+            )
+            
+            print(f"[{analysis_id}] Submitted {len(exports)} export tasks to GEE for {len(missing_years)} missing years")
+        else:
+            print(f"[{analysis_id}] All years cached! No GEE exports needed.")
         
         analyses.update(
             analysis_id,
@@ -119,82 +166,117 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
         )
         print(f"[{analysis_id}] Submitted {len(exports)} export tasks to GEE")
         
-        # Step 2: Monitor export completion. Submission only queues the
-        # exports; files are not ready in Drive until every task completes.
-        analyses.update(
-            analysis_id,
-            status="monitoring_exports",
-            message="Waiting for Earth Engine exports to complete. This may take 5-15 minutes."
-        )
+        # Step 2: Monitor export completion (only if there are missing years)
+        # Submission only queues the exports; files are not ready in Drive until
+        # every task completes.
+        if missing_years:
+            analyses.update(
+                analysis_id,
+                status="monitoring_exports",
+                message="Waiting for Earth Engine exports to complete. This may take 5-15 minutes."
+            )
 
-        task_ids = [export["gee_task_id"] for export in exports]
-        deadline = time.monotonic() + settings.gee_export_timeout_seconds
-        terminal_failures = {"FAILED", "CANCELLED", "CANCELED", "NOT_FOUND"}
+            task_ids = [export["gee_task_id"] for export in exports]
+            deadline = time.monotonic() + settings.gee_export_timeout_seconds
+            terminal_failures = {"FAILED", "CANCELLED", "CANCELED", "NOT_FOUND"}
 
-        while True:
-            task_statuses = gee_service.check_all_tasks(task_ids)
-            normalized_states = {
-                task_id: str(details.get("state", "UNKNOWN")).upper()
-                for task_id, details in task_statuses.items()
-            }
+            while True:
+                task_statuses = gee_service.check_all_tasks(task_ids)
+                normalized_states = {
+                    task_id: str(details.get("state", "UNKNOWN")).upper()
+                    for task_id, details in task_statuses.items()
+                }
 
-            # Keep the frontend task details synchronized with Earth Engine.
-            for export in exports:
-                details = task_statuses.get(export["gee_task_id"], {})
-                export["status"] = str(details.get("state", "UNKNOWN")).lower()
-                export["progress"] = details.get("progress", 0)
-            analyses.update(analysis_id, gee_tasks=exports)
+                # Keep the frontend task details synchronized with Earth Engine.
+                for export in exports:
+                    details = task_statuses.get(export["gee_task_id"], {})
+                    export["status"] = str(details.get("state", "UNKNOWN")).lower()
+                    export["progress"] = details.get("progress", 0)
+                analyses.update(analysis_id, gee_tasks=exports)
 
-            failures = {
-                task_id: state
-                for task_id, state in normalized_states.items()
-                if state in terminal_failures
-            }
-            if failures:
-                raise RuntimeError(f"Earth Engine export task failure: {failures}")
+                failures = {
+                    task_id: state
+                    for task_id, state in normalized_states.items()
+                    if state in terminal_failures
+                }
+                if failures:
+                    raise RuntimeError(f"Earth Engine export task failure: {failures}")
 
-            if normalized_states and all(state == "COMPLETED" for state in normalized_states.values()):
-                break
+                if normalized_states and all(state == "COMPLETED" for state in normalized_states.values()):
+                    break
 
-            if time.monotonic() >= deadline:
-                raise TimeoutError(
-                    f"Earth Engine exports did not complete within "
-                    f"{settings.gee_export_timeout_seconds // 60} minutes"
-                )
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Earth Engine exports did not complete within "
+                        f"{settings.gee_export_timeout_seconds // 60} minutes"
+                    )
 
-            time.sleep(settings.gee_poll_interval_seconds)
+                time.sleep(settings.gee_poll_interval_seconds)
 
-        analyses.update(
-            analysis_id,
-            status="exports_completed",
-            message="GEE exports completed. Files available in Google Cloud Storage."
-        )
+            analyses.update(
+                analysis_id,
+                status="exports_completed",
+                message="GEE exports completed. Files available in Google Cloud Storage."
+            )
+        else:
+            # All years are cached, skip GEE monitoring
+            print(f"[{analysis_id}] Skipping GEE monitoring (all years cached)")
+            analyses.update(
+                analysis_id,
+                status="exports_completed",
+                message="All years found in cache. Skipping GEE exports."
+            )
         
-        # Step 3: Download from Google Cloud Storage
+        # Step 3: Download from Google Cloud Storage (only for missing years)
+        # and copy cached TIFFs to the download directory
         analyses.update(analysis_id, status="downloading")
-        print(f"[{analysis_id}] Downloading files from Google Cloud Storage...")
+        print(f"[{analysis_id}] Assembling TIFF files (cached + downloaded)...")
         
         # Setup directories
         data_dir = settings.analysis_dir / analysis_id
         download_dir = data_dir / "downloads"
         download_dir.mkdir(parents=True, exist_ok=True)
         
-        # Get years from the analysis record
-        analysis_record = analyses.get(analysis_id)
+        # Dictionary to hold all TIFF paths: year -> path
+        all_tiff_paths = {}
         
-        downloaded_files = gcs_service.download_analysis_files(
-            analysis_id=analysis_id,
-            destination_dir=download_dir,
-            years=analysis_record["years"]
-        )
+        # Copy cached TIFFs to download directory
+        if cached_years:
+            print(f"[{analysis_id}] Copying {len(cached_years)} cached TIFFs to download directory...")
+            for year in cached_years:
+                cached_path = Path(cached_tiff_paths[year])
+                download_path = download_dir / f"urbancore_{analysis_id}_{year}.tif"
+                
+                # Copy the cached TIFF to the download directory
+                shutil.copy2(cached_path, download_path)
+                all_tiff_paths[year] = download_path
+                print(f"[{analysis_id}] Year {year}: copied from cache")
         
-        if not downloaded_files:
-            raise RuntimeError("No files were downloaded from Google Cloud Storage")
+        # Download missing TIFFs from GCS
+        if missing_years:
+            print(f"[{analysis_id}] Downloading {len(missing_years)} TIFFs from Google Cloud Storage...")
+            
+            downloaded_files = gcs_service.download_analysis_files(
+                analysis_id=analysis_id,
+                destination_dir=download_dir,
+                years=missing_years,
+                latitude=request.latitude,
+                longitude=request.longitude,
+                radius_m=request.radius_m
+            )
+            
+            if not downloaded_files:
+                raise RuntimeError("No files were downloaded from Google Cloud Storage")
+            
+            all_tiff_paths.update(downloaded_files)
+        
+        if not all_tiff_paths:
+            raise RuntimeError("No TIFF files available (no cache, no downloads)")
         
         analyses.update(
             analysis_id,
             status="processing",
-            downloads={year: str(path) for year, path in downloaded_files.items()}
+            downloads={year: str(path) for year, path in all_tiff_paths.items()}
         )
         
         # Step 4: Run UNet inference for each year
@@ -202,11 +284,20 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
         inference_dir = data_dir / "inference"
         inference_results = {}
         
-        for year, tif_path in downloaded_files.items():
+        for year, tif_path in all_tiff_paths.items():
             print(f"[{analysis_id}] Processing year {year}...")
             
             year_output_dir = inference_dir / str(year)
-            result = model_service.process_tif(tif_path, year_output_dir)
+            
+            # Pass geographic parameters for caching
+            result = model_service.process_tif(
+                tif_path=tif_path,
+                output_dir=year_output_dir,
+                latitude=request.latitude,
+                longitude=request.longitude,
+                radius_m=request.radius_m,
+                year=year
+            )
             inference_results[year] = result
         
         analyses.update(
@@ -221,7 +312,7 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
             print(f"[{analysis_id}] Generating SAM-3D visualizations...")
             viz_results = {}
             
-            for year, tif_path in downloaded_files.items():
+            for year, tif_path in all_tiff_paths.items():
                 # Get construction mask and metadata from inference
                 inf_result = inference_results[year]
                 
@@ -304,7 +395,17 @@ def process_downloaded_images(analysis_id: str) -> None:
             print(f"[{analysis_id}] Processing year {year}...")
             
             year_output_dir = inference_dir / str(year)
-            result = model_service.process_tif(tif_path, year_output_dir)
+            
+            # Get original analysis parameters for caching
+            analysis_record = analyses.get(analysis_id)
+            result = model_service.process_tif(
+                tif_path=tif_path,
+                output_dir=year_output_dir,
+                latitude=analysis_record["latitude"],
+                longitude=analysis_record["longitude"],
+                radius_m=analysis_record["radius_m"],
+                year=year
+            )
             inference_results[year] = result
         
         analyses.update(
