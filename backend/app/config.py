@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     data_dir: str = "./data/analyses"
     gee_poll_interval_seconds: int = 30
     gee_export_timeout_seconds: int = 1800
+    # Model and preprocessing versions for cache invalidation
+    model_version: str = "v1"
+    preprocessing_version: str = "v1" 
+    # GEE version for TIFF cache invalidation
+    gee_version: str = "v1"
 
     @property
     def origins(self) -> list[str]:

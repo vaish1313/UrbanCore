@@ -3,6 +3,7 @@ from pathlib import Path
 from google.cloud import storage
 from google.oauth2 import service_account
 from .config import settings
+from .gee_cache_service import gee_tiff_cache
 
 
 class GoogleCloudStorageService:
@@ -83,7 +84,10 @@ class GoogleCloudStorageService:
         self,
         analysis_id: str,
         destination_dir: Path,
-        years: list[int]
+        years: list[int],
+        latitude: float = None,
+        longitude: float = None,
+        radius_m: int = None
     ) -> dict[int, Path]:
         """
         Download all GeoTIFF files for a specific analysis from GCS.
@@ -92,6 +96,9 @@ class GoogleCloudStorageService:
             analysis_id: The analysis identifier
             destination_dir: Directory to save downloaded files
             years: List of years to download
+            latitude: Center latitude for caching (optional)
+            longitude: Center longitude for caching (optional)  
+            radius_m: Buffer radius for caching (optional)
             
         Returns:
             Dictionary mapping year to downloaded file path
@@ -102,11 +109,41 @@ class GoogleCloudStorageService:
         destination_dir.mkdir(parents=True, exist_ok=True)
 
         downloaded = {}
+        use_tiff_cache = all(param is not None for param in [latitude, longitude, radius_m])
 
         for year in years:
             filename = f"urbancore_{analysis_id}_{year}.tif"
-            gcs_path = f"analyses/{analysis_id}/{filename}"
             destination = destination_dir / filename
+            cache_key = None
+            
+            # Check TIFF cache if geographic parameters provided
+            if use_tiff_cache:
+                cache_key = gee_tiff_cache.generate_cache_key(
+                    latitude=latitude,
+                    longitude=longitude,
+                    radius_m=radius_m,
+                    year=year,
+                    gee_version=settings.gee_version
+                )
+                
+                # Try to use cached TIFF
+                if gee_tiff_cache.validate(cache_key):
+                    print(f"    TIFF CACHE HIT: {cache_key}")
+                    
+                    # Copy cached TIFF to analysis directory
+                    cached_path = gee_tiff_cache.copy_to_analysis_dir(cache_key, destination)
+                    if cached_path:
+                        downloaded[year] = cached_path
+                        continue
+                    else:
+                        print(f"    Warning: Failed to copy cached TIFF, falling back to download")
+                else:
+                    print(f"    TIFF CACHE MISS: {cache_key}")
+            else:
+                print(f"    TIFF cache disabled: missing geographic parameters for {filename}")
+
+            # Download from GCS (cache miss or cache disabled)
+            gcs_path = f"analyses/{analysis_id}/{filename}"
 
             try:
                 # Check if file exists first
@@ -118,6 +155,26 @@ class GoogleCloudStorageService:
                 self.download_file(gcs_path, destination)
                 downloaded[year] = destination
                 print(f"Downloaded from GCS: {filename}")
+                
+                # Store in TIFF cache for future reuse
+                if use_tiff_cache and cache_key:
+                    try:
+                        cached_path = gee_tiff_cache.set(
+                            cache_key=cache_key,
+                            latitude=latitude,
+                            longitude=longitude,
+                            radius_m=radius_m,
+                            year=year,
+                            gee_version=settings.gee_version,
+                            source_tif_path=destination
+                        )
+                        if cached_path:
+                            print(f"    TIFF CACHE STORED: {cache_key}")
+                        else:
+                            print(f"    TIFF CACHE STORE FAILED: {cache_key} - set() returned None")
+                    except Exception as cache_err:
+                        print(f"    TIFF CACHE STORE FAILED: {cache_key} - {cache_err}")
+                
             except Exception as e:
                 print(f"Error downloading {filename} from GCS: {e}")
 
