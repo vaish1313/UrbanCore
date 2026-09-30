@@ -9,9 +9,6 @@ import {
   Satellite,
   Flag,
   Eye,
-  ShieldAlert,
-  Download,
-  Flame,
 } from "lucide-react";
 import type { RoleFeatureMenuItem } from "./RoleFeaturesDropdown";
 
@@ -26,12 +23,9 @@ export const BUILDER_FEATURE_MENU: RoleFeatureMenuItem[] = [
 ];
 
 export const MUNICIPAL_FEATURE_MENU: RoleFeatureMenuItem[] = [
-  { id: "overview", label: "Command Overview", icon: Compass },
-  { id: "district-map", label: "District Map", icon: Satellite },
-  { id: "encroachment", label: "Encroachment Watch", icon: Flag },
-  { id: "forensics", label: "Case Forensics", icon: Eye },
-  { id: "heatmap", label: "Construction Heatmap", icon: Flame },
-  { id: "legal", label: "AI Legal Notice", icon: ShieldAlert },
-  { id: "export", label: "Case Export", icon: Download },
-  { id: "compliance", label: "Compliance Draft", icon: FileText, isReportModalTrigger: true },
+  { id: "overview",      label: "Command Overview",    icon: Compass },
+  { id: "district-map",  label: "District Map",        icon: Satellite },
+  { id: "encroachment",  label: "Encroachment Watch",  icon: Flag },
+  { id: "case-detail",   label: "Case Detail",         icon: Eye },
+  { id: "complaints",    label: "Citizen Complaints",  icon: FileText },
 ];
