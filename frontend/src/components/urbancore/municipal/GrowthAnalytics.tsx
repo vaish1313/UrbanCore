@@ -1,7 +1,71 @@
-import { TrendingUp, Flame, MapPin } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, Flame, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { motion } from "motion/react";
+
+import { useAnalysis } from "@/hooks/use-analysis";
+import { UrbanCoreAnalysisMap } from "./UrbanCoreAnalysisMap";
 import { GROWTH_HOTSPOTS } from "@/data/municipalData";
 
-export function GrowthAnalytics({ onSelectHotspot }: { onSelectHotspot?: (id: string) => void }) {
+interface GrowthAnalyticsProps {
+  onSelectHotspot?: (id: string) => void;
+  analysisId?: string; // New prop for real analysis data
+}
+
+export function GrowthAnalytics({ onSelectHotspot, analysisId }: GrowthAnalyticsProps) {
+  const { data: analysis, isLoading, error } = useAnalysis(analysisId);
+
+  // If we have analysis ID and it's loading or loaded, show the real analysis
+  if (analysisId && (isLoading || analysis)) {
+    if (isLoading) {
+      return (
+        <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="ml-3 text-muted-foreground">Loading analysis data...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+          <div className="flex items-center justify-center py-16 text-center">
+            <div>
+              <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Analysis Error</h3>
+              <p className="text-muted-foreground">{error.message}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (analysis && analysis.status !== "completed") {
+      return (
+        <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+          <div className="flex items-center justify-center py-16 text-center">
+            <div>
+              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Analysis In Progress</h3>
+              <p className="text-muted-foreground">
+                Status: {analysis.status} • {analysis.message}
+              </p>
+              <div className="mt-4 text-sm text-muted-foreground">
+                Analysis ID: {analysis.id}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (analysis && analysis.status === "completed") {
+      return <UrbanCoreAnalysisMap analysis={analysis} />;
+    }
+  }
+
+  // Fallback to mock data display (original functionality)
   return (
     <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
       <div className="flex items-center justify-between">

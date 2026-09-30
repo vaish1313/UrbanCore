@@ -346,7 +346,7 @@ export function WorkflowVisualization() {
           </motion.span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[8px] text-slate-500">U-Net · ResNet34</span>
+          <span className="font-mono text-[8px] text-slate-500">U-Net · ResNet18</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="font-mono text-[8px] text-emerald-400">Model Active</span>
         </div>

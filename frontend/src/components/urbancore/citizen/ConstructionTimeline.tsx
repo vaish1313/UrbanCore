@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { Building2, Loader2, AlertCircle, TrendingUp, Calendar } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Building2, Loader2, AlertCircle, TrendingUp, Calendar, TrendingDown, Layers, Play, Pause } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { ConstructionHeatmapGrid } from "./ConstructionHeatmapGrid";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
@@ -18,12 +19,57 @@ interface YearData {
   mask_path?: string;
 }
 
+interface YearDataForGrid {
+  year: number;
+  built_up_pct: number;
+}
+
+// Helper function to count up numbers
+function useCountUp(target: number, duration: number = 600) {
+  const [current, setCurrent] = useState(target);
+  const requestRef = useRef<number>();
+  const startValueRef = useRef(target);
+
+  useEffect(() => {
+    const previousValue = startValueRef.current;
+    const start = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed = time - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const value = previousValue + (target - previousValue) * eased;
+      
+      setCurrent(value);
+
+      if (progress < 1) {
+        requestRef.current = requestAnimationFrame(animate);
+      } else {
+        startValueRef.current = target;
+      }
+    };
+
+    requestRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [target, duration]);
+
+  return current;
+}
+
 export function ConstructionTimeline({ analysisId, onReportConcern }: ConstructionTimelineProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [yearlyData, setYearlyData] = useState<Record<number, YearData>>({});
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [fadeStats, setFadeStats] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playIntervalRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (!analysisId) {
@@ -89,7 +135,71 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
     fetchAnalysisResults();
   }, [analysisId]);
 
+  // Prepare data for the heatmap grid
+  const gridData: YearDataForGrid[] = availableYears.map(year => ({
+    year,
+    built_up_pct: yearlyData[year]?.construction_percentage || 0
+  }));
+
+  // Play/pause functionality
+  useEffect(() => {
+    if (isPlaying && availableYears.length > 1) {
+      playIntervalRef.current = setInterval(() => {
+        const currentIndex = availableYears.indexOf(selectedYear);
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex < availableYears.length) {
+          setSelectedYear(availableYears[nextIndex]);
+        } else {
+          // Reached the end, stop playing
+          setIsPlaying(false);
+        }
+      }, 1500); // 1.5 seconds per year
+    } else if (playIntervalRef.current) {
+      clearInterval(playIntervalRef.current);
+    }
+
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+    };
+  }, [isPlaying, selectedYear, availableYears]);
+
+  const handlePlay = () => {
+    if (selectedYear === availableYears[availableYears.length - 1]) {
+      // If at the end, restart from beginning
+      setSelectedYear(availableYears[0]);
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Year change animation for stats
+  const handleYearChange = (year: number) => {
+    setFadeStats(true);
+    setTimeout(() => {
+      setSelectedYear(year);
+      setTimeout(() => setFadeStats(false), 300);
+    }, 150);
+  };
+
   const currentYearData = yearlyData[selectedYear];
+  const previousYearData = selectedYear > (availableYears[0] || 2021) 
+    ? yearlyData[selectedYear - 1] 
+    : null;
+
+  // Calculate growth percentage (percentage points)
+  const growthPercentagePoints = previousYearData 
+    ? ((currentYearData?.construction_percentage || 0) - previousYearData.construction_percentage) 
+    : 0;
+
+  // Growth trend
+  const growthTrend = Math.abs(growthPercentagePoints) < 0.1 ? "Stable" : 
+                     growthPercentagePoints > 0 ? "Increasing" : "Decreasing";
+
+  // Animated values for stats
+  const animatedPercentage = useCountUp(currentYearData?.construction_percentage || 0);
+  const animatedPixels = useCountUp(currentYearData?.construction_pixels || 0);
 
   // Loading state
   if (loading) {
@@ -150,18 +260,45 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
             </span>
           </h2>
           <p className="text-sm md:text-base text-slate-400">
-            U-Net model analysis showing construction development over {availableYears.length} years
+            Grid visualization showing construction growth over {availableYears.length} years
           </p>
         </div>
 
-        {/* Year Slider */}
+        {/* HERO VISUALIZATION - 20x20 GRID */}
+        <div className="relative z-10 mb-8 flex justify-center">
+          <ConstructionHeatmapGrid
+            yearlyData={gridData}
+            selectedYear={selectedYear}
+            availableYears={availableYears}
+          />
+        </div>
+
+        {/* Year Selector with Play/Pause */}
         <div className="relative z-10 mb-8">
           <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                <Calendar className="w-4 h-4 text-cyan-400" />
-                Select Year
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                  <Calendar className="w-4 h-4 text-cyan-400" />
+                  Select Year
+                </span>
+                {availableYears.length > 1 && (
+                  <button
+                    onClick={handlePlay}
+                    className="flex items-center gap-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1.5 transition-colors"
+                    title={isPlaying ? "Pause timeline" : "Play timeline"}
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-3 w-3 text-cyan-400" />
+                    ) : (
+                      <Play className="h-3 w-3 text-cyan-400" />
+                    )}
+                    <span className="font-mono text-[8px] uppercase tracking-wider text-cyan-400">
+                      {isPlaying ? "pause" : "play"}
+                    </span>
+                  </button>
+                )}
+              </div>
               <motion.span
                 key={selectedYear}
                 initial={{ scale: 1.2, opacity: 0 }}
@@ -177,17 +314,19 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
               {availableYears.map((year) => (
                 <motion.button
                   key={year}
-                  onClick={() => setSelectedYear(year)}
+                  onClick={() => handleYearChange(year)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`
                     px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300
-                    ${
-                      selectedYear === year
-                        ? "bg-cyan-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.5)] border-2 border-cyan-400"
-                        : "bg-black/60 text-slate-400 border border-white/10 hover:border-cyan-400/50 hover:text-cyan-300"
+                    ${selectedYear === year
+                      ? "text-white shadow-[0_0_20px_rgba(247,147,26,0.5)] border-2 border-orange-400"
+                      : "bg-black/60 text-slate-400 border border-white/10 hover:border-orange-400/50 hover:text-orange-300"
                     }
                   `}
+                  style={{
+                    backgroundColor: selectedYear === year ? '#f97316' : undefined
+                  }}
                 >
                   {year}
                 </motion.button>
@@ -201,10 +340,10 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
                 min={availableYears[0]}
                 max={availableYears[availableYears.length - 1]}
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${((selectedYear - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%, rgb(30 41 59) ${((selectedYear - availableYears[0]) / (availableYears[availableYears.length - 1] - availableYears[0])) * 100}%, rgb(30 41 59) 100%)`,
+                  accentColor: '#f97316'
                 }}
               />
               <div className="flex justify-between mt-2 text-xs text-slate-500">
@@ -215,55 +354,96 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
           </div>
         </div>
 
-        {/* Current Year Data Display */}
+        {/* Stats Cards with Fade Animation */}
         <AnimatePresence mode="wait">
           {currentYearData && (
             <motion.div
               key={selectedYear}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: fadeStats ? 0 : 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: fadeStats ? 0.15 : 0.3 }}
               className="relative z-10"
             >
               {/* Statistics Cards */}
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                {/* Construction Percentage */}
+              <div className="grid md:grid-cols-4 gap-6 mb-8">
+                {/* Built-Up Area */}
                 <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 shadow-lg">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Construction Area
+                      Built-Up Area
                     </span>
                     <Building2 className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-bold text-white">
-                      {currentYearData.construction_percentage.toFixed(1)}
+                      {animatedPercentage.toFixed(1)}
                     </span>
                     <span className="text-2xl text-cyan-400">%</span>
                   </div>
                   <p className="text-xs text-slate-400 mt-2">of analyzed region</p>
                 </div>
 
-                {/* Construction Pixels */}
+                {/* New Construction (Percentage Points) */}
+                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/30 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      New Construction
+                    </span>
+                    {growthPercentagePoints >= 0 ? (
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 text-red-400" />
+                    )}
+                  </div>
+                  {previousYearData ? (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-3xl font-bold ${growthPercentagePoints >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {growthPercentagePoints >= 0 ? '+' : ''}{growthPercentagePoints.toFixed(1)}
+                        </span>
+                        <span className="text-lg text-slate-400">pp</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">
+                        percentage points vs {selectedYear - 1}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-slate-400">
+                          Baseline Year
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        No previous data
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {/* Growth Trend */}
                 <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-lg">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Construction Pixels
+                      Growth Trend
                     </span>
-                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                    <Layers className="w-5 h-5 text-purple-400" />
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-white">
-                      {currentYearData.construction_pixels.toLocaleString()}
+                    <span className={`text-2xl font-bold ${
+                      growthTrend === 'Increasing' ? 'text-green-400' : 
+                      growthTrend === 'Decreasing' ? 'text-red-400' : 'text-slate-400'
+                    }`}>
+                      {growthTrend}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-2">
-                    of {currentYearData.total_pixels.toLocaleString()} total pixels
+                    {Math.round(animatedPixels).toLocaleString()} pixels
                   </p>
                 </div>
 
-                {/* Year Label */}
+                {/* Analysis Year */}
                 <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 backdrop-blur-xl border border-orange-500/30 rounded-2xl p-6 shadow-lg flex flex-col justify-center">
                   <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
                     Analysis Year
@@ -282,7 +462,7 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-400">Model Architecture:</span>
-                    <span className="text-white font-medium">ResNet34 U-Net</span>
+                    <span className="text-white font-medium">ResNet18 U-Net</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Input Channels:</span>
@@ -304,7 +484,7 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
           )}
         </AnimatePresence>
 
-        {/* Growth Comparison (if multiple years available) */}
+        {/* Construction Growth Overview (Kept as requested) */}
         {availableYears.length > 1 && (
           <div className="relative z-10 mt-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Construction Growth Overview</h3>
@@ -325,12 +505,11 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${barWidth}%` }}
-                        transition={{ duration: 0.8, delay: year * 0.1 }}
-                        className={`h-full rounded-full ${
-                          year === selectedYear
-                            ? "bg-gradient-to-r from-cyan-500 to-blue-500"
+                        transition={{ duration: 0.8, delay: year * 0.05 }}
+                        className={`h-full rounded-full ${year === selectedYear
+                            ? "bg-gradient-to-r from-orange-500 to-red-500"
                             : "bg-gradient-to-r from-slate-600 to-slate-500"
-                        }`}
+                          }`}
                       />
                     </div>
                     <span className="text-sm font-semibold text-white w-20 text-right">
