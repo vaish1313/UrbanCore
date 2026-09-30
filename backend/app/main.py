@@ -1,5 +1,8 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import json
+from pathlib import Path
 from .auth import login, register
 from .config import settings
 from .schemas import AnalysisRequest, GeocodeResult, LoginRequest, RegisterRequest
@@ -112,3 +115,76 @@ async def get_year_results(analysis_id: str, year: int):
         "inference": inference,
         "visualization": visualization
     }
+
+@app.get(f"{settings.api_v1_prefix}/analyses/{{analysis_id}}/geojson/{{year}}/{{file_type}}")
+async def get_geojson_file(analysis_id: str, year: int, file_type: str):
+    """
+    Get the actual GeoJSON file for a specific analysis year.
+    
+    Args:
+        analysis_id: UUID of the analysis
+        year: Year to retrieve (must be in analysis year range)
+        file_type: Either 'inference' or 'visualization'
+    
+    Returns:
+        GeoJSON content as application/json
+    """
+    # Validate file_type
+    if file_type not in ["inference", "visualization"]:
+        raise HTTPException(400, "file_type must be 'inference' or 'visualization'")
+    
+    # Get and validate analysis
+    analysis = analyses.get(analysis_id)
+    if not analysis:
+        raise HTTPException(404, "Analysis not found")
+    
+    if analysis["status"] != "completed":
+        raise HTTPException(400, "Analysis not yet completed")
+    
+    # Get the appropriate results for the year
+    if file_type == "inference":
+        results = analysis.get("inference_results", {}).get(str(year))
+        if not results or "geojson_path" not in results:
+            raise HTTPException(404, f"No inference GeoJSON found for year {year}")
+        geojson_path = results["geojson_path"]
+    else:  # visualization
+        results = analysis.get("visualization_results", {}).get(str(year))
+        if not results or "geojson_path" not in results:
+            raise HTTPException(404, f"No visualization GeoJSON found for year {year}")
+        geojson_path = results["geojson_path"]
+    
+    # Validate that the path contains the analysis_id (security check)
+    if analysis_id not in geojson_path:
+        raise HTTPException(403, "Invalid file path for this analysis")
+    
+    # Convert to absolute path and validate existence
+    file_path = Path(geojson_path)
+    if not file_path.is_absolute():
+        # Relative path - resolve from current working directory
+        file_path = Path.cwd() / file_path
+    
+    if not file_path.exists():
+        raise HTTPException(404, "GeoJSON file not found on disk")
+    
+    if not file_path.suffix.lower() == ".geojson":
+        raise HTTPException(400, "File is not a GeoJSON file")
+    
+    try:
+        # Read and validate GeoJSON content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            geojson_data = json.load(f)
+        
+        # Basic validation that it's valid GeoJSON
+        if not isinstance(geojson_data, dict) or geojson_data.get("type") != "FeatureCollection":
+            raise HTTPException(500, "Invalid GeoJSON format")
+        
+        # Return as proper JSON response with GeoJSON content type
+        return JSONResponse(
+            content=geojson_data,
+            headers={"Content-Type": "application/geo+json"}
+        )
+    
+    except json.JSONDecodeError:
+        raise HTTPException(500, "Failed to parse GeoJSON file")
+    except Exception as e:
+        raise HTTPException(500, f"Failed to read GeoJSON file: {str(e)}")
