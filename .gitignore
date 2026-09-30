@@ -32,8 +32,6 @@ dist-ssr
 *.sw?
 
 # Python
-*.pth
-*.pt
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -43,18 +41,15 @@ venv/
 env/
 ENV/
 
-# Backend sensitive files
-backend/gee_key.json
-backend/*.json
+# Backend sensitive files (adjusted for self-contained clone)
 !backend/package.json
-backend/data/
-backend/.env
+backend/data/cache/
+backend/data/analyses/
+backend/data/restricted_zones/raw/
+backend/outputs/best_unet_urbancore.pth
 
 # Model checkpoints (large files)
-outputs/*.pth
-outputs/*.pt
-*.pth
-*.pt
+# Tracked via Git LFS
 
 # Temporary files
 *.tmp
