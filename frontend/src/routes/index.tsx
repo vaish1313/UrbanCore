@@ -90,14 +90,19 @@ function Index() {
     window.setTimeout(() => setReveal("done"), 1500);
   }, []);
 
-  /** lock scrolling permanently */
+  /** Keep the cinematic landing screen fixed, but restore normal scrolling in workspaces. */
   useEffect(() => {
+    if (activeRole) {
+      document.body.style.overflow = "";
+      return;
+    }
+
     document.body.style.overflow = "hidden";
     window.scrollTo({ top: 0 });
     return () => {
       document.body.style.overflow = "";
     };
-  }, []);
+  }, [activeRole]);
 
   useEffect(() => {
     // Disabled pointer move and orbit dragging so elements are static

@@ -35,7 +35,7 @@ export function RoleWorkspace({
   const featureMenu =
     role === "builder"
       ? {
-          menuLabel: "BUILDER FEATURES",
+          menuLabel: "BUILDER DASHBOARD",
           features: BUILDER_FEATURE_MENU,
           activeFeatureId: builderFeatureId,
           onSelectFeature: (feature: RoleFeatureMenuItem) => setBuilderFeatureId(feature.id),
