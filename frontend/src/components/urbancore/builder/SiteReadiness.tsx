@@ -109,12 +109,12 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
         : "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(251,113,133,0.2)]";
 
   return (
-    <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6 border border-border/80 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+    <div className="relative flex flex-col gap-6">
       {/* Subtle background glow */}
       <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
 
       {/* Dynamic Section Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/50 pb-4">
+      <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
@@ -158,7 +158,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-5 space-y-3 animate-pulse"
+                  className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl space-y-3 animate-pulse"
                 >
                   <div className="flex justify-between items-center">
                     <div className="h-3 w-28 rounded bg-border/50" />
@@ -214,7 +214,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             {/* 3 Primary Metric Cards */}
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {/* CARD 1: AVERAGE SLOPE */}
-              <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.02] p-5 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/[0.04] hover:shadow-[0_0_20px_rgba(56,189,248,0.1)]">
+              <div className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:bg-white/[0.1] hover:shadow-[0_0_20px_rgba(56,189,248,0.14)]">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     AVERAGE SLOPE
@@ -242,7 +242,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </div>
 
               {/* CARD 2: ELEVATION */}
-              <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.02] p-5 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/[0.04] hover:shadow-[0_0_20px_rgba(56,189,248,0.1)]">
+              <div className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:bg-white/[0.1] hover:shadow-[0_0_20px_rgba(56,189,248,0.14)]">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     ELEVATION
@@ -268,7 +268,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </div>
 
               {/* CARD 3: FLAT AREA % */}
-              <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.02] p-5 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/[0.04] hover:shadow-[0_0_20px_rgba(56,189,248,0.1)]">
+              <div className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:bg-white/[0.1] hover:shadow-[0_0_20px_rgba(56,189,248,0.14)]">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     FLAT AREA
@@ -302,7 +302,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             </div>
 
             {/* Terrain Contour Cross-Section Profile */}
-            <div className="rounded-2xl border border-border/60 bg-foreground/[0.02] p-5">
+            <div className="glass-panel rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div>
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -357,7 +357,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             {/* Compact Site Profile Summary & Factual Interpretation */}
             <div className="grid gap-4 md:grid-cols-12">
               {/* Compact Site Profile Table */}
-              <div className="rounded-2xl border border-border/60 bg-foreground/[0.02] p-5 md:col-span-6 flex flex-col justify-between">
+              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
                 <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3 block">
                   SITE PROFILE SUMMARY
                 </span>
@@ -398,7 +398,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </div>
 
               {/* Factual Interpretation Box */}
-              <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-5 md:col-span-6 flex flex-col justify-between">
+              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
                 <div>
                   <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5 mb-2">
                     <Info className="h-3.5 w-3.5 shrink-0" /> FACTUAL TERRAIN INTERPRETATION

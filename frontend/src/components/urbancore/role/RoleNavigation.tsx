@@ -68,8 +68,9 @@ export function RoleNavigation({
   return (
     <>
       <motion.header
-        className={`sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md px-4 py-3 sm:px-8 ${role === "citizen" ? "bg-black/60 shadow-sm" : "bg-black/80 shadow-md"
-          }`}
+        className={`sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md px-4 py-3 sm:px-8 ${
+          role === "citizen" ? "bg-black/60 shadow-sm" : "bg-black/80 shadow-md"
+        }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -98,7 +99,15 @@ export function RoleNavigation({
                 type="button"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/30 bg-[#0d1527] text-cyan-400 hover:border-cyan-500/60 hover:bg-[#131f38] transition-all duration-200 cursor-pointer shadow-md"
-                aria-label={`Toggle ${featureMenu.menuLabel}`}
+                aria-label={
+                  isMenuOpen
+                    ? role === "builder"
+                      ? "Close Builder Dashboard"
+                      : `Close ${featureMenu.menuLabel}`
+                    : role === "builder"
+                      ? "Open Builder Dashboard"
+                      : `Open ${featureMenu.menuLabel}`
+                }
               >
                 {isMenuOpen ? (
                   <X className="h-4 w-4 text-cyan-300" />
@@ -130,10 +139,11 @@ export function RoleNavigation({
 
               <DropdownMenuContent
                 align="end"
-                className={`w-48 border mt-2 shadow-2xl rounded-2xl p-1.5 ${role === "citizen"
-                  ? "bg-[#0a0f1d]/90 backdrop-blur-xl border-white/10"
-                  : "bg-[#0a0f1d] border-slate-800 backdrop-blur-none z-50"
-                  }`}
+                className={`w-48 border mt-2 shadow-2xl rounded-2xl p-1.5 ${
+                  role === "citizen"
+                    ? "bg-[#0a0f1d]/90 backdrop-blur-xl border-white/10"
+                    : "bg-[#0a0f1d] border-slate-800 backdrop-blur-none z-50"
+                }`}
               >
                 <DropdownMenuItem
                   onClick={() => setIsProfileOpen(true)}
@@ -178,10 +188,10 @@ export function RoleNavigation({
           activeFeatureId={featureMenu.activeFeatureId}
           onSelectFeature={featureMenu.onSelectFeature}
           roleLabel={
-            role === "municipal"
-              ? "Municipal Authority"
-              : role === "builder"
-                ? "Builder Workspace"
+            role === "builder"
+              ? undefined
+              : role === "municipal"
+                ? "Municipal Authority"
                 : "City Explorer"
           }
           mode="overlay"
