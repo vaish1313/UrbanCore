@@ -101,3 +101,41 @@ export type SpatialLayerState = {
   protectedZones: boolean;
   constructionChange: boolean;
 };
+
+export type ComplianceSummary = Record<string, number>;
+
+export interface IntersectionDetail {
+  zone_type: string;
+  source_dataset: string;
+  intersection_area_sqm: number;
+}
+
+export type MunicipalCase = {
+  id: string;
+  analysis_id: string;
+  year: number;
+  polygon_index: number;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
+  geometry: any; // GeoJSON Polygon
+  compliance_summary: ComplianceSummary;
+  intersection_details: IntersectionDetail[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type MunicipalComplaint = {
+  id: string;
+  reference_number: string;
+  citizen_name: string;
+  title: string;
+  description: string;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_name: string | null;
+  evidence_reference: string | null;
+  created_at: string;
+  updated_at: string;
+};

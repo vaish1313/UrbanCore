@@ -1,43 +1,494 @@
 /**
- * /municipal/encroachment — Encroachment Watch + Evidence Viewer page.
- * Only this component tree is mounted at this route.
+ * /municipal/encroachment — Encroachment Watch
+ *
+ * Map-first layout. Map takes ~72 % of height.
+ * Red highlighted polygons for flagged AOIs directly on map.
+ * Floating legend bottom-left.
+ * Right panel: compact alert cards (no huge tables).
+ * Mark as Reviewed + Flag for Action are pure React state.
  */
+
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Flag } from "lucide-react";
-import { MUNICIPAL_ALERTS } from "@/data/municipalData";
-import type { MunicipalAlert } from "@/types/urbancore";
-import { EncroachmentWatch } from "@/components/urbancore/municipal/EncroachmentWatch";
-import { EvidenceViewer } from "@/components/urbancore/municipal/EvidenceViewer";
-import { ComplianceReportModal } from "@/components/urbancore/municipal/ComplianceReportModal";
-import { MunicipalPageShell } from "@/components/urbancore/municipal/MunicipalPageShell";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  ShieldAlert, MapPin, CheckCircle2, Flag, AlertTriangle,
+  ChevronRight, X,
+} from "lucide-react";
+// @ts-expect-error react-map-gl/mapbox types
+import Map, { Source, Layer, Marker, NavigationControl } from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { useMunicipalCases, useUpdateCaseStatus } from "@/hooks/use-municipal";
+import type { MunicipalCase } from "@/types/urbancore";
+import { NASHIK_AOIS } from "@/data/nashikAois";
 
 export const Route = createFileRoute("/municipal/encroachment")({
-  head: () => ({
-    meta: [{ title: "Encroachment Watch — Municipal Authority" }],
-  }),
+  head: () => ({ meta: [{ title: "Encroachment Watch — Municipal Authority" }] }),
   component: EncroachmentPage,
 });
 
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
+
+const PANEL: React.CSSProperties = {
+  background: "rgba(10,16,34,0.84)",
+  border: "1px solid rgba(34,211,238,0.13)",
+  borderRadius: 16,
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
+  boxShadow: "0 4px 32px rgba(0,0,0,0.42)",
+};
+
+/* Build GeoJSON for flagged encroachment AOIs */
+function buildEncroachmentGeoJSON(cases: MunicipalCase[], highlightId?: string) {
+  const features = cases.map((c) => {
+    if (!c.geometry) return null;
+    return {
+      type: "Feature" as const,
+      properties: {
+        id: c.id,
+        severity: "HIGH", // we can determine severity from compliance_summary if needed, defaulting to HIGH for now
+        isHighlighted: c.id === highlightId,
+      },
+      geometry: c.geometry,
+    };
+  }).filter(Boolean);
+
+  return { type: "FeatureCollection" as const, features: features as NonNullable<typeof features[0]>[] };
+}
+
 function EncroachmentPage() {
   const navigate = useNavigate();
-  const [selectedAlert, setSelectedAlert] = useState<MunicipalAlert>(MUNICIPAL_ALERTS[0]!);
-  const [isDraftOpen, setIsDraftOpen] = useState(false);
+  const { data: casesData, isLoading, isError, error } = useMunicipalCases();
+  const updateStatus = useUpdateCaseStatus();
+  
+  const cases = casesData?.cases || [];
+  
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+
+  const selectedCase = cases.find((c) => c.id === selectedCaseId) || cases[0];
+  const encroachGeoJSON = buildEncroachmentGeoJSON(cases, selectedCase?.id);
+
+  const mapCenter = selectedCase && selectedCase.latitude && selectedCase.longitude
+    ? { longitude: selectedCase.longitude, latitude: selectedCase.latitude, zoom: 15 }
+    : { longitude: 73.72, latitude: 20.00, zoom: 11 };
+
+  const handleUpdateStatus = (id: string, newStatus: string) => {
+    updateStatus.mutate({ caseId: id, status: newStatus });
+  };
+
+  const stateColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
+    NEEDS_REVIEW:  { bg: "rgba(100,116,139,0.10)", border: "rgba(100,116,139,0.3)", text: "#94a3b8", label: "Pending" },
+    REVIEWED: { bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.35)", text: "#34d399", label: "Reviewed ✓" },
+    NOTICE_ISSUED:  { bg: "rgba(251,146,60,0.10)",  border: "rgba(251,146,60,0.35)", text: "#fb923c", label: "Notice Issued" },
+    RESOLVED:  { bg: "rgba(34,211,238,0.10)",  border: "rgba(34,211,238,0.35)", text: "#22d3ee", label: "Resolved" },
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 56px)", color: "#94a3b8" }}>
+        Loading compliance cases...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 56px)", color: "#f87171" }}>
+        Unable to load municipal data. Try again.
+      </div>
+    );
+  }
+
+  if (cases.length === 0) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 56px)", color: "#94a3b8" }}>
+        No compliance cases found.
+      </div>
+    );
+  }
 
   return (
-    <MunicipalPageShell
-      eyebrow="Encroachment Watch"
-      eyebrowIcon={<Flag size={13} />}
-      title="Detected Encroachment Flags"
-      onBack={() => navigate({ to: "/municipal" })}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 56px)",
+        position: "fixed",
+        inset: 0,
+        top: 56,
+        zIndex: 0,
+      }}
     >
-      <EncroachmentWatch selectedAlert={selectedAlert} onSelectAlert={setSelectedAlert} />
-      <EvidenceViewer alert={selectedAlert} onGenerateDraft={() => setIsDraftOpen(true)} />
-      <ComplianceReportModal
-        alert={selectedAlert}
-        isOpen={isDraftOpen}
-        onClose={() => setIsDraftOpen(false)}
-      />
-    </MunicipalPageShell>
+      {/* ── MAP (top ~70 %) ───────────────────────────────────────────────── */}
+      <div style={{ flex: "0 0 68%", position: "relative" }}>
+        <Map
+          key={`${mapCenter.longitude}-${mapCenter.latitude}`}
+          initialViewState={mapCenter}
+          mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+          mapboxAccessToken={MAPBOX_TOKEN}
+          style={{ width: "100%", height: "100%" }}
+          attributionControl={false}
+        >
+          <NavigationControl position="bottom-right" style={{ marginBottom: 8 }} />
+
+          {/* Encroachment polygons */}
+          <Source id="encroach" type="geojson" data={encroachGeoJSON}>
+            <Layer
+              id="encroach-fill"
+              type="fill"
+              paint={{
+                "fill-color": [
+                  "case",
+                  ["get", "isHighlighted"], "rgba(239,68,68,0.35)",
+                  "rgba(239,68,68,0.15)",
+                ],
+                "fill-outline-color": "transparent",
+              }}
+            />
+            <Layer
+              id="encroach-stroke"
+              type="line"
+              paint={{
+                "line-color": "#f87171",
+                "line-width": ["case", ["get", "isHighlighted"], 2.5, 1.5],
+                "line-opacity": ["case", ["get", "isHighlighted"], 1, 0.6],
+                "line-dasharray": [4, 2],
+              }}
+            />
+          </Source>
+
+          {/* Alert markers */}
+          {cases.map((c) => {
+            if (!c.latitude || !c.longitude) return null;
+            const isSel = c.id === selectedCase?.id;
+            return (
+              <Marker
+                key={c.id}
+                longitude={c.longitude}
+                latitude={c.latitude}
+                anchor="center"
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedCaseId(c.id)}
+                  style={{
+                    width: isSel ? 20 : 13,
+                    height: isSel ? 20 : 13,
+                    borderRadius: "50%",
+                    background: isSel ? "#ef4444" : "rgba(239,68,68,0.7)",
+                    border: `2px solid ${isSel ? "#fff" : "#f87171"}`,
+                    boxShadow: `0 0 ${isSel ? 18 : 8}px rgba(239,68,68,0.6)`,
+                    cursor: "pointer",
+                    padding: 0,
+                    outline: "none",
+                    transition: "all 0.2s",
+                  }}
+                />
+              </Marker>
+            );
+          })}
+        </Map>
+
+        {/* Floating legend bottom-left */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 14,
+            left: 14,
+            zIndex: 10,
+            ...PANEL,
+            padding: "8px 14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+              fontSize: "0.58rem",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#475569",
+            }}
+          >
+            ENCROACHMENT FLAGS
+          </span>
+          {(["HIGH", "MEDIUM"] as const).map((sev) => (
+            <div key={sev} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: sev === "HIGH" ? "#ef4444" : "#fbbf24",
+                  boxShadow: `0 0 6px ${sev === "HIGH" ? "rgba(239,68,68,0.7)" : "rgba(251,191,36,0.7)"}`,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                  fontSize: "0.65rem",
+                  color: "#94a3b8",
+                }}
+              >
+                {sev} Severity
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* header chip top-left */}
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 14,
+            zIndex: 10,
+            ...PANEL,
+            padding: "7px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <ShieldAlert size={14} color="#f87171" />
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-display,'Sora',sans-serif)",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: "#f1f5f9",
+              }}
+            >
+              Encroachment Watch
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                fontSize: "0.58rem",
+                color: "#f87171",
+                letterSpacing: "0.1em",
+              }}
+            >
+              {cases.length} ACTIVE FLAGS · NASHIK
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ALERT CARDS (bottom ~30 %) ────────────────────────────────────── */}
+      <div
+        style={{
+          flex: "1 1 0",
+          background: "rgba(8,13,28,0.92)",
+          borderTop: "1px solid rgba(34,211,238,0.10)",
+          backdropFilter: "blur(20px)",
+          overflowX: "auto",
+          overflowY: "hidden",
+          display: "flex",
+          alignItems: "stretch",
+          gap: 12,
+          padding: "12px 16px",
+        }}
+      >
+        {cases.map((c) => {
+          const isSel  = c.id === selectedCase?.id;
+          const state  = c.status || "NEEDS_REVIEW";
+          const sc     = stateColors[state] || stateColors.NEEDS_REVIEW;
+          const isHigh = true; // default high severity for cases
+
+          const primaryZone = c.intersection_details?.[0]?.zone_type || "Unknown Zone";
+          const totalArea = Math.round(
+            c.intersection_details?.reduce((acc, detail) => acc + detail.intersection_area_sqm, 0) || 0
+          );
+
+          return (
+            <motion.div
+              key={c.id}
+              whileHover={{ scale: 1.01 }}
+              onClick={() => setSelectedCaseId(c.id)}
+              style={{
+                minWidth: 240,
+                maxWidth: 280,
+                flexShrink: 0,
+                borderRadius: 14,
+                background: isSel
+                  ? "rgba(34,211,238,0.07)"
+                  : state === "NOTICE_ISSUED"
+                  ? "rgba(251,146,60,0.07)"
+                  : "rgba(255,255,255,0.02)",
+                border: isSel
+                  ? "1px solid rgba(34,211,238,0.35)"
+                  : state === "NOTICE_ISSUED"
+                  ? "1px solid rgba(251,146,60,0.35)"
+                  : "1px solid rgba(255,255,255,0.07)",
+                cursor: "pointer",
+                padding: "12px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s",
+              }}
+            >
+              {/* severity + status row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                    fontSize: "0.58rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: isHigh ? "rgba(239,68,68,0.15)" : "rgba(251,191,36,0.15)",
+                    border: isHigh ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(251,191,36,0.3)",
+                    color: isHigh ? "#f87171" : "#fbbf24",
+                  }}
+                >
+                  HIGH
+                </span>
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                    fontSize: "0.58rem",
+                    fontWeight: 700,
+                    background: sc.bg,
+                    border: `1px solid ${sc.border}`,
+                    color: sc.text,
+                  }}
+                >
+                  {sc.label}
+                </span>
+              </div>
+
+              {/* title */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 6,
+                }}
+              >
+                <AlertTriangle size={13} color={isHigh ? "#f87171" : "#fbbf24"} style={{ marginTop: 1, flexShrink: 0 }} />
+                <span
+                  style={{
+                    fontFamily: "var(--font-display,'Sora',sans-serif)",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    color: "#e2e8f0",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {primaryZone} Violation
+                </span>
+              </div>
+
+              {/* location + area */}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <MapPin size={11} color="#22d3ee" style={{ flexShrink: 0 }} />
+                <span
+                  style={{
+                    fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                    fontSize: "0.68rem",
+                    color: "#64748b",
+                  }}
+                >
+                  Nashik • {c.latitude?.toFixed(4)}, {c.longitude?.toFixed(4)}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                  fontSize: "0.62rem",
+                  color: "#475569",
+                }}
+              >
+                {c.year} · {totalArea.toLocaleString()} m²
+              </div>
+
+              {/* action buttons */}
+              <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleUpdateStatus(c.id, "REVIEWED"); }}
+                  disabled={state === "REVIEWED" || updateStatus.isPending}
+                  style={{
+                    flex: 1,
+                    padding: "5px 0",
+                    borderRadius: 8,
+                    border: "1px solid rgba(52,211,153,0.3)",
+                    background: state === "REVIEWED" ? "rgba(52,211,153,0.12)" : "rgba(52,211,153,0.06)",
+                    color: "#34d399",
+                    cursor: state === "REVIEWED" ? "default" : "pointer",
+                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                    fontSize: "0.58rem",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    opacity: state === "REVIEWED" ? 0.7 : 1,
+                  }}
+                >
+                  <CheckCircle2 size={11} />
+                  {state === "REVIEWED" ? "Reviewed" : "Review"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleUpdateStatus(c.id, "NOTICE_ISSUED"); }}
+                  disabled={state === "NOTICE_ISSUED" || updateStatus.isPending}
+                  style={{
+                    flex: 1,
+                    padding: "5px 0",
+                    borderRadius: 8,
+                    border: "1px solid rgba(251,146,60,0.3)",
+                    background: state === "NOTICE_ISSUED" ? "rgba(251,146,60,0.14)" : "rgba(251,146,60,0.06)",
+                    color: "#fb923c",
+                    cursor: state === "NOTICE_ISSUED" ? "default" : "pointer",
+                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                    fontSize: "0.58rem",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    opacity: state === "NOTICE_ISSUED" ? 0.7 : 1,
+                  }}
+                >
+                  <Flag size={11} />
+                  {state === "NOTICE_ISSUED" ? "Flagged" : "Flag"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ to: "/municipal/case-detail", search: { caseId: c.id } });
+                  }}
+                  style={{
+                    padding: "5px 8px",
+                    borderRadius: 8,
+                    border: "1px solid rgba(34,211,238,0.2)",
+                    background: "rgba(34,211,238,0.06)",
+                    color: "#22d3ee",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ChevronRight size={12} />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
