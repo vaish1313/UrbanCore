@@ -22,6 +22,91 @@ from .gcs_service import gcs_service
 from .model_service import model_service
 from .sam3d_service import sam3d_service
 from .gee_cache_service import gee_tiff_cache
+from .compliance_service import check_compliance
+import pyproj
+from shapely.geometry import shape, mapping
+from shapely.ops import transform
+from .municipal_service import persist_municipal_cases
+
+
+def enrich_with_compliance(result: dict, year: int, analysis_id: str) -> None:
+    """Enrich the inference result with compliance data for each detected construction polygon."""
+    geojson_path = result.get("geojson_path")
+    if not geojson_path or not os.path.exists(geojson_path):
+        result["compliance"] = []
+        return
+
+    if result.get("construction_pixels", 0) == 0:
+        result["compliance"] = []
+        return
+
+    metadata = result.get("metadata", {})
+    src_crs_str = metadata.get("crs")
+    
+    if not src_crs_str:
+        print(f"Warning: Missing CRS in metadata for year {year}. Skipping compliance check to avoid false results.")
+        result["compliance"] = []
+        return
+
+    transformer = None
+    is_wgs84 = False
+    try:
+        src_crs = pyproj.CRS.from_string(src_crs_str)
+        dst_crs = pyproj.CRS.from_epsg(4326)
+        if src_crs == dst_crs:
+            is_wgs84 = True
+        else:
+            transformer = pyproj.Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+    except Exception as e:
+        print(f"Warning: Failed to parse CRS '{src_crs_str}': {e}. Skipping compliance.")
+        result["compliance"] = []
+        return
+
+    try:
+        with open(geojson_path, 'r') as f:
+            feature_collection = json.load(f)
+    except Exception as e:
+        print(f"Warning: Failed to read GeoJSON for compliance check: {e}")
+        result["compliance"] = []
+        return
+
+    compliance_results = []
+    
+    for i, feature in enumerate(feature_collection.get("features", [])):
+        geom = feature.get("geometry")
+        if not geom:
+            continue
+            
+        try:
+            geom_shape = shape(geom)
+            if geom_shape.is_empty:
+                continue
+                
+            if not is_wgs84 and transformer:
+                geom_shape = transform(transformer.transform, geom_shape)
+                
+            geom_reproj = mapping(geom_shape)
+            
+            comp_result = check_compliance(geom_reproj)
+            
+            if comp_result.get("potential_violation"):
+                comp_result["year"] = year
+                comp_result["polygon_index"] = i
+                comp_result["geometry"] = geom_reproj
+                compliance_results.append(comp_result)
+                
+        except Exception as e:
+            print(f"Warning: Failed to process polygon {i} for compliance: {e}")
+            continue
+
+    result["compliance"] = compliance_results
+    
+    # Persist the cases to the municipal database
+    try:
+        persist_municipal_cases(analysis_id, year, compliance_results)
+    except Exception as e:
+        print(f"Warning: Failed to persist municipal cases for {analysis_id}: {e}")
+
 
 
 class AnalysisStore:
@@ -298,6 +383,7 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
                 radius_m=request.radius_m,
                 year=year
             )
+            enrich_with_compliance(result, year, analysis_id)
             inference_results[year] = result
         
         analyses.update(
@@ -406,6 +492,7 @@ def process_downloaded_images(analysis_id: str) -> None:
                 radius_m=analysis_record["radius_m"],
                 year=year
             )
+            enrich_with_compliance(result, year, analysis_id)
             inference_results[year] = result
         
         analyses.update(
