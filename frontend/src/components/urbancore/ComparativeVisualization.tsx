@@ -1,188 +1,403 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { TrendingUp, AlertTriangle, Building2, MapPin, ScanLine } from "lucide-react";
+/**
+ * ComparativeVisualization
+ *
+ * Premium before/after comparison slider for the Solutions > Citizen section.
+ * - Uses /citizen map.png as the base image on BOTH sides (perfectly aligned)
+ * - LEFT (2021): clean satellite map, no overlays
+ * - RIGHT (2025): same map + semi-transparent GIS polygon overlays
+ * - Auto-animates the slider back and forth on mount
+ * - User can grab and drag at any time
+ * - No side panels, no popups, no stats — only map + slider + legend
+ */
+
+import { useEffect, useRef, useState, useCallback } from "react";
+
+/* ── GIS overlay regions ── exact % positions on the citizen map.png ──── */
+const OVERLAYS = [
+  /* ── GREEN: Urban growth / safe development ─────────────────────────── */
+  {
+    id: "pathardi",
+    label: "Pathardi",
+    color: "#22c55e",
+    opacity: 0.32,
+    glow: "rgba(34,197,94,0.45)",
+    // bottom-right quadrant — Pathardi Phata residential growth
+    points: "62,72 74,68 80,74 78,84 68,88 60,82",
+  },
+  {
+    id: "ambad",
+    label: "Ambad MIDC",
+    color: "#22c55e",
+    opacity: 0.28,
+    glow: "rgba(34,197,94,0.40)",
+    // left-center — Ambad industrial zone
+    points: "16,62 32,58 36,68 28,76 14,72",
+  },
+  {
+    id: "mhasrul",
+    label: "Mhasrul",
+    color: "#22c55e",
+    opacity: 0.25,
+    glow: "rgba(34,197,94,0.35)",
+    points: "50,28 60,24 66,32 58,40 48,36",
+  },
+
+  /* ── BLUE: Rivers / water bodies ────────────────────────────────────── */
+  {
+    id: "godavari",
+    label: "",
+    color: "#3b82f6",
+    opacity: 0.38,
+    glow: "rgba(59,130,246,0.5)",
+    // diagonal river strip through centre
+    points: "34,42 54,38 68,44 72,52 56,56 38,52",
+  },
+  {
+    id: "gangapur-res",
+    label: "",
+    color: "#3b82f6",
+    opacity: 0.35,
+    glow: "rgba(59,130,246,0.45)",
+    // top-left — Gangapur reservoir
+    points: "8,16 22,12 28,22 20,30 8,26",
+  },
+
+  /* ── RED: Restricted / eco-sensitive ────────────────────────────────── */
+  {
+    id: "trimbak",
+    label: "Trimbak Road",
+    color: "#ef4444",
+    opacity: 0.30,
+    glow: "rgba(239,68,68,0.45)",
+    // far left — Trimbakeshwar protected hill
+    points: "2,52 14,46 18,56 14,66 4,64",
+  },
+  {
+    id: "panchavati",
+    label: "Panchavati",
+    color: "#ef4444",
+    opacity: 0.28,
+    glow: "rgba(239,68,68,0.40)",
+    // centre-right riverbank
+    points: "58,42 68,40 74,48 68,56 58,54",
+  },
+
+  /* ── YELLOW: Moderate monitoring ────────────────────────────────────── */
+  {
+    id: "satpur",
+    label: "Satpur MIDC",
+    color: "#eab308",
+    opacity: 0.28,
+    glow: "rgba(234,179,8,0.40)",
+    // top-centre
+    points: "32,18 46,14 52,24 46,32 30,28",
+  },
+  {
+    id: "gangapur-road",
+    label: "Gangapur Road",
+    color: "#eab308",
+    opacity: 0.26,
+    glow: "rgba(234,179,8,0.38)",
+    // centre
+    points: "42,44 56,40 62,50 54,58 40,54",
+  },
+  {
+    id: "deolali",
+    label: "Deolali",
+    color: "#eab308",
+    opacity: 0.24,
+    glow: "rgba(234,179,8,0.35)",
+    // bottom-right
+    points: "72,76 84,72 88,82 80,90 70,86",
+  },
+];
+
+const LEGEND = [
+  { color: "#22c55e", label: "Urban Growth" },
+  { color: "#ef4444", label: "Restricted Zone" },
+  { color: "#3b82f6", label: "Water Bodies" },
+  { color: "#eab308", label: "Monitoring Area" },
+];
+
+/* Convert "x,y x,y ..." (% values) to SVG points string */
+function toSvgPoints(pts: string, w: number, h: number): string {
+  return pts
+    .trim()
+    .split(/\s+/)
+    .map((p) => {
+      const [x, y] = p.split(",").map(Number);
+      return `${((x! / 100) * w).toFixed(1)},${((y! / 100) * h).toFixed(1)}`;
+    })
+    .join(" ");
+}
 
 export function ComparativeVisualization({ onComplete }: { onComplete?: () => void }) {
-  const [phase, setPhase] = useState<"scan2021" | "scan2025" | "report">("scan2021");
+  /* slider position 0-100 (% from left) */
+  const [sliderPct, setSliderPct] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging      = useRef(false);
+  const animFrameRef  = useRef<number>(0);
+  const autoRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* SVG canvas size — kept in state so overlays scale with container */
+  const [svgSize, setSvgSize] = useState({ w: 600, h: 400 });
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("scan2025"), 2500); // 2.5s for 2021
-    const t2 = setTimeout(() => setPhase("report"), 5000); // 2.5s for 2025
-    const t3 = setTimeout(() => {
-      if (onComplete) onComplete();
-    }, 12000); // 7s to read report
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        setSvgSize({ w: e.contentRect.width, h: e.contentRect.height });
+      }
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  /* ── auto-animate slider ───────────────────────────────────────────── */
+  useEffect(() => {
+    let start: number | null = null;
+    let cancelled = false;
+    const PERIOD = 5000; // ms for one full left↔right sweep
+
+    const tick = (ts: number) => {
+      if (cancelled) return;
+      if (start === null) start = ts;
+      const elapsed = ts - start;
+      /* sine wave 0→1→0 oscillation — pause feels natural at ends */
+      const t = (elapsed % PERIOD) / PERIOD;
+      /* 10% to 90% range so edges don't get cut off */
+      const pct = 10 + 80 * (0.5 + 0.5 * Math.sin(2 * Math.PI * t - Math.PI / 2));
+      if (!dragging.current) setSliderPct(pct);
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    /* small delay so component has mounted */
+    autoRef.current = setTimeout(() => {
+      animFrameRef.current = requestAnimationFrame(tick);
+    }, 600);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      cancelled = true;
+      if (autoRef.current) clearTimeout(autoRef.current);
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [onComplete]);
+  }, []);
+
+  /* ── drag handlers ─────────────────────────────────────────────────── */
+  const getPct = useCallback((clientX: number) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return 50;
+    const raw = ((clientX - rect.left) / rect.width) * 100;
+    return Math.min(98, Math.max(2, raw));
+  }, []);
+
+  const onMouseDown = useCallback(() => { dragging.current = true; }, []);
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging.current) return;
+    setSliderPct(getPct(e.clientX));
+  }, [getPct]);
+  const onMouseUp   = useCallback(() => { dragging.current = false; }, []);
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    dragging.current = true;
+    setSliderPct(getPct(e.touches[0]!.clientX));
+  }, [getPct]);
+  const onTouchEnd  = useCallback(() => { dragging.current = false; }, []);
+
+  /* notify parent once */
+  useEffect(() => { onComplete?.(); }, [onComplete]);
+
+  const MAP_SRC = "/citizen map.png";
 
   return (
-    <motion.div
-      className="w-full text-left"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+    <div
+      ref={containerRef}
+      className="relative w-full select-none overflow-hidden rounded-2xl"
+      style={{
+        aspectRatio: "3/2",
+        boxShadow:
+          "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.14), 0 25px 50px -12px rgba(0,0,0,0.65)",
+        cursor: dragging.current ? "ew-resize" : "col-resize",
+        userSelect: "none",
+      }}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
-      <div className="glass-panel relative overflow-hidden rounded-3xl border border-border/50 bg-background/40 p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
-        <div className="absolute -left-32 -top-32 h-64 w-64 rounded-full bg-primary/20 blur-[100px]" />
+      {/* ── RIGHT LAYER: 2025 with GIS overlays (full width, always) ─── */}
+      <div className="absolute inset-0">
+        <img
+          src={MAP_SRC}
+          alt="Nashik 2025 satellite"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          draggable={false}
+        />
 
-        <div className="relative flex flex-col gap-6">
-          <header className="flex flex-col gap-1 text-center">
-            <h3 className="font-display text-xl font-semibold text-foreground sm:text-2xl">
-              {phase === "scan2021" && "Analyzing 2021 Baseline"}
-              {phase === "scan2025" && "Processing 2025 Multispectral Data"}
-              {phase === "report" && "Panchavati Change Intelligence Compiled"}
-            </h3>
-            <p className="text-xs font-light text-primary/80 animate-pulse flex items-center justify-center gap-1.5">
-              <ScanLine className="h-3 w-3" />
-              {phase !== "report" ? "Geospatial Scanning Active..." : "Analysis Complete."}
-            </p>
-          </header>
+        {/* SVG overlay — polygons only, no cover */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox={`0 0 ${svgSize.w} ${svgSize.h}`}
+          preserveAspectRatio="none"
+          style={{ pointerEvents: "none" }}
+        >
+          <defs>
+            {OVERLAYS.map((ov) => (
+              <filter key={`glow-${ov.id}`} id={`glow-${ov.id}`} x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            ))}
+          </defs>
 
-          <div
-            className="relative w-full overflow-hidden rounded-2xl border border-border/40 bg-foreground/[0.02]"
-            style={{ height: "300px" }}
-          >
-            <AnimatePresence mode="popLayout">
-              {/* 2021 Map */}
-              {phase === "scan2021" && (
-                <motion.div
-                  key="2021"
-                  className="absolute inset-0 bg-[url('/src/assets/region-maharashtra.jpg')] bg-cover bg-center"
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, filter: "blur(10px)" }}
-                  transition={{ duration: 1 }}
+          {OVERLAYS.map((ov) => (
+            <g key={ov.id}>
+              <polygon
+                points={toSvgPoints(ov.points, svgSize.w, svgSize.h)}
+                fill={ov.color}
+                fillOpacity={ov.opacity}
+                stroke={ov.color}
+                strokeOpacity={0.7}
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+                filter={`url(#glow-${ov.id})`}
+              />
+              {ov.label && (
+                <text
+                  x={(() => {
+                    const pts = ov.points.trim().split(/\s+/);
+                    const xs = pts.map((p) => (Number(p.split(",")[0]!) / 100) * svgSize.w);
+                    return (Math.min(...xs) + Math.max(...xs)) / 2;
+                  })()}
+                  y={(() => {
+                    const pts = ov.points.trim().split(/\s+/);
+                    const ys = pts.map((p) => (Number(p.split(",")[1]!) / 100) * svgSize.h);
+                    return (Math.min(...ys) + Math.max(...ys)) / 2 + 4;
+                  })()}
+                  textAnchor="middle"
+                  fill="white"
+                  fillOpacity={0.88}
+                  fontSize={Math.max(9, svgSize.w * 0.018)}
+                  fontFamily="'JetBrains Mono', monospace"
+                  fontWeight="600"
+                  letterSpacing="0.04em"
+                  style={{ pointerEvents: "none", textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
                 >
-                  <div className="absolute inset-0 bg-background/50 mix-blend-overlay" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                  <div className="absolute right-4 top-4 z-10 rounded-full bg-background/80 px-3 py-1 font-mono text-xs font-medium text-foreground backdrop-blur-sm border border-border/50">
-                    2021 SAT
-                  </div>
-                  {/* Scanner line */}
-                  <motion.div
-                    className="absolute left-0 right-0 h-1 bg-primary shadow-[0_0_20px_4px_rgba(114,180,255,0.6)] z-20"
-                    initial={{ top: "0%" }}
-                    animate={{ top: "100%" }}
-                    transition={{ duration: 2.2, ease: "linear", repeat: Infinity }}
-                  />
-                </motion.div>
+                  {ov.label}
+                </text>
               )}
+            </g>
+          ))}
+        </svg>
 
-              {/* 2025 Map */}
-              {phase === "scan2025" && (
-                <motion.div
-                  key="2025"
-                  className="absolute inset-0 bg-[url('/src/assets/city-nashik.jpg')] bg-cover bg-center"
-                  initial={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, filter: "blur(10px)" }}
-                  transition={{ duration: 1 }}
-                >
-                  <div className="absolute inset-0 bg-primary/20 mix-blend-overlay" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                  <div className="absolute right-4 top-4 z-10 rounded-full bg-primary/20 border border-primary/50 px-3 py-1 font-mono text-xs font-medium text-primary backdrop-blur-sm">
-                    2025 SAT
-                  </div>
-                  {/* Scanner line */}
-                  <motion.div
-                    className="absolute left-0 right-0 h-1 bg-accent shadow-[0_0_20px_4px_rgba(var(--accent-rgb),0.6)] z-20"
-                    initial={{ top: "0%" }}
-                    animate={{ top: "100%" }}
-                    transition={{ duration: 2.2, ease: "linear", repeat: Infinity }}
-                  />
-                </motion.div>
-              )}
-
-              {/* Report Map overlaying both/zoomed */}
-              {phase === "report" && (
-                <motion.div
-                  key="report"
-                  className="absolute inset-0 bg-[url('/src/assets/city-nashik.jpg')] bg-cover bg-center"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                >
-                  <div className="absolute inset-0 bg-background/70 mix-blend-multiply" />
-
-                  {/* Scanned Points */}
-                  <motion.div
-                    className="absolute left-[30%] top-[40%] flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 border border-accent/50"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.5, type: "spring" }}
-                  >
-                    <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_10px_2px_rgba(var(--accent-rgb),0.8)] animate-ping" />
-                  </motion.div>
-
-                  <motion.div
-                    className="absolute right-[25%] top-[55%] flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 border border-primary/50"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.8, type: "spring" }}
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_2px_rgba(114,180,255,0.8)] animate-ping" />
-                  </motion.div>
-
-                  <motion.div
-                    className="absolute left-[50%] top-[25%] flex h-10 w-10 items-center justify-center rounded-full bg-accent/20 border border-accent/50"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 1.1, type: "spring" }}
-                  >
-                    <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_10px_2px_rgba(var(--accent-rgb),0.8)] animate-ping" />
-                  </motion.div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/90 to-transparent pt-20">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <motion.div
-                        className="flex flex-col gap-1 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 backdrop-blur-md"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.3 }}
-                      >
-                        <span className="text-[10px] uppercase text-muted-foreground">
-                          New Structures
-                        </span>
-                        <span className="text-lg font-semibold text-foreground">+12.1%</span>
-                      </motion.div>
-
-                      <motion.div
-                        className="flex flex-col gap-1 rounded-xl border border-accent/30 bg-accent/10 p-3 backdrop-blur-md"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.5 }}
-                      >
-                        <span className="text-[10px] uppercase text-accent">Risk Zones</span>
-                        <span className="text-lg font-semibold text-foreground">3</span>
-                      </motion.div>
-
-                      <motion.div
-                        className="flex flex-col gap-1 rounded-xl border border-border/40 bg-foreground/[0.02] p-3 backdrop-blur-md sm:col-span-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.7 }}
-                      >
-                        <span className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-primary" /> Takeaway
-                        </span>
-                        <span className="text-xs font-light text-foreground/90 leading-snug">
-                          Rapid urbanization towards NE axis. Commercial suitability high. 3 new
-                          encroachments flagged.
-                        </span>
-                      </motion.div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {/* 2025 year badge */}
+        <div
+          className="absolute top-3 right-3 z-10 font-mono text-[10px] font-bold tracking-[0.18em] uppercase px-3 py-1.5 rounded-full"
+          style={{
+            background: "rgba(6,12,28,0.80)",
+            border: "1px solid rgba(34,211,238,0.35)",
+            color: "#22d3ee",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          2025 · AI Analysis
         </div>
       </div>
-    </motion.div>
+
+      {/* ── LEFT LAYER: 2021 clean map — revealed by slider clip ──────── */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ clipPath: `inset(0 ${100 - sliderPct}% 0 0)` }}
+      >
+        {/* same image, same size/position as the right layer — perfectly aligned */}
+        <img
+          src={MAP_SRC}
+          alt="Nashik 2021 satellite"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          draggable={false}
+        />
+
+        {/* 2021 year badge */}
+        <div
+          className="absolute top-3 left-3 z-10 font-mono text-[10px] font-bold tracking-[0.18em] uppercase px-3 py-1.5 rounded-full"
+          style={{
+            background: "rgba(6,12,28,0.80)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: "#cbd5e1",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          2021 · Baseline
+        </div>
+      </div>
+
+      {/* ── Slider handle ────────────────────────────────────────────────── */}
+      <div
+        className="absolute top-0 bottom-0 z-20 flex items-center justify-center"
+        style={{
+          left: `calc(${sliderPct}% - 1px)`,
+          width: 2,
+          background: "rgba(255,255,255,0.85)",
+          boxShadow: "0 0 12px rgba(255,255,255,0.5), 0 0 24px rgba(34,211,238,0.4)",
+          pointerEvents: "none",
+        }}
+      >
+        {/* circular drag pill */}
+        <div
+          onMouseDown={onMouseDown}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "rgba(6,12,28,0.92)",
+            border: "2px solid rgba(34,211,238,0.7)",
+            boxShadow: "0 0 16px rgba(34,211,238,0.45), 0 2px 12px rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "ew-resize",
+            pointerEvents: "auto",
+            flexShrink: 0,
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          {/* left-right arrows */}
+          <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+            <path d="M5 1L1 5l4 4M11 1l4 4-4 4" stroke="#22d3ee" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+
+      {/* ── Legend bottom-right ───────────────────────────────────────────── */}
+      <div
+        className="absolute bottom-3 right-3 z-20 flex flex-col gap-1.5 px-3 py-2.5 rounded-xl"
+        style={{
+          background: "rgba(4,9,22,0.82)",
+          border: "1px solid rgba(255,255,255,0.09)",
+          backdropFilter: "blur(12px)",
+          pointerEvents: "none",
+        }}
+      >
+        <p
+          className="font-mono uppercase tracking-widest mb-0.5"
+          style={{ fontSize: 8, color: "rgba(255,255,255,0.38)", letterSpacing: "0.18em" }}
+        >
+          Zone Legend
+        </p>
+        {LEGEND.map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-2">
+            <span
+              className="flex-shrink-0 rounded-sm"
+              style={{ width: 9, height: 9, background: color, opacity: 0.9 }}
+            />
+            <span
+              className="font-mono tracking-wide whitespace-nowrap"
+              style={{ fontSize: 9, color: "rgba(255,255,255,0.72)" }}
+            >
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
