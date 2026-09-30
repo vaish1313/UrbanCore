@@ -8,7 +8,9 @@
  * Can be toggled between permanent mode (always visible) and overlay mode (slide-in).
  */
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { createPortal } from "react-dom";
 import type { RoleFeatureMenuItem } from "./RoleFeaturesDropdown";
 import {
   PermanentSidebar,
@@ -108,12 +110,16 @@ export function WorkspaceSidebar({
     );
   }
 
-  // Overlay mode - original slide-in behavior
-  return (
+  // Overlay mode — portal-based so it escapes all parent stacking contexts.
+  // useEffect ensures we only run on client (avoids SSR document error).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const sidebarContent = (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop — semi-transparent, closes sidebar on click */}
+          {/* Backdrop */}
           <motion.div
             key="sidebar-backdrop"
             initial={{ opacity: 0 }}
@@ -121,18 +127,41 @@ export function WorkspaceSidebar({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-45 bg-black/55 backdrop-blur-sm cursor-pointer"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9998,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              cursor: "pointer",
+            }}
           />
 
-          {/* Drawer panel — full height, slides in from left */}
+          {/* Drawer panel */}
           <motion.aside
             key="sidebar-panel"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col bg-[rgba(8,13,28,0.97)] backdrop-blur-2xl border-r border-primary/15 shadow-2xl overflow-y-auto"
-            style={{ height: "100vh", minHeight: "100vh" }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              zIndex: 9999,
+              width: 280,
+              height: "100vh",
+              display: "flex",
+              flexDirection: "column",
+              background: "rgba(8,13,28,0.97)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              borderRight: "1px solid rgba(34,211,238,0.15)",
+              boxShadow: "4px 0 40px rgba(0,0,0,0.6)",
+              overflowY: "auto",
+            }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-5 pb-4 border-b border-white/7 flex-shrink-0">
@@ -199,7 +228,6 @@ export function WorkspaceSidebar({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {/* Active indicator bar */}
                     {isActive && (
                       <motion.span
                         layoutId="sidebar-active-bar"
@@ -208,7 +236,6 @@ export function WorkspaceSidebar({
                       />
                     )}
 
-                    {/* Icon */}
                     <span className={`
                       h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
                       ${isActive
@@ -219,7 +246,6 @@ export function WorkspaceSidebar({
                       <Icon className="h-4 w-4" />
                     </span>
 
-                    {/* Label */}
                     <span className={`
                       flex-1 truncate font-medium text-sm
                       ${isActive ? "text-slate-100" : "text-slate-300"}
@@ -227,22 +253,9 @@ export function WorkspaceSidebar({
                       {feature.label}
                     </span>
 
-                    {/* Active chevron */}
                     {isActive && (
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                        className="flex-shrink-0 text-primary"
-                      >
-                        <path
-                          d="M5 3l4 4-4 4"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 text-primary">
+                        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </motion.button>
@@ -261,4 +274,8 @@ export function WorkspaceSidebar({
       )}
     </AnimatePresence>
   );
+
+  // Only render portal on client after mount
+  if (!mounted) return null;
+  return createPortal(sidebarContent, document.body);
 }

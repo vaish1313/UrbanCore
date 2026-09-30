@@ -44,7 +44,7 @@ export function RoleWorkspace({
 
   return (
     <motion.div
-      className="fixed inset-0 z-40 overflow-y-auto bg-background/60 backdrop-blur-md"
+      className="relative min-h-screen"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

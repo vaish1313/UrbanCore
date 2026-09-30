@@ -180,3 +180,14 @@ export const GROWTH_HOTSPOTS = [
     category: "Logistics Corridor",
   },
 ];
+
+/**
+ * Case IDs — single source of truth mapping alert id → case reference number.
+ * Used by both Encroachment Watch and Case Detail so they show consistent IDs.
+ */
+export const ALERT_CASE_IDS: Record<string, string> = {
+  "enc-001": "UC-2025-0041",
+  "enc-002": "UC-2025-0039",
+  "enc-003": "UC-2025-0894",
+  "enc-004": "UC-2025-0037",
+};
