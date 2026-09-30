@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  ShieldCheck,
   Info,
   Mountain,
   Navigation as NavigationIcon,
@@ -13,6 +12,7 @@ import {
   MapPin,
   Sparkles,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
 
@@ -20,6 +20,7 @@ const API_BASE_URL = "http://localhost:8000/api/v1";
 
 interface SuitabilityScoreProps {
   aoi: AOI;
+  onGenerateReport?: () => void;
 }
 
 interface FactorItem {
@@ -47,7 +48,7 @@ interface BackendSuitabilityResponse {
   summary?: string;
 }
 
-export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
+export function SuitabilityScore({ aoi, onGenerateReport }: SuitabilityScoreProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [backendData, setBackendData] = useState<BackendSuitabilityResponse | null>(null);
@@ -219,12 +220,12 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6 border border-border/80 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+    <div className="relative flex flex-col gap-6">
       {/* Subtle glowing accent background */}
       <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
 
       {/* Section Header with Site Context */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/50 pb-4">
+      <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
@@ -245,9 +246,16 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-primary shadow-[0_0_15px_rgba(56,189,248,0.2)]">
-            <ShieldCheck className="h-3.5 w-3.5" /> AI Multispectral Fusion
-          </span>
+          {onGenerateReport && (
+            <button
+              type="button"
+              onClick={onGenerateReport}
+              className="flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary transition-all duration-300 hover:border-primary hover:bg-primary/20 hover:shadow-[0_0_18px_rgba(56,189,248,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Generate Land Intelligence PDF
+            </button>
+          )}
         </div>
       </div>
 
@@ -263,7 +271,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
             className="grid gap-8 md:grid-cols-12 md:items-center py-6"
           >
             {/* Score Skeleton */}
-            <div className="flex flex-col items-center justify-center md:col-span-5 border-b md:border-b-0 md:border-r border-border/40 pb-6 md:pb-0 md:pr-6">
+            <div className="glass-panel flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/[0.035] p-6 shadow-xl backdrop-blur-xl md:col-span-5">
               <div className="relative flex h-48 w-48 items-center justify-center">
                 <div className="h-44 w-44 rounded-full border-4 border-dashed border-primary/30 animate-spin" />
                 <div className="absolute flex flex-col items-center justify-center">
@@ -334,7 +342,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
             className="grid gap-8 md:grid-cols-12 md:items-center"
           >
             {/* Left Column: Radial Score Gauge & Site Profile Mini Cards */}
-            <div className="flex flex-col items-center justify-center md:col-span-5 border-b md:border-b-0 md:border-r border-border/40 pb-6 md:pb-0 md:pr-6">
+            <div className="glass-panel flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/[0.035] p-6 shadow-xl backdrop-blur-xl md:col-span-5">
               {/* Radial SVG Score visualization */}
               <div className="relative flex h-52 w-52 items-center justify-center">
                 <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 120 120">
@@ -442,7 +450,7 @@ export function SuitabilityScore({ aoi }: SuitabilityScoreProps) {
                 return (
                   <div
                     key={f.label}
-                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-foreground/[0.02] p-3.5 transition-all duration-300 hover:border-primary/40 hover:bg-foreground/[0.04] hover:shadow-[0_0_15px_rgba(56,189,248,0.12)]"
+                    className="group relative overflow-hidden rounded-2xl border border-white/15 bg-white/[0.065] p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:bg-white/[0.1] hover:shadow-[0_0_18px_rgba(56,189,248,0.16)]"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2.5">

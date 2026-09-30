@@ -18,7 +18,7 @@ import {
   PermanentSidebarContent,
   PermanentSidebarFooter,
   PermanentSidebarNavItem,
-  PermanentSidebarGroup
+  PermanentSidebarGroup,
 } from "@/components/ui/permanent-sidebar";
 
 export type WorkspaceSidebarProps = {
@@ -44,6 +44,23 @@ export function WorkspaceSidebar({
   roleLabel,
   mode = "overlay",
 }: WorkspaceSidebarProps) {
+  // Overlay mode uses a portal so it escapes all parent stacking contexts.
+  // These hooks stay unconditional because this component also supports permanent mode.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || mode === "permanent") return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, mode, onClose]);
 
   // Permanent mode - always visible sidebar
   if (mode === "permanent") {
@@ -110,11 +127,6 @@ export function WorkspaceSidebar({
     );
   }
 
-  // Overlay mode — portal-based so it escapes all parent stacking contexts.
-  // useEffect ensures we only run on client (avoids SSR document error).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-
   const sidebarContent = (
     <AnimatePresence>
       {isOpen && (
@@ -151,7 +163,7 @@ export function WorkspaceSidebar({
               left: 0,
               bottom: 0,
               zIndex: 9999,
-              width: 280,
+              width: "min(390px, 92vw)",
               height: "100vh",
               display: "flex",
               flexDirection: "column",
@@ -187,7 +199,9 @@ export function WorkspaceSidebar({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close sidebar"
+                aria-label={
+                  menuLabel === "BUILDER DASHBOARD" ? "Close Builder Dashboard" : "Close sidebar"
+                }
                 className="h-8 w-8 rounded-full border border-white/12 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100 transition-all duration-150 flex items-center justify-center flex-shrink-0"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -220,9 +234,10 @@ export function WorkspaceSidebar({
                     }}
                     className={`
                       relative flex items-center gap-3 w-full p-3 rounded-xl text-left transition-all duration-150
-                      ${isActive
-                        ? "bg-primary/12 text-primary border border-primary/35"
-                        : "text-slate-300 hover:text-white hover:bg-white/5"
+                      ${
+                        isActive
+                          ? "bg-primary/12 text-primary border border-primary/35"
+                          : "text-slate-300 hover:text-white hover:bg-white/5"
                       }
                     `}
                     whileHover={{ scale: 1.02 }}
@@ -236,26 +251,43 @@ export function WorkspaceSidebar({
                       />
                     )}
 
-                    <span className={`
+                    <span
+                      className={`
                       h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all
-                      ${isActive
-                        ? "bg-primary/15 border border-primary/30 text-primary"
-                        : "bg-white/4 border border-white/6 text-slate-400"
+                      ${
+                        isActive
+                          ? "bg-primary/15 border border-primary/30 text-primary"
+                          : "bg-white/4 border border-white/6 text-slate-400"
                       }
-                    `}>
+                    `}
+                    >
                       <Icon className="h-4 w-4" />
                     </span>
 
-                    <span className={`
+                    <span
+                      className={`
                       flex-1 truncate font-medium text-sm
                       ${isActive ? "text-slate-100" : "text-slate-300"}
-                    `}>
+                    `}
+                    >
                       {feature.label}
                     </span>
 
                     {isActive && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 text-primary">
-                        <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        className="flex-shrink-0 text-primary"
+                      >
+                        <path
+                          d="M5 3l4 4-4 4"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </motion.button>

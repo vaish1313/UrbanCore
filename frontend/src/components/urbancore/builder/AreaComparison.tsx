@@ -145,7 +145,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
 
   if (isLoading) {
     return (
-      <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+      <div className="relative flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 animate-pulse rounded-2xl bg-primary/20" />
@@ -196,9 +196,9 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
   const maxGrowth = Math.max(...allSites.map((s) => s.construction_growth_percent), 40);
 
   return (
-    <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+    <div className="relative flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
@@ -228,8 +228,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
             key={site.id}
             className={`flex flex-col justify-between rounded-2xl p-4 transition-all duration-300 ${
               site.is_selected
-                ? "border-2 border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(114,180,255,0.15)]"
-                : "border border-border/50 bg-card/30 hover:border-border hover:bg-card/50"
+                ? "border-2 border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(114,180,255,0.15)] backdrop-blur-xl"
+                : "border border-white/15 bg-white/[0.065] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl hover:border-primary/40 hover:bg-white/[0.1]"
             }`}
           >
             <div className="flex flex-col gap-1.5">
@@ -299,7 +299,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       </div>
 
       {/* Side-by-Side Comparison Table */}
-      <div className="overflow-x-auto rounded-2xl border border-border/50 bg-card/20">
+      <div className="glass-panel overflow-x-auto rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-border/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/20">
@@ -376,7 +376,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       {/* Visual Comparison Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Land Suitability Score Visual Comparison */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+        <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <div className="flex items-center gap-2 border-b border-border/30 pb-3">
             <Layers className="h-4 w-4 text-primary" />
             <h4 className="font-display text-sm font-semibold text-foreground">
@@ -417,7 +417,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
         </div>
 
         {/* 5-Year Construction Growth Visual Comparison */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+        <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <div className="flex items-center gap-2 border-b border-border/30 pb-3">
             <TrendingUp className="h-4 w-4 text-cyan-400" />
             <h4 className="font-display text-sm font-semibold text-foreground">
@@ -462,7 +462,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       </div>
 
       {/* Neutral Factual Observations Box */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+      <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-primary" />
           <h4 className="font-display text-xs font-bold uppercase tracking-wider text-primary">
