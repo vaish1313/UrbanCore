@@ -159,8 +159,7 @@ export const NashikBackgroundCarousel: FC<NashikBackgroundCarouselProps> = ({
       <div
         className="absolute inset-x-0 h-40 pointer-events-none"
         style={{
-          background:
-            "linear-gradient(to bottom, transparent, rgba(56,189,248,0.05), transparent)",
+          background: "linear-gradient(to bottom, transparent, rgba(56,189,248,0.05), transparent)",
           animation: "nashik-scanline-glance 8s ease-in-out infinite",
         }}
       />

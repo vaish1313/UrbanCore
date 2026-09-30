@@ -114,7 +114,7 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
   const fallbackHistory: YearHistoryItem[] = aoi.constructionHistory.map((item) => ({
     year: item.year,
     buildings_count: item.buildingsCount,
-    built_up_area_ha: Math.round((item.buildingsCount * 0.1) * 10) / 10,
+    built_up_area_ha: Math.round(item.buildingsCount * 0.1 * 10) / 10,
     built_up_change_percent: item.builtUpChangePercent,
   }));
 
@@ -126,7 +126,8 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
         : [DEFAULT_YEAR_ITEM];
 
   const safeIndex = Math.min(Math.max(0, selectedYearIndex), historyList.length - 1);
-  const activeYearData: YearHistoryItem = historyList[safeIndex] ?? historyList[0] ?? DEFAULT_YEAR_ITEM;
+  const activeYearData: YearHistoryItem =
+    historyList[safeIndex] ?? historyList[0] ?? DEFAULT_YEAR_ITEM;
 
   // Derived calculations
   const firstYearItem: YearHistoryItem = historyList[0] ?? DEFAULT_YEAR_ITEM;
@@ -186,7 +187,9 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
           <h3 className="font-display text-xl font-bold tracking-tight text-foreground flex items-center gap-2 mt-1">
             <MapPin className="h-4.5 w-4.5 text-primary shrink-0" />
             <span>{aoi.name}</span>
-            <span className="text-muted-foreground font-normal text-base">— Construction History</span>
+            <span className="text-muted-foreground font-normal text-base">
+              — Construction History
+            </span>
           </h3>
         </div>
 
@@ -355,7 +358,8 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
                     <Activity className="h-3.5 w-3.5 text-primary" /> CONSTRUCTION GROWTH TRAJECTORY
                   </span>
                   <p className="text-xs text-muted-foreground font-light mt-0.5">
-                    Multi-year built-up footprint evolution (ha) for <strong className="text-foreground font-medium">{aoi.name}</strong>
+                    Multi-year built-up footprint evolution (ha) for{" "}
+                    <strong className="text-foreground font-medium">{aoi.name}</strong>
                   </p>
                 </div>
                 <span className="font-mono text-[10px] rounded-lg border border-border/60 bg-foreground/[0.03] px-2.5 py-1 text-primary">

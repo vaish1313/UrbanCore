@@ -1,17 +1,22 @@
 /**
  * /municipal — Layout route (shared shell for all municipal sub-pages).
  *
- * TanStack Router picks this file up as the parent layout for every
- * route under /municipal/*.  The <Outlet /> renders whichever child
- * route is currently active — nothing else is mounted.
+ * Sidebar contains 5 items:
+ *   Command Overview · District Map · Encroachment Watch · Case Detail · Citizen Complaints
  *
- * Navigation between features is driven by the sidebar
- * (RoleFeaturesSidebar) whose onSelectFeature now calls useNavigate
- * instead of setting local state, so the URL updates and only the
- * active page's component is mounted.
+ * Behaviour:
+ *   - When the current URL is /municipal (Command Overview), all sidebar clicks
+ *     dispatch a "municipal-feature-select" custom event so index.tsx can swap
+ *     the feature section in-page — no route change needed.
+ *   - When the current URL is any other /municipal/* sub-route, clicks navigate
+ *     back to /municipal and the event is still dispatched so the right feature
+ *     renders immediately on arrival.
+ *
+ * Sidebar fix:
+ *   The wrapper uses `relative min-h-screen` (NOT `fixed overflow-y-auto`).
+ *   The sidebar itself is position:fixed so it stays put while the page scrolls.
  */
 
-import { useState } from "react";
 import { createFileRoute, Outlet, useNavigate, useMatchRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { RoleNavigation } from "@/components/urbancore/role/RoleNavigation";
@@ -25,59 +30,70 @@ export const Route = createFileRoute("/municipal")({
   component: MunicipalLayout,
 });
 
-// Map feature-menu ids → nested route paths (relative to /municipal)
-const FEATURE_ROUTE_MAP: Record<string, string> = {
-  "overview":      "/municipal",
-  "district-map":  "/municipal/district-map",
-  "encroachment":  "/municipal/encroachment",
-  "forensics":     "/municipal/forensics",
-  "heatmap":       "/municipal/heatmap",
-  "legal":         "/municipal/legal",
-  "export":        "/municipal/export",
-};
+/** Dispatch the custom event that index.tsx listens for */
+function dispatchFeatureSelect(featureId: string) {
+  window.dispatchEvent(
+    new CustomEvent("municipal-feature-select", { detail: { featureId } }),
+  );
+}
 
 function MunicipalLayout() {
-  const navigate    = useNavigate();
-  const matchRoute  = useMatchRoute();
-  const [isDraftOpen, setIsDraftOpen] = useState(false);
+  const navigate   = useNavigate();
+  const matchRoute = useMatchRoute();
 
-  // Derive activeFeatureId from the current URL so the sidebar
-  // highlights the correct item without extra state.
+  /* Determine which sidebar item is visually active */
   const activeFeatureId = (() => {
-    for (const [id, path] of Object.entries(FEATURE_ROUTE_MAP)) {
-      if (matchRoute({ to: path, fuzzy: path === "/municipal" ? false : true })) return id;
-    }
+    if (matchRoute({ to: "/municipal/district-map" })) return "district-map";
+    if (matchRoute({ to: "/municipal/encroachment"  })) return "encroachment";
+    if (matchRoute({ to: "/municipal/case-detail"   })) return "case-detail";
+    if (matchRoute({ to: "/municipal/complaints"    })) return "complaints";
+    /* On /municipal itself the active item is tracked by index.tsx's local state;
+       fall back to "overview" so the nav header shows the right label. */
     return "overview";
   })();
 
   const handleFeatureSelect = (feature: RoleFeatureMenuItem) => {
-    // "compliance" is a modal trigger, not a route
-    if (feature.isReportModalTrigger) {
-      setIsDraftOpen(true);
-      return;
+    const isOnOverviewPage = !!matchRoute({ to: "/municipal" });
+
+    if (isOnOverviewPage) {
+      /* Already on the overview page — just switch the feature section in-place */
+      dispatchFeatureSelect(feature.id);
+    } else {
+      /* On a sub-route — navigate back to overview, then switch feature */
+      navigate({ to: "/municipal" }).then(() => {
+        /* Small delay so index.tsx has mounted before the event fires */
+        setTimeout(() => dispatchFeatureSelect(feature.id), 100);
+      });
     }
-    const path = FEATURE_ROUTE_MAP[feature.id] ?? "/municipal";
-    navigate({ to: path });
   };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-y-auto bg-background/60 backdrop-blur-md">
+    /*
+     * NO backdrop-filter / blur on this wrapper.
+     * backdrop-filter creates a new stacking context that traps
+     * position:fixed children — the sidebar would get clipped inside it.
+     * The page content (index.tsx, sub-routes) handles its own background.
+     */
+    <div className="relative min-h-screen">
       <RoleNavigation
         role="municipal"
         activeTab="command"
         onTabChange={() => {}}
         onBack={() => navigate({ to: "/" })}
         workspaceFeatureId={activeFeatureId}
-        onResetWorkspaceFeature={() => navigate({ to: "/municipal" })}
+        onResetWorkspaceFeature={() => {
+          navigate({ to: "/municipal" });
+          dispatchFeatureSelect("overview");
+        }}
         featureMenu={{
           menuLabel: "MUNICIPAL FEATURES",
           features: MUNICIPAL_FEATURE_MENU,
           activeFeatureId,
           onSelectFeature: handleFeatureSelect,
         }}
+        sidebarMode="overlay"
       />
 
-      {/* Only the active child route is mounted here */}
       <motion.div
         key={activeFeatureId}
         initial={{ opacity: 0, y: 12 }}
@@ -87,33 +103,6 @@ function MunicipalLayout() {
       >
         <Outlet />
       </motion.div>
-
-      {/* Compliance draft modal — available from any sub-page */}
-      {isDraftOpen && (
-        <ComplianceDraftPortal onClose={() => setIsDraftOpen(false)} />
-      )}
     </div>
-  );
-}
-
-// Lazy-import the compliance modal only when opened
-import { lazy, Suspense } from "react";
-import { MUNICIPAL_ALERTS } from "@/data/municipalData";
-
-const ComplianceReportModal = lazy(() =>
-  import("@/components/urbancore/municipal/ComplianceReportModal").then((m) => ({
-    default: m.ComplianceReportModal,
-  })),
-);
-
-function ComplianceDraftPortal({ onClose }: { onClose: () => void }) {
-  return (
-    <Suspense fallback={null}>
-      <ComplianceReportModal
-        alert={MUNICIPAL_ALERTS[0]!}
-        isOpen
-        onClose={onClose}
-      />
-    </Suspense>
   );
 }

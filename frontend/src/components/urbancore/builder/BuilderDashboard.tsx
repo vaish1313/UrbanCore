@@ -166,15 +166,25 @@ export function BuilderDashboard({
             {isFeatureOnlyPage ? (
               /* FEATURE-ONLY PAGE: Renders ONLY the selected feature page */
               <div className="w-full pt-4">
-                <SectionDivider label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`} />
+                <SectionDivider
+                  label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`}
+                />
 
-                {activeFeatureId === "suitability" && <SuitabilityScore aoi={selectedAoi} />}
+                {activeFeatureId === "suitability" && (
+                  <SuitabilityScore
+                    aoi={selectedAoi}
+                    onGenerateReport={() => setIsReportOpen(true)}
+                  />
+                )}
                 {activeFeatureId === "terrain" && <SiteReadiness aoi={selectedAoi} />}
                 {activeFeatureId === "constraints" && <ConstraintPanel aoi={selectedAoi} />}
                 {activeFeatureId === "history" && <ConstructionHistory aoi={selectedAoi} />}
                 {activeFeatureId === "risk" && <AreaComparison aoi={selectedAoi} />}
                 {activeFeatureId === "reports" && (
-                  <LandReportsPanel aoi={selectedAoi} onGenerateReport={() => setIsReportOpen(true)} />
+                  <LandReportsPanel
+                    aoi={selectedAoi}
+                    onGenerateReport={() => setIsReportOpen(true)}
+                  />
                 )}
               </div>
             ) : (
@@ -193,6 +203,23 @@ export function BuilderDashboard({
                 <div ref={mapSectionRef} className="w-full flex flex-col gap-6">
                   <SelectedSiteCard aoi={selectedAoi} onChangeLocation={handleChangeLocation} />
                   <BuilderMap aoi={selectedAoi} />
+                </div>
+
+                <div className="mt-4 flex w-full flex-col gap-8">
+                  <SectionDivider label="AI LAND SUITABILITY SCORE" />
+                  <SuitabilityScore
+                    aoi={selectedAoi}
+                    onGenerateReport={() => setIsReportOpen(true)}
+                  />
+
+                  <SectionDivider label="SITE READINESS ANALYSIS" />
+                  <SiteReadiness aoi={selectedAoi} />
+
+                  <SectionDivider label="ZONING CHECK" />
+                  <ConstraintPanel aoi={selectedAoi} />
+
+                  <SectionDivider label="NEIGHBOURHOOD COMPARISON" />
+                  <AreaComparison aoi={selectedAoi} />
                 </div>
               </div>
             )}

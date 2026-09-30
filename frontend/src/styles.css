@@ -213,13 +213,21 @@
 /* ─── Municipal GIS Dashboard ─────────────────────────────────────────────── */
 
 @keyframes mc-radar-rotate {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes mc-spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @utility mc-hud-grid {
@@ -230,12 +238,19 @@
 }
 
 @utility mc-radar-sweep {
-  background: conic-gradient(from 0deg at 50% 50%, rgba(0, 240, 255, 0) 0deg, rgba(0, 240, 255, 0.08) 320deg, rgba(0, 240, 255, 0.25) 360deg);
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(0, 240, 255, 0) 0deg,
+    rgba(0, 240, 255, 0.08) 320deg,
+    rgba(0, 240, 255, 0.25) 360deg
+  );
   animation: mc-radar-rotate 12s linear infinite;
 }
 
 @utility mc-glow-cyan {
-  box-shadow: 0 0 25px -5px rgba(0, 240, 255, 0.15), inset 0 0 15px -5px rgba(0, 240, 255, 0.1);
+  box-shadow:
+    0 0 25px -5px rgba(0, 240, 255, 0.15),
+    inset 0 0 15px -5px rgba(0, 240, 255, 0.1);
 }
 
 @utility mc-spin-slow {
@@ -245,12 +260,24 @@
 /* ─── Nashik Landmark Vertical Sliding Background ─────────────────────────── */
 
 @keyframes nashik-vertical-marquee {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
 }
 
 @keyframes nashik-scanline-glance {
-  0%   { transform: translateY(-100%); opacity: 0; }
-  50%  { opacity: 0.12; }
-  100% { transform: translateY(1000%); opacity: 0; }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateY(1000%);
+    opacity: 0;
+  }
 }

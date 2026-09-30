@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // MOCK LOGIN - Bypass backend, accept any credentials
       console.log("Mock login with data:", data);
-      
+
       // Create mock user based on input
       const mockUser: UserPayload = {
         id: "mock-user-" + Date.now(),
@@ -67,18 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: null,
         role: "CITIZEN" as RoleType, // Always login as CITIZEN
       };
-      
+
       const mockToken = "mock-token-" + Date.now();
-      
+
       setToken(mockToken);
       setUser(mockUser);
       localStorage.setItem("urbancore_token", mockToken);
       localStorage.setItem("urbancore_user", JSON.stringify(mockUser));
-      
+
       console.log("Mock login successful:", mockUser);
-    } catch (err: unknown) { 
+    } catch (err: unknown) {
       console.error("Mock login error:", err);
-      throw err; 
+      throw err;
     }
   };
 
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // MOCK REGISTER - Bypass backend, accept any registration
       console.log("Mock register with data:", data);
-      
+
       // Create mock user from registration data
       const mockUser: UserPayload = {
         id: "mock-user-" + Date.now(),
@@ -96,18 +96,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: (data.address as string) || null,
         role: (data.role as RoleType) || "CITIZEN",
       };
-      
+
       const mockToken = "mock-token-" + Date.now();
-      
+
       setToken(mockToken);
       setUser(mockUser);
       localStorage.setItem("urbancore_token", mockToken);
       localStorage.setItem("urbancore_user", JSON.stringify(mockUser));
-      
+
       console.log("Mock registration successful:", mockUser);
-    } catch (err: unknown) { 
+    } catch (err: unknown) {
       console.error("Mock register error:", err);
-      throw err; 
+      throw err;
     }
   };
 

@@ -80,7 +80,8 @@ function buildFallbackData(selectedAoi: AOI): ComparisonData {
   const top4 = calculated.slice(0, 4);
 
   const selGrowth = selectedAoi.constructionHistory
-    ? selectedAoi.constructionHistory[selectedAoi.constructionHistory.length - 1]?.builtUpChangePercent || 0
+    ? selectedAoi.constructionHistory[selectedAoi.constructionHistory.length - 1]
+        ?.builtUpChangePercent || 0
     : 0;
 
   const selItem: ComparisonItem = {
@@ -100,13 +101,10 @@ function buildFallbackData(selectedAoi: AOI): ComparisonData {
     `Nearest spatial neighbor is ${top4[0]?.name || "N/A"} located ${top4[0]?.distance_km || 0} km away.`,
     `Flood zone overlap across the 5 comparison sites ranges from ${Math.min(
       selItem.flood_zone_percent,
-      ...top4.map((t) => t.flood_zone_percent)
-    )}% to ${Math.max(
-      selItem.flood_zone_percent,
-      ...top4.map((t) => t.flood_zone_percent)
-    )}%.`,
+      ...top4.map((t) => t.flood_zone_percent),
+    )}% to ${Math.max(selItem.flood_zone_percent, ...top4.map((t) => t.flood_zone_percent))}%.`,
     `5-Year construction growth in this micro-region averages ${Math.round(
-      (selGrowth + top4.reduce((acc, curr) => acc + curr.construction_growth_percent, 0)) / 5
+      (selGrowth + top4.reduce((acc, curr) => acc + curr.construction_growth_percent, 0)) / 5,
     )}%.`,
   ];
 
@@ -147,7 +145,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
 
   if (isLoading) {
     return (
-      <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+      <div className="relative flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 animate-pulse rounded-2xl bg-primary/20" />
@@ -159,7 +157,10 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl border border-border/30 bg-card/20" />
+            <div
+              key={i}
+              className="h-32 animate-pulse rounded-2xl border border-border/30 bg-card/20"
+            />
           ))}
         </div>
         <div className="h-48 animate-pulse rounded-2xl border border-border/30 bg-card/20" />
@@ -171,7 +172,9 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
     return (
       <div className="glass-panel flex flex-col items-center justify-center gap-4 rounded-3xl p-8 text-center">
         <ShieldAlert className="h-10 w-10 text-destructive" />
-        <h3 className="font-display text-lg font-semibold text-foreground">Comparison Data Unavailable</h3>
+        <h3 className="font-display text-lg font-semibold text-foreground">
+          Comparison Data Unavailable
+        </h3>
         <p className="text-xs text-muted-foreground">
           Unable to compute neighborhood spatial comparison for {aoi.name}.
         </p>
@@ -193,9 +196,9 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
   const maxGrowth = Math.max(...allSites.map((s) => s.construction_growth_percent), 40);
 
   return (
-    <div className="glass-panel flex flex-col gap-6 rounded-3xl p-6">
+    <div className="relative flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
@@ -206,7 +209,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
             Spatial Benchmark Matrix
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Comparing <strong className="text-foreground">{selected_aoi.name}</strong> with the 4 geographically nearest candidate locations in Nashik.
+            Comparing <strong className="text-foreground">{selected_aoi.name}</strong> with the 4
+            geographically nearest candidate locations in Nashik.
           </p>
         </div>
 
@@ -224,8 +228,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
             key={site.id}
             className={`flex flex-col justify-between rounded-2xl p-4 transition-all duration-300 ${
               site.is_selected
-                ? "border-2 border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(114,180,255,0.15)]"
-                : "border border-border/50 bg-card/30 hover:border-border hover:bg-card/50"
+                ? "border-2 border-primary/60 bg-primary/10 shadow-[0_0_20px_rgba(114,180,255,0.15)] backdrop-blur-xl"
+                : "border border-white/15 bg-white/[0.065] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl hover:border-primary/40 hover:bg-white/[0.1]"
             }`}
           >
             <div className="flex flex-col gap-1.5">
@@ -241,7 +245,10 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                   </span>
                 )}
               </div>
-              <h4 className="font-display text-sm font-semibold text-foreground truncate" title={site.name}>
+              <h4
+                className="font-display text-sm font-semibold text-foreground truncate"
+                title={site.name}
+              >
                 {site.name}
               </h4>
             </div>
@@ -254,8 +261,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                     site.suitability_score >= 80
                       ? "text-emerald-400"
                       : site.suitability_score >= 70
-                      ? "text-cyan-400"
-                      : "text-amber-400"
+                        ? "text-cyan-400"
+                        : "text-amber-400"
                   }`}
                 >
                   {site.suitability_score}/100
@@ -269,8 +276,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                     site.flood_zone_percent <= 5
                       ? "text-emerald-400"
                       : site.flood_zone_percent <= 15
-                      ? "text-amber-400"
-                      : "text-rose-400"
+                        ? "text-amber-400"
+                        : "text-rose-400"
                   }
                 >
                   {site.flood_zone_percent}%
@@ -292,7 +299,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       </div>
 
       {/* Side-by-Side Comparison Table */}
-      <div className="overflow-x-auto rounded-2xl border border-border/50 bg-card/20">
+      <div className="glass-panel overflow-x-auto rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-border/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground bg-muted/20">
@@ -309,16 +316,12 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
               <tr
                 key={site.id}
                 className={`transition-colors ${
-                  site.is_selected
-                    ? "bg-primary/10 font-semibold"
-                    : "hover:bg-white/[0.02]"
+                  site.is_selected ? "bg-primary/10 font-semibold" : "hover:bg-white/[0.02]"
                 }`}
               >
                 <td className="p-3.5 font-medium text-foreground">
                   <div className="flex items-center gap-2">
-                    {site.is_selected && (
-                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                    )}
+                    {site.is_selected && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
                     <span>{site.name}</span>
                     {site.is_selected && (
                       <span className="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
@@ -340,8 +343,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                       site.suitability_score >= 80
                         ? "bg-emerald-500/10 text-emerald-400"
                         : site.suitability_score >= 70
-                        ? "bg-cyan-500/10 text-cyan-400"
-                        : "bg-amber-500/10 text-amber-400"
+                          ? "bg-cyan-500/10 text-cyan-400"
+                          : "bg-amber-500/10 text-amber-400"
                     }`}
                   >
                     {site.suitability_score} / 100
@@ -353,8 +356,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                       site.flood_zone_percent <= 5
                         ? "text-emerald-400"
                         : site.flood_zone_percent <= 15
-                        ? "text-amber-400"
-                        : "text-rose-400"
+                          ? "text-amber-400"
+                          : "text-rose-400"
                     }
                   >
                     {site.flood_zone_percent}%
@@ -363,9 +366,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                 <td className="p-3.5 font-mono text-cyan-300">
                   +{site.construction_growth_percent}%
                 </td>
-                <td className="p-3.5 text-right font-mono text-foreground">
-                  {site.avg_slope}°
-                </td>
+                <td className="p-3.5 text-right font-mono text-foreground">{site.avg_slope}°</td>
               </tr>
             ))}
           </tbody>
@@ -375,7 +376,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       {/* Visual Comparison Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Land Suitability Score Visual Comparison */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+        <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <div className="flex items-center gap-2 border-b border-border/30 pb-3">
             <Layers className="h-4 w-4 text-primary" />
             <h4 className="font-display text-sm font-semibold text-foreground">
@@ -388,7 +389,11 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
               return (
                 <div key={site.id} className="flex flex-col gap-1 text-xs">
                   <div className="flex items-center justify-between font-mono text-[11px]">
-                    <span className={site.is_selected ? "font-bold text-primary" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        site.is_selected ? "font-bold text-primary" : "text-muted-foreground"
+                      }
+                    >
                       {site.name} {site.is_selected && "(Selected)"}
                     </span>
                     <span className="font-bold text-foreground">{site.suitability_score}/100</span>
@@ -399,8 +404,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
                         site.is_selected
                           ? "bg-gradient-to-r from-primary to-cyan-400"
                           : site.suitability_score >= 80
-                          ? "bg-emerald-400/80"
-                          : "bg-cyan-500/70"
+                            ? "bg-emerald-400/80"
+                            : "bg-cyan-500/70"
                       }`}
                       style={{ width: `${pct}%` }}
                     />
@@ -412,7 +417,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
         </div>
 
         {/* 5-Year Construction Growth Visual Comparison */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/20 p-5">
+        <div className="glass-panel flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <div className="flex items-center gap-2 border-b border-border/30 pb-3">
             <TrendingUp className="h-4 w-4 text-cyan-400" />
             <h4 className="font-display text-sm font-semibold text-foreground">
@@ -421,14 +426,23 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
           </div>
           <div className="flex flex-col gap-3">
             {allSites.map((site) => {
-              const pct = Math.min(100, Math.round((site.construction_growth_percent / maxGrowth) * 100));
+              const pct = Math.min(
+                100,
+                Math.round((site.construction_growth_percent / maxGrowth) * 100),
+              );
               return (
                 <div key={site.id} className="flex flex-col gap-1 text-xs">
                   <div className="flex items-center justify-between font-mono text-[11px]">
-                    <span className={site.is_selected ? "font-bold text-primary" : "text-muted-foreground"}>
+                    <span
+                      className={
+                        site.is_selected ? "font-bold text-primary" : "text-muted-foreground"
+                      }
+                    >
                       {site.name} {site.is_selected && "(Selected)"}
                     </span>
-                    <span className="font-bold text-cyan-300">+{site.construction_growth_percent}%</span>
+                    <span className="font-bold text-cyan-300">
+                      +{site.construction_growth_percent}%
+                    </span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/30">
                     <div
@@ -448,7 +462,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       </div>
 
       {/* Neutral Factual Observations Box */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+      <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-primary" />
           <h4 className="font-display text-xs font-bold uppercase tracking-wider text-primary">

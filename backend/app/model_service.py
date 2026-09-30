@@ -9,6 +9,7 @@ import segmentation_models_pytorch as smp
 import rasterio
 from rasterio.features import shapes
 from .config import settings
+from .cache_service import inference_cache
 
 
 class ResNetUNet(nn.Module):
@@ -574,13 +575,25 @@ class ModelInferenceService:
 
         return geojson
 
-    def process_tif(self, tif_path: Path, output_dir: Path) -> dict:
+    def process_tif(
+        self, 
+        tif_path: Path, 
+        output_dir: Path,
+        latitude: float = None,
+        longitude: float = None,
+        radius_m: int = None,
+        year: int = None
+    ) -> dict:
         """
         Complete processing pipeline for a single GeoTIFF.
         
         Args:
             tif_path: Path to input GeoTIFF
             output_dir: Directory to save outputs
+            latitude: Center latitude for caching (optional)
+            longitude: Center longitude for caching (optional)
+            radius_m: Buffer radius for caching (optional)
+            year: Analysis year for caching (optional)
             
         Returns:
             Dictionary with processing results
@@ -589,6 +602,37 @@ class ModelInferenceService:
             raise RuntimeError("Model is not loaded. Please ensure the model checkpoint exists.")
             
         output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Check cache if geographic parameters provided
+        if all(param is not None for param in [latitude, longitude, radius_m, year]):
+            cache_key = inference_cache.generate_cache_key(
+                latitude=latitude,
+                longitude=longitude,
+                radius_m=radius_m,
+                year=year,
+                model_version=settings.model_version,
+                preprocessing_version=settings.preprocessing_version
+            )
+            
+            # Try to get cached result
+            cached_result = inference_cache.get(cache_key)
+            if cached_result is not None:
+                print(f"    CACHE HIT: {cache_key}")
+                
+                # Return cached result in expected format
+                return {
+                    "mask_path": cached_result["mask_path"],
+                    "geojson_path": cached_result["geojson_path"],
+                    "total_pixels": cached_result["total_pixels"],
+                    "construction_pixels": cached_result["construction_pixels"],
+                    "construction_percentage": cached_result["construction_percentage"],
+                    "metadata": cached_result["metadata"]
+                }
+            else:
+                print(f"    CACHE MISS: {cache_key}")
+        else:
+            cache_key = None
+            print("    Cache disabled: missing geographic parameters")
 
         # Run inference
         binary_mask, metadata = self.infer(tif_path)
@@ -624,7 +668,7 @@ class ModelInferenceService:
         construction_pixels = np.sum(binary_mask)
         construction_percentage = (construction_pixels / total_pixels) * 100
 
-        return {
+        result = {
             "mask_path": str(mask_path),
             "geojson_path": str(geojson_path),
             "total_pixels": int(total_pixels),
@@ -632,6 +676,21 @@ class ModelInferenceService:
             "construction_percentage": float(construction_percentage),
             "metadata": metadata
         }
+
+        # Store in cache if cache key was generated
+        if cache_key is not None:
+            inference_cache.set(
+                cache_key=cache_key,
+                latitude=latitude,
+                longitude=longitude,
+                radius_m=radius_m,
+                year=year,
+                model_version=settings.model_version,
+                preprocessing_version=settings.preprocessing_version,
+                inference_result=result
+            )
+
+        return result
 
 
 # Singleton instance

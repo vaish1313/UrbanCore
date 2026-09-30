@@ -9,12 +9,14 @@ class Settings(BaseSettings):
         protected_namespaces=('settings_',)
     )
     api_v1_prefix: str = "/api/v1"
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:4173,http://localhost:3000"
     supabase_url: str = ""
     supabase_publishable_key: str = ""
     supabase_project_id: str = ""
     # A service key is optional. Do not expose it to the frontend.
     supabase_service_role_key: str = ""
+    # PostgreSQL / PostGIS database URL
+    database_url: str = ""
     gee_service_account_email: str = ""
     gee_private_key_path: str = ""
     google_drive_folder_id: str = ""
@@ -33,6 +35,11 @@ class Settings(BaseSettings):
     data_dir: str = "./data/analyses"
     gee_poll_interval_seconds: int = 30
     gee_export_timeout_seconds: int = 1800
+    # Model and preprocessing versions for cache invalidation
+    model_version: str = "v1"
+    preprocessing_version: str = "v1" 
+    # GEE version for TIFF cache invalidation
+    gee_version: str = "v1"
 
     @property
     def origins(self) -> list[str]:

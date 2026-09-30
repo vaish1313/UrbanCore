@@ -1,31 +1,12 @@
 /**
- * /municipal/heatmap — Construction Heatmap & Growth Analytics page.
- * Renders GrowthAnalytics + ConstructionMonitor in isolation.
+ * /municipal/heatmap — Removed page.
+ * Redirects to Command Overview so old links don't break.
  */
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Flame } from "lucide-react";
-import { GrowthAnalytics } from "@/components/urbancore/municipal/GrowthAnalytics";
-import { ConstructionMonitor } from "@/components/urbancore/municipal/ConstructionMonitor";
-import { MunicipalPageShell } from "@/components/urbancore/municipal/MunicipalPageShell";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/municipal/heatmap")({
-  head: () => ({
-    meta: [{ title: "Construction Heatmap — Municipal Authority" }],
-  }),
-  component: HeatmapPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/municipal", replace: true });
+  },
+  component: () => null,
 });
-
-function HeatmapPage() {
-  const navigate = useNavigate();
-  return (
-    <MunicipalPageShell
-      eyebrow="Construction Heatmap"
-      eyebrowIcon={<Flame size={13} />}
-      title="Growth Analytics & Construction Monitor"
-      onBack={() => navigate({ to: "/municipal" })}
-    >
-      <GrowthAnalytics />
-      <ConstructionMonitor />
-    </MunicipalPageShell>
-  );
-}

@@ -39,6 +39,7 @@ export function RoleNavigation({
   workspaceFeatureId,
   onResetWorkspaceFeature,
   featureMenu,
+  sidebarMode = "overlay",
 }: {
   role: RoleType;
   activeTab: string;
@@ -47,6 +48,8 @@ export function RoleNavigation({
   workspaceFeatureId?: string;
   onResetWorkspaceFeature?: () => void;
   featureMenu?: RoleFeatureMenuConfig;
+  /** Whether to use permanent sidebar or overlay mode */
+  sidebarMode?: "overlay" | "permanent";
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,11 +58,9 @@ export function RoleNavigation({
   const RoleIcon = role === "builder" ? Building2 : role === "municipal" ? Landmark : Users;
   const showFeatureMenu = (role === "builder" || role === "municipal") && !!featureMenu;
 
-  const homeTab =
-    role === "builder" ? "overview" : role === "municipal" ? "command" : "explore";
+  const homeTab = role === "builder" ? "overview" : role === "municipal" ? "command" : "explore";
 
-  const roleTitle =
-    role === "builder" || role === "municipal" ? "CITY EXPLORER" : "CITY EXPLORER";
+  const roleTitle = role === "builder" || role === "municipal" ? "CITY EXPLORER" : "CITY EXPLORER";
 
   const userInitial = user?.full_name ? user.full_name.charAt(0).toUpperCase() : "M";
   const username = user?.full_name || "mankar purva8";
@@ -79,11 +80,7 @@ export function RoleNavigation({
             <button
               type="button"
               onClick={() => {
-                if (
-                  showFeatureMenu &&
-                  workspaceFeatureId &&
-                  workspaceFeatureId !== "overview"
-                ) {
+                if (showFeatureMenu && workspaceFeatureId && workspaceFeatureId !== "overview") {
                   onResetWorkspaceFeature?.();
                 } else if (activeTab === "my-reports") {
                   onTabChange(homeTab);
@@ -102,7 +99,15 @@ export function RoleNavigation({
                 type="button"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-500/30 bg-[#0d1527] text-cyan-400 hover:border-cyan-500/60 hover:bg-[#131f38] transition-all duration-200 cursor-pointer shadow-md"
-                aria-label={`Toggle ${featureMenu.menuLabel}`}
+                aria-label={
+                  isMenuOpen
+                    ? role === "builder"
+                      ? "Close Builder Dashboard"
+                      : `Close ${featureMenu.menuLabel}`
+                    : role === "builder"
+                      ? "Open Builder Dashboard"
+                      : `Open ${featureMenu.menuLabel}`
+                }
               >
                 {isMenuOpen ? (
                   <X className="h-4 w-4 text-cyan-300" />
@@ -183,12 +188,13 @@ export function RoleNavigation({
           activeFeatureId={featureMenu.activeFeatureId}
           onSelectFeature={featureMenu.onSelectFeature}
           roleLabel={
-            role === "municipal"
-              ? "Municipal Authority"
-              : role === "builder"
-                ? "Builder Workspace"
+            role === "builder"
+              ? undefined
+              : role === "municipal"
+                ? "Municipal Authority"
                 : "City Explorer"
           }
+          mode="overlay"
         />
       )}
     </>

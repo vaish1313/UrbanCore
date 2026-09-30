@@ -20,7 +20,8 @@ export function LandReportsPanel({
             Land Intelligence Report: {aoi.name}
           </h3>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Comprehensive geospatial evaluation including land suitability, terrain readiness, environmental constraints, and 5-year growth timeline.
+            Comprehensive geospatial evaluation including land suitability, terrain readiness,
+            environmental constraints, and 5-year growth timeline.
           </p>
         </div>
 
@@ -37,8 +38,12 @@ export function LandReportsPanel({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase text-slate-400">Selected Location</span>
-          <span className="text-sm font-semibold text-white">{aoi.location || "Nashik, Maharashtra"}</span>
-          <span className="font-mono text-[11px] text-cyan-400">{aoi.coords.lat}° N, {aoi.coords.lng}° E</span>
+          <span className="text-sm font-semibold text-white">
+            {aoi.location || "Nashik, Maharashtra"}
+          </span>
+          <span className="font-mono text-[11px] text-cyan-400">
+            {aoi.coords.lat}° N, {aoi.coords.lng}° E
+          </span>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase text-slate-400">Suitability Score</span>
@@ -47,8 +52,12 @@ export function LandReportsPanel({
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase text-slate-400">Terrain Readiness</span>
-          <span className="text-sm font-semibold text-emerald-400">{aoi.terrain.readiness} READINESS</span>
-          <span className="text-xs text-slate-400">{aoi.terrain.roughness} ({aoi.terrain.slope}° Slope)</span>
+          <span className="text-sm font-semibold text-emerald-400">
+            {aoi.terrain.readiness} READINESS
+          </span>
+          <span className="text-xs text-slate-400">
+            {aoi.terrain.roughness} ({aoi.terrain.slope}° Slope)
+          </span>
         </div>
       </div>
     </div>
