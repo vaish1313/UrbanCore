@@ -39,6 +39,7 @@ export function RoleNavigation({
   workspaceFeatureId,
   onResetWorkspaceFeature,
   featureMenu,
+  sidebarMode = "overlay",
 }: {
   role: RoleType;
   activeTab: string;
@@ -47,6 +48,8 @@ export function RoleNavigation({
   workspaceFeatureId?: string;
   onResetWorkspaceFeature?: () => void;
   featureMenu?: RoleFeatureMenuConfig;
+  /** Whether to use permanent sidebar or overlay mode */
+  sidebarMode?: "overlay" | "permanent";
 }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -65,9 +68,8 @@ export function RoleNavigation({
   return (
     <>
       <motion.header
-        className={`sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md px-4 py-3 sm:px-8 ${
-          role === "citizen" ? "bg-black/60 shadow-sm" : "bg-black/80 shadow-md"
-        }`}
+        className={`sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md px-4 py-3 sm:px-8 ${role === "citizen" ? "bg-black/60 shadow-sm" : "bg-black/80 shadow-md"
+          }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -128,11 +130,10 @@ export function RoleNavigation({
 
               <DropdownMenuContent
                 align="end"
-                className={`w-48 border mt-2 shadow-2xl rounded-2xl p-1.5 ${
-                  role === "citizen"
-                    ? "bg-[#0a0f1d]/90 backdrop-blur-xl border-white/10"
-                    : "bg-[#0a0f1d] border-slate-800 backdrop-blur-none z-50"
-                }`}
+                className={`w-48 border mt-2 shadow-2xl rounded-2xl p-1.5 ${role === "citizen"
+                  ? "bg-[#0a0f1d]/90 backdrop-blur-xl border-white/10"
+                  : "bg-[#0a0f1d] border-slate-800 backdrop-blur-none z-50"
+                  }`}
               >
                 <DropdownMenuItem
                   onClick={() => setIsProfileOpen(true)}
@@ -183,6 +184,7 @@ export function RoleNavigation({
                 ? "Builder Workspace"
                 : "City Explorer"
           }
+          mode="overlay"
         />
       )}
     </>
