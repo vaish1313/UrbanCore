@@ -65,7 +65,7 @@ function MunicipalLayout() {
       <RoleNavigation
         role="municipal"
         activeTab="command"
-        onTabChange={() => {}}
+        onTabChange={() => { }}
         onBack={() => navigate({ to: "/" })}
         workspaceFeatureId={activeFeatureId}
         onResetWorkspaceFeature={() => navigate({ to: "/municipal" })}
@@ -75,6 +75,7 @@ function MunicipalLayout() {
           activeFeatureId,
           onSelectFeature: handleFeatureSelect,
         }}
+        sidebarMode="overlay"
       />
 
       {/* Only the active child route is mounted here */}
