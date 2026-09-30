@@ -1,18 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LandReportsPanel } from "@/components/urbancore/builder/LandReportsPanel";
-import { useBuilderContext } from "@/components/urbancore/builder/BuilderContext";
-import { SectionDivider } from "@/components/urbancore/builder/SectionDivider";
+/**
+ * /builder/land-reports — removed.
+ * The "Generate Land Intelligence PDF" button now lives on the
+ * Land Suitability page. Redirect old links there.
+ */
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/builder/land-reports")({
-  component: LandReportsRoutePage,
+  beforeLoad: () => {
+    throw redirect({ to: "/builder/land-suitability", replace: true });
+  },
+  component: () => null,
 });
-
-function LandReportsRoutePage() {
-  const { selectedAoi, setIsReportOpen } = useBuilderContext();
-  return (
-    <div className="w-full">
-      <SectionDivider label="MODULE FEATURE: Land Reports" />
-      <LandReportsPanel aoi={selectedAoi} onGenerateReport={() => setIsReportOpen(true)} />
-    </div>
-  );
-}

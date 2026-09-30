@@ -250,9 +250,9 @@ export function SuitabilityScore({ aoi, onGenerateReport }: SuitabilityScoreProp
             <button
               type="button"
               onClick={onGenerateReport}
-              className="flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary transition-all duration-300 hover:border-primary hover:bg-primary/20 hover:shadow-[0_0_18px_rgba(56,189,248,0.28)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70"
+              className="flex items-center justify-center gap-2.5 rounded-2xl border border-cyan-500/50 bg-cyan-500/20 px-5 py-3 font-mono text-xs font-semibold text-cyan-300 transition-all duration-300 hover:bg-cyan-500/30 hover:border-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)] shrink-0 cursor-pointer"
             >
-              <FileText className="h-3.5 w-3.5" />
+              <FileText className="h-4 w-4 text-cyan-400" />
               Generate Land Intelligence PDF
             </button>
           )}

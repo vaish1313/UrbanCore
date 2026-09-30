@@ -8,11 +8,11 @@ export const Route = createFileRoute("/builder/land-suitability")({
 });
 
 function LandSuitabilityRoutePage() {
-  const { selectedAoi } = useBuilderContext();
+  const { selectedAoi, setIsReportOpen } = useBuilderContext();
   return (
     <div className="w-full">
       <SectionDivider label="MODULE FEATURE: Land Suitability" />
-      <SuitabilityScore aoi={selectedAoi} />
+      <SuitabilityScore aoi={selectedAoi} onGenerateReport={() => setIsReportOpen(true)} />
     </div>
   );
 }
