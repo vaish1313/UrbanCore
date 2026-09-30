@@ -26,6 +26,8 @@ import { Route as BuilderRiskAssessmentRouteImport } from './routes/builder/risk
 import { Route as BuilderTerrainAnalysisRouteImport } from './routes/builder/terrain-analysis'
 import { Route as BuilderZoningConstraintsRouteImport } from './routes/builder/zoning-constraints'
 import { Route as MunicipalIndexRouteImport } from './routes/municipal/index'
+import { Route as MunicipalCaseDetailRouteImport } from './routes/municipal/case-detail'
+import { Route as MunicipalComplaintsRouteImport } from './routes/municipal/complaints'
 import { Route as MunicipalDistrictMapRouteImport } from './routes/municipal/district-map'
 import { Route as MunicipalEncroachmentRouteImport } from './routes/municipal/encroachment'
 import { Route as MunicipalExportRouteImport } from './routes/municipal/export'
@@ -120,6 +122,16 @@ const MunicipalIndexRoute = MunicipalIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MunicipalRouteRoute,
 } as any)
+const MunicipalCaseDetailRoute = MunicipalCaseDetailRouteImport.update({
+  id: '/case-detail',
+  path: '/case-detail',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
+const MunicipalComplaintsRoute = MunicipalComplaintsRouteImport.update({
+  id: '/complaints',
+  path: '/complaints',
+  getParentRoute: () => MunicipalRouteRoute,
+} as any)
 const MunicipalDistrictMapRoute = MunicipalDistrictMapRouteImport.update({
   id: '/district-map',
   path: '/district-map',
@@ -167,6 +179,8 @@ export interface FileRoutesByFullPath {
   '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
   '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
   '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/case-detail': typeof MunicipalCaseDetailRoute
+  '/municipal/complaints': typeof MunicipalComplaintsRoute
   '/municipal/district-map': typeof MunicipalDistrictMapRoute
   '/municipal/encroachment': typeof MunicipalEncroachmentRoute
   '/municipal/export': typeof MunicipalExportRoute
@@ -190,6 +204,8 @@ export interface FileRoutesByTo {
   '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
   '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
   '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/case-detail': typeof MunicipalCaseDetailRoute
+  '/municipal/complaints': typeof MunicipalComplaintsRoute
   '/municipal/district-map': typeof MunicipalDistrictMapRoute
   '/municipal/encroachment': typeof MunicipalEncroachmentRoute
   '/municipal/export': typeof MunicipalExportRoute
@@ -216,6 +232,8 @@ export interface FileRoutesById {
   '/builder/risk-assessment': typeof BuilderRiskAssessmentRoute
   '/builder/terrain-analysis': typeof BuilderTerrainAnalysisRoute
   '/builder/zoning-constraints': typeof BuilderZoningConstraintsRoute
+  '/municipal/case-detail': typeof MunicipalCaseDetailRoute
+  '/municipal/complaints': typeof MunicipalComplaintsRoute
   '/municipal/district-map': typeof MunicipalDistrictMapRoute
   '/municipal/encroachment': typeof MunicipalEncroachmentRoute
   '/municipal/export': typeof MunicipalExportRoute
@@ -243,6 +261,8 @@ export interface FileRouteTypes {
     | '/builder/risk-assessment'
     | '/builder/terrain-analysis'
     | '/builder/zoning-constraints'
+    | '/municipal/case-detail'
+    | '/municipal/complaints'
     | '/municipal/district-map'
     | '/municipal/encroachment'
     | '/municipal/export'
@@ -266,6 +286,8 @@ export interface FileRouteTypes {
     | '/builder/risk-assessment'
     | '/builder/terrain-analysis'
     | '/builder/zoning-constraints'
+    | '/municipal/case-detail'
+    | '/municipal/complaints'
     | '/municipal/district-map'
     | '/municipal/encroachment'
     | '/municipal/export'
@@ -291,6 +313,8 @@ export interface FileRouteTypes {
     | '/builder/risk-assessment'
     | '/builder/terrain-analysis'
     | '/builder/zoning-constraints'
+    | '/municipal/case-detail'
+    | '/municipal/complaints'
     | '/municipal/district-map'
     | '/municipal/encroachment'
     | '/municipal/export'
@@ -433,6 +457,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MunicipalIndexRouteImport
       parentRoute: typeof MunicipalRouteRoute
     }
+    '/municipal/case-detail': {
+      id: '/municipal/case-detail'
+      path: '/case-detail'
+      fullPath: '/municipal/case-detail'
+      preLoaderRoute: typeof MunicipalCaseDetailRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
+    '/municipal/complaints': {
+      id: '/municipal/complaints'
+      path: '/complaints'
+      fullPath: '/municipal/complaints'
+      preLoaderRoute: typeof MunicipalComplaintsRouteImport
+      parentRoute: typeof MunicipalRouteRoute
+    }
     '/municipal/district-map': {
       id: '/municipal/district-map'
       path: '/district-map'
@@ -479,6 +517,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface MunicipalRouteRouteChildren {
+  MunicipalCaseDetailRoute: typeof MunicipalCaseDetailRoute
+  MunicipalComplaintsRoute: typeof MunicipalComplaintsRoute
   MunicipalDistrictMapRoute: typeof MunicipalDistrictMapRoute
   MunicipalEncroachmentRoute: typeof MunicipalEncroachmentRoute
   MunicipalExportRoute: typeof MunicipalExportRoute
@@ -489,6 +529,8 @@ interface MunicipalRouteRouteChildren {
 }
 
 const MunicipalRouteRouteChildren: MunicipalRouteRouteChildren = {
+  MunicipalCaseDetailRoute: MunicipalCaseDetailRoute,
+  MunicipalComplaintsRoute: MunicipalComplaintsRoute,
   MunicipalDistrictMapRoute: MunicipalDistrictMapRoute,
   MunicipalEncroachmentRoute: MunicipalEncroachmentRoute,
   MunicipalExportRoute: MunicipalExportRoute,
