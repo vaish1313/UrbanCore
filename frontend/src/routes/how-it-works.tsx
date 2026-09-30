@@ -5,9 +5,7 @@ import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
 import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import { UrbanTimeline } from "@/components/urbancore/UrbanTimeline";
-import {
-  Satellite, Radar, BrainCircuit, Activity, Layers, Play
-} from "lucide-react";
+import { Satellite, Radar, BrainCircuit, Activity, Layers, Play } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
 export const Route = createFileRoute("/how-it-works")({
@@ -26,7 +24,7 @@ function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
       <NashikBackgroundCarousel />
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
 
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
@@ -77,20 +75,55 @@ function HowItWorksPage() {
             <div className="flex flex-col gap-3">
               {[
                 [
-                  { band: "B2", file: "b2.png", title: "B2 (Blue Band)", sub: "Water Bodies", color: "#38bdf8" },
-                  { band: "B3", file: "b3.png", title: "B3 (Green Band)", sub: "Vegetation", color: "#4ade80" },
-                  { band: "B4", file: "b4.png", title: "B4 (Red Band)", sub: "Urban and Built-up Areas", color: "#f87171" },
+                  {
+                    band: "B2",
+                    file: "b2.png",
+                    title: "B2 (Blue Band)",
+                    sub: "Water Bodies",
+                    color: "#38bdf8",
+                  },
+                  {
+                    band: "B3",
+                    file: "b3.png",
+                    title: "B3 (Green Band)",
+                    sub: "Vegetation",
+                    color: "#4ade80",
+                  },
+                  {
+                    band: "B4",
+                    file: "b4.png",
+                    title: "B4 (Red Band)",
+                    sub: "Urban and Built-up Areas",
+                    color: "#f87171",
+                  },
                 ],
                 [
-                  { band: "B8", file: "b8.png", title: "B8 (NIR Band)", sub: "Vegetation and Biomass", color: "#4ade80" },
-                  { band: "B11", file: "b11.png", title: "B11 (SWIR 1 Band)", sub: "Dry Areas, Soil and Materials", color: "#fb923c" },
-                  { band: "B12", file: "b12.png", title: "B12 (SWIR 2 Band)", sub: "Soil, City and Infrastructure", color: "#e879f9" },
+                  {
+                    band: "B8",
+                    file: "b8.png",
+                    title: "B8 (NIR Band)",
+                    sub: "Vegetation and Biomass",
+                    color: "#4ade80",
+                  },
+                  {
+                    band: "B11",
+                    file: "b11.png",
+                    title: "B11 (SWIR 1 Band)",
+                    sub: "Dry Areas, Soil and Materials",
+                    color: "#fb923c",
+                  },
+                  {
+                    band: "B12",
+                    file: "b12.png",
+                    title: "B12 (SWIR 2 Band)",
+                    sub: "Soil, City and Infrastructure",
+                    color: "#e879f9",
+                  },
                 ],
               ].map((row, rowIdx) => (
                 <div key={rowIdx} className="flex items-center gap-0">
                   {row.map(({ band, file, title, sub, color }, idx) => (
                     <div key={band} className="flex items-center flex-1 min-w-0">
-
                       {/* ── Card ──────────────────────────────────────────── */}
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -108,13 +141,25 @@ function HowItWorksPage() {
 
                         {/* Header */}
                         <div className="absolute top-0 left-0 right-0 px-2.5 pt-2 pb-4 bg-gradient-to-b from-black/85 to-transparent">
-                          <p className="font-mono text-[9px] font-semibold leading-tight" style={{ color }}>{title}</p>
-                          <p className="font-mono text-[7.5px] text-white/55 leading-tight mt-0.5">{sub}</p>
+                          <p
+                            className="font-mono text-[9px] font-semibold leading-tight"
+                            style={{ color }}
+                          >
+                            {title}
+                          </p>
+                          <p className="font-mono text-[7.5px] text-white/55 leading-tight mt-0.5">
+                            {sub}
+                          </p>
                         </div>
 
                         {/* Bottom label */}
                         <div className="absolute bottom-0 left-0 right-0 px-2.5 py-1.5 bg-gradient-to-t from-black/80 to-transparent">
-                          <span className="font-mono text-[10px] font-bold tracking-widest" style={{ color }}>{band}</span>
+                          <span
+                            className="font-mono text-[10px] font-bold tracking-widest"
+                            style={{ color }}
+                          >
+                            {band}
+                          </span>
                         </div>
 
                         {/* Neon border glow on hover */}
@@ -126,17 +171,25 @@ function HowItWorksPage() {
                         {/* Top radial glow */}
                         <div
                           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                          style={{ background: `radial-gradient(circle at 50% 0%, ${color}18 0%, transparent 65%)` }}
+                          style={{
+                            background: `radial-gradient(circle at 50% 0%, ${color}18 0%, transparent 65%)`,
+                          }}
                         />
                       </motion.div>
 
                       {/* ── Horizontal connector (between cards, not after last) ── */}
                       {idx < row.length - 1 && (
-                        <div className="flex items-center flex-shrink-0 mx-0" style={{ width: "28px" }}>
+                        <div
+                          className="flex items-center flex-shrink-0 mx-0"
+                          style={{ width: "28px" }}
+                        >
                           {/* Left dot */}
                           <div
                             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                            style={{ background: "#38bdf8", boxShadow: "0 0 6px 2px rgba(34,211,238,0.7)" }}
+                            style={{
+                              background: "#38bdf8",
+                              boxShadow: "0 0 6px 2px rgba(34,211,238,0.7)",
+                            }}
                           />
                           {/* Line */}
                           <div
@@ -149,7 +202,10 @@ function HowItWorksPage() {
                           {/* Right dot */}
                           <div
                             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                            style={{ background: "#38bdf8", boxShadow: "0 0 6px 2px rgba(34,211,238,0.7)" }}
+                            style={{
+                              background: "#38bdf8",
+                              boxShadow: "0 0 6px 2px rgba(34,211,238,0.7)",
+                            }}
                           />
                         </div>
                       )}
@@ -166,8 +222,13 @@ function HowItWorksPage() {
       <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col-reverse lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 w-full relative">
-            <div className="rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
-              style={{ boxShadow: "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)" }}>
+            <div
+              className="rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:scale-110 transform-gpu cursor-pointer"
+              style={{
+                boxShadow:
+                  "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)",
+              }}
+            >
               <img
                 src="/step2-howitworks.png"
                 alt="Spectral indices — NDVI, NDBI, NDWI, BSI computation pipeline"
@@ -235,14 +296,23 @@ function HowItWorksPage() {
               regions using advanced neural networks.
             </p>
             <div className="flex gap-3 mb-10">
-              <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">U-Net</span>
-              <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">ResNet18 Encoder</span>
+              <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">
+                U-Net
+              </span>
+              <span className="px-3 py-1 rounded text-xs font-mono border border-white/20 bg-white/5 text-slate-300">
+                ResNet18 Encoder
+              </span>
             </div>
           </div>
 
           <div className="lg:w-1/2 w-full relative">
-            <div className="rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2"
-              style={{ boxShadow: "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)" }}>
+            <div
+              className="rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:scale-110 transform-gpu cursor-pointer"
+              style={{
+                boxShadow:
+                  "0 0 0 1px rgba(34,211,238,0.22), 0 0 40px -8px rgba(34,211,238,0.12), 0 25px 50px -12px rgba(0,0,0,0.7)",
+              }}
+            >
               <img
                 src="/step03-howitworks.png"
                 alt="AI segmentation — U-Net built-up detection"
@@ -267,7 +337,8 @@ function HowItWorksPage() {
             Multiple years reveal change.
           </h2>
           <p className="text-slate-400 font-light text-sm max-w-xl mx-auto">
-            Only 5–10% of the city changes each year. The rest stays identical — that's what makes urban growth visible.
+            Only 5–10% of the city changes each year. The rest stays identical — that's what makes
+            urban growth visible.
           </p>
         </div>
 
@@ -279,14 +350,15 @@ function HowItWorksPage() {
       {/* STEP 5 - CHANGE DETECTION */}
       <section className="relative z-10 py-24 sm:py-32 w-full border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-start gap-10">
-
           <div>
             <div className="flex items-center gap-3 mb-6">
               <span className="font-mono text-xs text-rose-400 border border-rose-500/20 bg-rose-500/10 px-3 py-1 rounded-full">
                 STEP 05
               </span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl font-light text-white">Reveal where the city moved.</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-light text-white">
+              Reveal where the city moved.
+            </h2>
           </div>
 
           {/* Full Footprint image — hover lift */}
@@ -309,17 +381,28 @@ function HowItWorksPage() {
             animate={{ x: ["0%", "-50%"] }}
             transition={{ ease: "linear", duration: 20, repeat: Infinity }}
           >
-            <span>Sentinel-2</span><span>•</span>
-            <span>Google Earth Engine</span><span>•</span>
-            <span>10-channel input</span><span>•</span>
-            <span>U-Net</span><span>•</span>
-            <span>ResNet18</span><span>•</span>
-            <span>Multi-temporal analysis</span><span>•</span>
-            <span>Sentinel-2</span><span>•</span>
-            <span>Google Earth Engine</span><span>•</span>
-            <span>10-channel input</span><span>•</span>
-            <span>U-Net</span><span>•</span>
-            <span>ResNet18</span><span>•</span>
+            <span>Sentinel-2</span>
+            <span>•</span>
+            <span>Google Earth Engine</span>
+            <span>•</span>
+            <span>10-channel input</span>
+            <span>•</span>
+            <span>U-Net</span>
+            <span>•</span>
+            <span>ResNet18</span>
+            <span>•</span>
+            <span>Multi-temporal analysis</span>
+            <span>•</span>
+            <span>Sentinel-2</span>
+            <span>•</span>
+            <span>Google Earth Engine</span>
+            <span>•</span>
+            <span>10-channel input</span>
+            <span>•</span>
+            <span>U-Net</span>
+            <span>•</span>
+            <span>ResNet18</span>
+            <span>•</span>
             <span>Multi-temporal analysis</span>
           </motion.div>
         </div>

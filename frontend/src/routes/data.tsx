@@ -7,10 +7,7 @@ import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroun
 import { ComparativeVisualization } from "@/components/urbancore/ComparativeVisualization";
 import { NashikLiveMap } from "@/components/urbancore/NashikLiveMap";
 import { UrbanTimeline } from "@/components/urbancore/UrbanTimeline";
-import heroBg from "@/assets/hero-bg.png";
-import {
-  Clock, TrendingUp, Search, Sparkles, Map, Network, ArrowRight
-} from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
 export const Route = createFileRoute("/data")({
@@ -29,7 +26,7 @@ function DataInsightsPage() {
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
       <NashikBackgroundCarousel />
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
 
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
@@ -67,7 +64,8 @@ function DataInsightsPage() {
             Five years. One landscape.
           </h2>
           <p className="text-slate-400 font-light text-sm max-w-xl mx-auto">
-            Only a small fraction of Nashik's landscape changes each year. The timeline below captures exactly where and how.
+            Only a small fraction of Nashik's landscape changes each year. The timeline below
+            captures exactly where and how.
           </p>
         </div>
         <div className="w-full max-w-5xl mx-auto px-6 sm:px-10">
@@ -87,7 +85,7 @@ function DataInsightsPage() {
         </div>
 
         <div className="w-full max-w-5xl mx-auto px-6 sm:px-10">
-          <ComparativeVisualization onComplete={() => { }} />
+          <ComparativeVisualization onComplete={() => {}} />
         </div>
       </section>
 
@@ -99,96 +97,6 @@ function DataInsightsPage() {
           </h2>
 
           <NashikLiveMap />
-        </div>
-      </section>
-
-      {/* SECTION 4 - INSIGHT CARDS */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Built-up Expansion */}
-            <div className="p-8 rounded-2xl bg-[#03060d] border border-white/5 hover:border-cyan-500/30 transition-colors group">
-              <div className="h-40 mb-6 flex items-end justify-center pb-4 relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-cyan-900/20 to-transparent rounded-lg" />
-                <div className="w-full max-w-[200px] h-32 border-b border-l border-white/20 relative flex items-end gap-2 px-2">
-                  <motion.div
-                    initial={{ height: "30%" }}
-                    whileInView={{ height: "40%" }}
-                    transition={{ duration: 1 }}
-                    className="w-full bg-cyan-500/40 border-t border-cyan-400"
-                  />
-                  <motion.div
-                    initial={{ height: "30%" }}
-                    whileInView={{ height: "60%" }}
-                    transition={{ duration: 1, delay: 0.2 }}
-                    className="w-full bg-cyan-500/60 border-t border-cyan-400"
-                  />
-                  <motion.div
-                    initial={{ height: "30%" }}
-                    whileInView={{ height: "90%" }}
-                    transition={{ duration: 1, delay: 0.4 }}
-                    className="w-full bg-cyan-500/80 border-t border-cyan-400"
-                  />
-                </div>
-              </div>
-              <h3 className="font-mono text-sm text-cyan-400 mb-2">Built-up Expansion</h3>
-              <p className="text-slate-400 font-light text-sm">
-                Track the outward sprawl of urban boundaries year-over-year.
-              </p>
-            </div>
-
-            {/* Temporal Change */}
-            <div className="p-8 rounded-2xl bg-[#03060d] border border-white/5 hover:border-orange-500/30 transition-colors group">
-              <div className="h-40 mb-6 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-orange-900/20 to-transparent rounded-lg" />
-                <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded bg-slate-800 border border-slate-600 relative overflow-hidden">
-                    <div className="absolute bottom-0 left-0 w-8 h-8 bg-slate-600" />
-                  </div>
-                  <TrendingUp className="text-orange-400 w-6 h-6 my-auto" />
-                  <div className="w-16 h-16 rounded bg-slate-800 border border-orange-500 relative overflow-hidden">
-                    <div className="absolute bottom-0 left-0 w-8 h-8 bg-slate-600" />
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-orange-500" />
-                  </div>
-                </div>
-              </div>
-              <h3 className="font-mono text-sm text-orange-400 mb-2">Temporal Change</h3>
-              <p className="text-slate-400 font-light text-sm">
-                Isolate newly developed zones between specific date ranges.
-              </p>
-            </div>
-
-            {/* Area Comparison */}
-            <div className="p-8 rounded-2xl bg-[#03060d] border border-white/5 hover:border-purple-500/30 transition-colors group">
-              <div className="h-40 mb-6 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent rounded-lg" />
-                <div className="w-32 h-32 rounded-full border border-purple-500/50 flex items-center justify-center">
-                  <div className="w-1/2 h-full bg-purple-500/20 border-r border-purple-400 flex items-center justify-center">
-                    <span className="font-mono text-[10px] text-purple-300">ZONE A</span>
-                  </div>
-                  <div className="w-1/2 h-full bg-transparent flex items-center justify-center">
-                    <span className="font-mono text-[10px] text-slate-500">ZONE B</span>
-                  </div>
-                </div>
-              </div>
-              <h3 className="font-mono text-sm text-purple-400 mb-2">Area Comparison</h3>
-              <p className="text-slate-400 font-light text-sm">
-                Compare development rates across different municipal wards or zones.
-              </p>
-            </div>
-
-            {/* Urban Growth Pattern */}
-            <div className="p-8 rounded-2xl bg-[#03060d] border border-white/5 hover:border-emerald-500/30 transition-colors group">
-              <div className="h-40 mb-6 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/20 to-transparent rounded-lg" />
-                <Network className="w-16 h-16 text-emerald-400 opacity-80" />
-              </div>
-              <h3 className="font-mono text-sm text-emerald-400 mb-2">Urban Growth Pattern</h3>
-              <p className="text-slate-400 font-light text-sm">
-                Visualize clustering and dispersion patterns in new construction.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
