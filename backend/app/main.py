@@ -10,6 +10,7 @@ from .service import analyses, geocode, run_analysis, process_downloaded_images
 from .compliance_router import router as compliance_router
 from .municipal_router import router as municipal_router
 from .complaints_router import router as complaints_router, municipal_router as municipal_complaints_router
+from .builder_router import router as builder_router
 
 app = FastAPI(title="UrbanCore API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -18,6 +19,9 @@ app.include_router(compliance_router, prefix=settings.api_v1_prefix)
 app.include_router(municipal_router, prefix=f"{settings.api_v1_prefix}/municipal")
 app.include_router(complaints_router, prefix=f"{settings.api_v1_prefix}/complaints")
 app.include_router(municipal_complaints_router, prefix=f"{settings.api_v1_prefix}/municipal/complaints")
+# Builder Dashboard APIs: /api/v1/builder/aois and /api/v1/aois/compare
+app.include_router(builder_router, prefix=f"{settings.api_v1_prefix}/builder")
+app.include_router(builder_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health")
 async def health(): 

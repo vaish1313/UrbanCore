@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { NASHIK_AOIS } from "@/data/nashikAois";
+import { useEffect, useState } from "react";
 import type { AOI } from "@/types/urbancore";
 import { HeroSearch } from "@/components/urbancore/citizen/HeroSearch";
 import { SelectedSiteCard } from "@/components/urbancore/builder/SelectedSiteCard";
@@ -14,6 +14,14 @@ export const Route = createFileRoute("/builder/overview")({
 function OverviewRoutePage() {
   const { selectedAoi, setSelectedAoi } = useBuilderContext();
   const mapSectionRef = useRef<HTMLDivElement>(null);
+  const [aois, setAois] = useState<AOI[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/v1/builder/aois")
+      .then((r) => r.json())
+      .then((data) => setAois(data.aois))
+      .catch((err) => console.error("Failed to load AOIs", err));
+  }, []);
 
   const scrollToMap = useCallback(() => {
     mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -31,7 +39,7 @@ function OverviewRoutePage() {
   const handleSearch = useCallback(
     (suggestion: { label: string; lat: number; lng: number }) => {
       const qLower = suggestion.label.toLowerCase();
-      const matched = NASHIK_AOIS.find(
+      const matched = aois.find(
         (a) =>
           a.name.toLowerCase().includes(qLower) ||
           (a.location && a.location.toLowerCase().includes(qLower)) ||

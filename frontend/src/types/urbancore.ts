@@ -4,6 +4,8 @@ export type AOI = {
   id: string;
   name: string;
   location?: string;
+  estimatedConstructionAreaSqM?: number;
+  selectionSource?: "canonical-aoi" | "map-selected";
   geometry?: {
     type: "Polygon";
     coordinates: number[][][];

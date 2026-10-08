@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
+import { useBuilderSuitability, useBuilderTerrain } from "@/hooks/use-builder";
 
 export function LandReportsPanel({
   aoi,
@@ -8,6 +9,10 @@ export function LandReportsPanel({
   aoi: AOI;
   onGenerateReport: () => void;
 }) {
+  const isMapSelected = aoi.selectionSource === "map-selected";
+  const { data: suitability, isLoading } = useBuilderSuitability(aoi.id, !isMapSelected);
+  const { data: terrain, isLoading: isTerrainLoading, isError: isTerrainError } = useBuilderTerrain(aoi.id, !isMapSelected);
+
   return (
     <div className="glass-panel w-full rounded-3xl border border-white/10 bg-black/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
@@ -47,16 +52,28 @@ export function LandReportsPanel({
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase text-slate-400">Suitability Score</span>
-          <span className="text-lg font-bold text-cyan-400">{aoi.suitabilityScore} / 100</span>
-          <span className="text-xs text-slate-400">High Development Potential</span>
+          <span className="text-lg font-bold text-cyan-400">
+            {isMapSelected || isLoading || suitability?.overall_score == null
+              ? "Assessment Incomplete"
+              : `${suitability.overall_score.toFixed(2)} / 100`}
+          </span>
+          <span className="text-xs text-slate-400">
+            {isMapSelected ? "Suitability unavailable for this location" : suitability?.constraint_status === "UNAVAILABLE" ? "Constraint assessment unavailable" : "Backend site screening result"}
+          </span>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
           <span className="font-mono text-[10px] uppercase text-slate-400">Terrain Readiness</span>
           <span className="text-sm font-semibold text-emerald-400">
-            {aoi.terrain.readiness} READINESS
+            {isMapSelected || isTerrainError ? "UNAVAILABLE" : isTerrainLoading || !terrain ? "LOADING" : "AVAILABLE"}
           </span>
           <span className="text-xs text-slate-400">
-            {aoi.terrain.roughness} ({aoi.terrain.slope}° Slope)
+            {isMapSelected
+              ? "Coordinate-based terrain analysis is not available"
+              : isTerrainError
+                ? "Terrain metrics could not be loaded"
+                : terrain
+                  ? `${terrain.terrain_roughness_m.toFixed(2)} m roughness (${terrain.mean_slope_deg.toFixed(2)}° mean slope)`
+                  : "Loading terrain metrics..."}
           </span>
         </div>
       </div>

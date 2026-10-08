@@ -12,7 +12,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
-import { NASHIK_AOIS } from "@/data/nashikAois";
 
 interface ComparisonItem {
   id: string;
@@ -36,84 +35,7 @@ interface AreaComparisonProps {
   aoi: AOI;
 }
 
-// Haversine distance fallback for client-side calculation
-function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Earth radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-}
 
-function buildFallbackData(selectedAoi: AOI): ComparisonData {
-  const selLat = selectedAoi.coords.lat;
-  const selLng = selectedAoi.coords.lng;
-
-  const otherAois = NASHIK_AOIS.filter((item) => item.id !== selectedAoi.id);
-
-  const calculated = otherAois.map((item) => {
-    const dist = calculateDistanceKm(selLat, selLng, item.coords.lat, item.coords.lng);
-    const growth = item.constructionHistory
-      ? item.constructionHistory[item.constructionHistory.length - 1]?.builtUpChangePercent || 0
-      : 0;
-
-    return {
-      id: item.id,
-      name: item.name,
-      distance_km: dist,
-      suitability_score: item.suitabilityScore,
-      flood_zone_percent: item.constraints.floodZoneOverlapPercent,
-      construction_growth_percent: growth,
-      avg_slope: item.terrain.slope,
-      elevation: item.terrain.elevation,
-      is_selected: false,
-    };
-  });
-
-  calculated.sort((a, b) => a.distance_km - b.distance_km);
-  const top4 = calculated.slice(0, 4);
-
-  const selGrowth = selectedAoi.constructionHistory
-    ? selectedAoi.constructionHistory[selectedAoi.constructionHistory.length - 1]
-        ?.builtUpChangePercent || 0
-    : 0;
-
-  const selItem: ComparisonItem = {
-    id: selectedAoi.id,
-    name: selectedAoi.name,
-    distance_km: 0.0,
-    suitability_score: selectedAoi.suitabilityScore,
-    flood_zone_percent: selectedAoi.constraints.floodZoneOverlapPercent,
-    construction_growth_percent: selGrowth,
-    avg_slope: selectedAoi.terrain.slope,
-    elevation: selectedAoi.terrain.elevation,
-    is_selected: true,
-  };
-
-  const observations = [
-    `Selected site (${selectedAoi.name}) has a suitability score of ${selectedAoi.suitabilityScore}/100.`,
-    `Nearest spatial neighbor is ${top4[0]?.name || "N/A"} located ${top4[0]?.distance_km || 0} km away.`,
-    `Flood zone overlap across the 5 comparison sites ranges from ${Math.min(
-      selItem.flood_zone_percent,
-      ...top4.map((t) => t.flood_zone_percent),
-    )}% to ${Math.max(selItem.flood_zone_percent, ...top4.map((t) => t.flood_zone_percent))}%.`,
-    `5-Year construction growth in this micro-region averages ${Math.round(
-      (selGrowth + top4.reduce((acc, curr) => acc + curr.construction_growth_percent, 0)) / 5,
-    )}%.`,
-  ];
-
-  return {
-    selected_aoi: selItem,
-    nearest_aois: top4,
-    observations,
-  };
-}
 
 export function AreaComparison({ aoi }: AreaComparisonProps) {
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
@@ -131,9 +53,8 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       const json: ComparisonData = await response.json();
       setComparisonData(json);
     } catch (err) {
-      console.warn("Backend API call failed, utilizing client-side spatial fallback.", err);
-      const fallback = buildFallbackData(aoi);
-      setComparisonData(fallback);
+      console.error("Backend API call failed.", err);
+      setError("Failed to fetch neighborhood comparison data");
     } finally {
       setIsLoading(false);
     }

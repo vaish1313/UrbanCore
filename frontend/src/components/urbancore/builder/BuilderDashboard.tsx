@@ -1,5 +1,4 @@
-import { useState, useRef, useCallback } from "react";
-import { NASHIK_AOIS } from "@/data/nashikAois";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { AOI } from "@/types/urbancore";
 
 import { HeroSearch } from "../citizen/HeroSearch";
@@ -13,6 +12,7 @@ import { AreaComparison } from "./AreaComparison";
 import { BuilderReportModal } from "./BuilderReportModal";
 import { LandReportsPanel } from "./LandReportsPanel";
 import { SectionDivider } from "./SectionDivider";
+import { SiteSelectionConfirmation } from "./SiteSelectionConfirmation";
 
 const FEATURE_LABELS: Record<string, string> = {
   overview: "Overview",
@@ -37,8 +37,36 @@ export function BuilderDashboard({
   activeFeatureId?: string;
   onSelectFeature?: (featureId: string) => void;
 }) {
-  const [selectedAoi, setSelectedAoi] = useState<AOI>(NASHIK_AOIS[0]!);
+  const [aois, setAois] = useState<AOI[]>([]);
+  const [selectedAoi, setSelectedAoi] = useState<AOI | null>(null);
+  const [pendingAoi, setPendingAoi] = useState<AOI | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAois() {
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/builder/aois");
+        if (!response.ok) throw new Error("Failed to fetch AOIs");
+        const data = await response.json();
+        const canonicalAois = data.aois.map((aoi: AOI) => ({
+          ...aoi,
+          selectionSource: "canonical-aoi" as const,
+        }));
+        setAois(canonicalAois);
+        if (canonicalAois.length > 0) {
+          setSelectedAoi(canonicalAois[0]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Could not load AOIs from the backend");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchAois();
+  }, []);
 
   const mapSectionRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +86,7 @@ export function BuilderDashboard({
   const handleSearch = useCallback(
     (suggestion: { label: string; lat: number; lng: number }) => {
       const qLower = suggestion.label.toLowerCase();
-      const matched = NASHIK_AOIS.find(
+      const matched = aois.find(
         (a) =>
           a.name.toLowerCase().includes(qLower) ||
           (a.location && a.location.toLowerCase().includes(qLower)) ||
@@ -66,8 +94,7 @@ export function BuilderDashboard({
       );
 
       if (matched) {
-        setSelectedAoi(matched);
-        onSelectAoi?.(matched);
+        setPendingAoi(matched);
       } else {
         const customAoi: AOI = {
           id: `aoi-${Date.now()}`,
@@ -81,12 +108,13 @@ export function BuilderDashboard({
             y: 50,
           },
           suitabilityScore: 82,
+          selectionSource: "map-selected",
           terrain: {
-            elevation: 600,
-            slope: 5,
-            roughness: "Flat Plains",
-            flatLandPercent: 85,
-            readiness: "HIGH",
+            elevation: Number.NaN,
+            slope: Number.NaN,
+            roughness: "Unavailable",
+            flatLandPercent: Number.NaN,
+            readiness: "LOW",
           },
           accessibilityScore: 85,
           waterAvailabilityScore: 80,
@@ -102,15 +130,45 @@ export function BuilderDashboard({
           },
           summary: `Site intelligence analysis for ${suggestion.label}.`,
         };
-        setSelectedAoi(customAoi);
-        onSelectAoi?.(customAoi);
+        setPendingAoi(customAoi);
       }
       scrollToMap();
     },
-    [onSelectAoi, scrollToMap],
+    [aois, onSelectAoi, scrollToMap],
   );
 
+  const confirmPendingAoi = useCallback(() => {
+    if (!pendingAoi) return;
+    setSelectedAoi(pendingAoi);
+    onSelectAoi?.(pendingAoi);
+    setPendingAoi(null);
+  }, [onSelectAoi, pendingAoi]);
+
+  const cancelPendingAoi = useCallback(() => setPendingAoi(null), []);
+
   const isFeatureOnlyPage = activeFeatureId && activeFeatureId !== "overview";
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !selectedAoi) {
+    return (
+      <div className="flex h-[50vh] w-full flex-col items-center justify-center gap-4 text-center">
+        <p className="text-sm text-destructive">{error || "No AOIs available."}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="rounded border border-primary/20 px-4 py-2 text-sm text-primary hover:bg-primary/10"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -233,6 +291,13 @@ export function BuilderDashboard({
           onClose={() => setIsReportOpen(false)}
         />
       </div>
+      {pendingAoi && (
+        <SiteSelectionConfirmation
+          aoi={pendingAoi}
+          onCancel={cancelPendingAoi}
+          onConfirm={confirmPendingAoi}
+        />
+      )}
     </>
   );
 }

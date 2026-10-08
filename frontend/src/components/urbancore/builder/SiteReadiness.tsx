@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Mountain,
@@ -14,92 +13,26 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
-
-const API_BASE_URL = "http://localhost:8000/api/v1";
+import { useBuilderTerrain } from "@/hooks/use-builder";
 
 interface SiteReadinessProps {
   aoi: AOI;
 }
 
-interface BackendSiteReadinessResponse {
-  aoi_id: string;
-  name: string;
-  location?: string;
-  average_slope: number;
-  slope_min?: number;
-  slope_max?: number;
-  average_elevation: number;
-  min_elevation?: number;
-  max_elevation?: number;
-  elevation_range?: number;
-  flat_area_percentage: number;
-  terrain_classification: string;
-  readiness_level: "HIGH" | "MEDIUM" | "LOW";
-  factual_interpretation: string;
-}
-
 export function SiteReadiness({ aoi }: SiteReadinessProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [backendData, setBackendData] = useState<BackendSiteReadinessResponse | null>(null);
-
-  // Fetch terrain site readiness from backend API when AOI changes
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
-
-    const fetchSiteReadiness = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/terrain/site-readiness/${aoi.id}`);
-        if (response.ok) {
-          const data: BackendSiteReadinessResponse = await response.json();
-          if (isMounted) {
-            setBackendData(data);
-            setError(null);
-          }
-        } else {
-          // If server returns non-200, fallback gracefully to AOI terrain props
-          if (isMounted) {
-            setBackendData(null);
-          }
-        }
-      } catch (err) {
-        console.warn("Backend site readiness API unavailable. Using AOI DEM fallback.", err);
-        if (isMounted) {
-          setBackendData(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchSiteReadiness();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [aoi.id]);
-
-  // Derived readiness metrics (Backend primary, AOI prop fallback)
-  const averageSlope = backendData?.average_slope ?? aoi.terrain.slope;
-  const slopeMin =
-    backendData?.slope_min ?? Math.max(0.1, Math.round(averageSlope * 0.1 * 10) / 10);
-  const slopeMax = backendData?.slope_max ?? Math.round(averageSlope * 1.7 * 10) / 10;
-
-  const averageElevation = backendData?.average_elevation ?? aoi.terrain.elevation;
-  const minElevation = backendData?.min_elevation ?? averageElevation - 12;
-  const maxElevation = backendData?.max_elevation ?? averageElevation + 14;
-
-  const flatAreaPercentage = backendData?.flat_area_percentage ?? aoi.terrain.flatLandPercent;
-  const terrainClass = backendData?.terrain_classification ?? aoi.terrain.roughness;
-  const readinessLevel = backendData?.readiness_level ?? aoi.terrain.readiness;
-
-  const factualInterpretation =
-    backendData?.factual_interpretation ||
-    `Approximately ${flatAreaPercentage}% of the selected AOI falls within the project's classified flat-land plane, with an average terrain slope of ${averageSlope}°.`;
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected";
+  const { data: terrain, isLoading, isError, refetch } = useBuilderTerrain(aoi.id, isCanonicalAoi);
+  const readinessLevel = aoi.terrain.readiness;
+  const averageSlope = terrain?.mean_slope_deg;
+  const maxSlope = terrain?.max_slope_deg;
+  const averageElevation = terrain?.mean_elevation_m;
+  const minElevation = terrain?.min_elevation_m;
+  const maxElevation = terrain?.max_elevation_m;
+  const flatAreaPercentage = terrain?.flat_land_percentage;
+  const terrainRoughness = terrain?.terrain_roughness_m;
+  const factualInterpretation = terrain
+    ? `Approximately ${terrain.flat_land_percentage.toFixed(2)}% of the selected AOI has slope at or below 5°, with a mean terrain slope of ${terrain.mean_slope_deg.toFixed(2)}°.`
+    : "";
 
   const readinessColor =
     readinessLevel === "HIGH"
@@ -176,7 +109,22 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </p>
             </div>
           </motion.div>
-        ) : error ? (
+        ) : !isCanonicalAoi ? (
+          <motion.div
+            key="map-selected-unavailable"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-12 text-center"
+          >
+            <AlertTriangle className="mb-3 h-10 w-10 text-amber-400" />
+            <h4 className="font-mono text-sm font-semibold uppercase tracking-wider text-amber-400">
+              TERRAIN ANALYSIS NOT AVAILABLE
+            </h4>
+            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+              This map-selected site is confirmed, but the backend does not yet provide coordinate-based DEM terrain analysis for arbitrary locations.
+            </p>
+          </motion.div>
+        ) : isError || !terrain ? (
           /* Error State UI */
           <motion.div
             key="error"
@@ -195,7 +143,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             </p>
             <button
               type="button"
-              onClick={() => setIsLoading(true)}
+              onClick={() => refetch()}
               className="mt-4 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/20 px-5 py-2.5 font-mono text-xs font-medium text-primary hover:bg-primary/30 transition-all shadow-[0_0_15px_rgba(56,189,248,0.2)]"
             >
               <RefreshCw className="h-4 w-4" /> Retry Analysis
@@ -226,7 +174,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
 
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-display text-3xl font-extrabold tracking-tight text-foreground">
-                    {averageSlope}°
+                    {averageSlope?.toFixed(2)}°
                   </span>
                   <span className="font-mono text-xs text-muted-foreground font-light">
                     average slope
@@ -234,9 +182,9 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
-                  <span className="font-mono text-[10px]">Slope Range</span>
+                  <span className="font-mono text-[10px]">Mean / Max Slope</span>
                   <span className="font-mono font-medium text-foreground">
-                    {slopeMin}° — {slopeMax}°
+                    {averageSlope?.toFixed(2)}° — {maxSlope?.toFixed(2)}°
                   </span>
                 </div>
               </div>
@@ -254,7 +202,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
 
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-display text-3xl font-extrabold tracking-tight text-foreground">
-                    {averageElevation} m
+                    {averageElevation?.toFixed(2)} m
                   </span>
                   <span className="font-mono text-xs text-muted-foreground font-light">MSL</span>
                 </div>
@@ -262,7 +210,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                 <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[11px] text-muted-foreground">
                   <span className="font-mono text-[10px]">Elevation Range</span>
                   <span className="font-mono font-medium text-foreground">
-                    {minElevation} m — {maxElevation} m
+                    {minElevation?.toFixed(2)} m — {maxElevation?.toFixed(2)} m
                   </span>
                 </div>
               </div>
@@ -280,7 +228,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
 
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="font-display text-3xl font-extrabold tracking-tight text-cyan-400">
-                    {flatAreaPercentage}%
+                    {flatAreaPercentage?.toFixed(2)}%
                   </span>
                   <span className="font-mono text-xs text-muted-foreground font-light">
                     classified area
@@ -293,7 +241,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                     <motion.div
                       className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 shadow-[0_0_10px_rgba(56,189,248,0.4)]"
                       initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, Math.max(0, flatAreaPercentage))}%` }}
+                      animate={{ width: `${Math.min(100, Math.max(0, flatAreaPercentage ?? 0))}%` }}
                       transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                     />
                   </div>
@@ -316,10 +264,10 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[10px] rounded-lg border border-border/60 bg-foreground/[0.03] px-2.5 py-1 text-foreground">
-                    Class: <strong className="text-primary">{terrainClass}</strong>
+                    Roughness: <strong className="text-primary">{terrainRoughness?.toFixed(2)} m</strong>
                   </span>
                   <span className="font-mono text-[10px] rounded-lg border border-border/60 bg-foreground/[0.03] px-2.5 py-1 text-muted-foreground">
-                    {minElevation}m — {maxElevation}m Band
+                    {minElevation?.toFixed(2)}m — {maxElevation?.toFixed(2)}m Band
                   </span>
                 </div>
               </div>
@@ -331,8 +279,8 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                     100,
                     Math.max(
                       15,
-                      Math.sin(i * 0.35 + averageSlope * 0.2) * 32 +
-                        averageSlope * 4 +
+                      Math.sin(i * 0.35 + (averageSlope ?? 0) * 0.2) * 32 +
+                        (averageSlope ?? 0) * 4 +
                         ((i * 7) % 13),
                     ),
                   );
@@ -341,7 +289,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                       key={i}
                       className="w-full rounded-t-xs bg-gradient-to-t from-primary/10 via-primary/50 to-primary transition-all duration-300 hover:bg-cyan-400"
                       style={{ height: `${h}%` }}
-                      title={`Contour Point ${i + 1}: ${Math.round(minElevation + (h / 100) * (maxElevation - minElevation))}m`}
+                      title={`Contour Point ${i + 1}: ${Math.round((minElevation ?? 0) + (h / 100) * ((maxElevation ?? 0) - (minElevation ?? 0)))}m`}
                     />
                   );
                 })}
@@ -367,7 +315,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                       Average Slope
                     </span>
                     <span className="font-mono text-xs font-bold text-foreground mt-0.5 block">
-                      {averageSlope}°
+                      {averageSlope?.toFixed(2)}°
                     </span>
                   </div>
                   <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
@@ -375,7 +323,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                       Average Elevation
                     </span>
                     <span className="font-mono text-xs font-bold text-foreground mt-0.5 block">
-                      {averageElevation} m
+                      {averageElevation?.toFixed(2)} m
                     </span>
                   </div>
                   <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
@@ -383,15 +331,15 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                       Flat Area
                     </span>
                     <span className="font-mono text-xs font-bold text-cyan-400 mt-0.5 block">
-                      {flatAreaPercentage}%
+                      {flatAreaPercentage?.toFixed(2)}%
                     </span>
                   </div>
                   <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
                     <span className="block font-mono text-[10px] text-muted-foreground uppercase">
-                      Terrain Class
+                      Terrain Roughness
                     </span>
                     <span className="font-mono text-xs font-bold text-foreground truncate mt-0.5 block">
-                      {terrainClass}
+                      {terrainRoughness?.toFixed(2)} m
                     </span>
                   </div>
                 </div>
@@ -408,7 +356,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
                   </p>
                 </div>
                 <div className="mt-4 pt-3 border-t border-primary/20 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span>Source: DEM / SRTM 30m Elevation Grid</span>
+                  <span>Source: {terrain.dem_source}</span>
                   <span className="text-primary flex items-center gap-1">
                     Factual Analysis <ArrowUpRight className="h-3 w-3" />
                   </span>

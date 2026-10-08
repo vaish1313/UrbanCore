@@ -10,8 +10,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
+import { useBuilderSuitability, useBuilderTerrain, type BuilderSuitabilityResponse, type BuilderTerrainMetrics } from "@/hooks/use-builder";
 import { jsPDF } from "jspdf";
-import { NASHIK_AOIS } from "@/data/nashikAois";
 
 const STEPS = [
   "Collecting site information...",
@@ -23,7 +23,11 @@ const STEPS = [
   "Building Land Intelligence PDF report...",
 ];
 
-function generateClientPdfBlob(aoi: AOI): Blob {
+async function generateClientPdfBlob(
+  aoi: AOI,
+  terrain: BuilderTerrainMetrics | undefined,
+  suitability: BuilderSuitabilityResponse | undefined,
+): Promise<Blob> {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -144,13 +148,33 @@ function generateClientPdfBlob(aoi: AOI): Blob {
   doc.setFontSize(14);
   doc.setFont("Helvetica", "bold");
   doc.setTextColor(2, 132, 199);
-  doc.text(`${aoi.suitabilityScore} / 100`, 16, y + 8);
+  const overallScore = suitability?.overall_score;
+  doc.text(overallScore === null || overallScore === undefined ? "SUITABILITY ASSESSMENT: INCOMPLETE" : `${overallScore.toFixed(2)} / 100`, 16, y + 8);
 
   doc.setFontSize(8);
   doc.setFont("Helvetica", "normal");
   doc.setTextColor(15, 23, 42);
-  doc.text(aoi.summary, 55, y + 7);
+  doc.text(`Terrain Score: ${suitability ? suitability.terrain_score.toFixed(2) : "Unavailable"} / 100`, 55, y + 5);
+  doc.text(`Constraint Assessment: ${suitability?.constraint_status || "UNAVAILABLE"}`, 55, y + 9);
+  doc.text(`Constraint Score: ${suitability?.constraint_score == null ? "Unavailable" : suitability.constraint_score.toFixed(2)}`, 55, y + 13);
   y += 18;
+
+  doc.setFontSize(8);
+  doc.setTextColor(51, 65, 85);
+  if (suitability?.constraint_status === "UNAVAILABLE") {
+    doc.text("Overall suitability could not be calculated because restricted-zone intersection could not be assessed for this AOI.", 12, y);
+    y += 5;
+  }
+  const factorSummary = suitability
+    ? `Slope ${suitability.factors.slope_score.toFixed(2)} · Flat ${suitability.factors.flat_land_score.toFixed(2)} · Roughness ${suitability.factors.roughness_score.toFixed(2)} · Elevation ${suitability.factors.elevation_score.toFixed(2)}`
+    : "Suitability factors unavailable";
+  doc.text(factorSummary, 12, y);
+  y += 5;
+  const reasonSummary = suitability ? [...suitability.positive_factors, ...suitability.negative_factors].join(" · ") : "";
+  if (reasonSummary) {
+    doc.text(doc.splitTextToSize(reasonSummary, pageWidth - 24), 12, y);
+    y += 6;
+  }
 
   // 3. Site Readiness Analysis
   doc.setFont("Helvetica", "bold");
@@ -162,11 +186,12 @@ function generateClientPdfBlob(aoi: AOI): Blob {
   y += 6;
 
   const readinessRows: [string, string][] = [
-    ["Average Slope", `${aoi.terrain.slope}°`],
-    ["Elevation", `${aoi.terrain.elevation} m MSL`],
-    ["Flat Area Percentage", `${aoi.terrain.flatLandPercent}%`],
-    ["Terrain Classification", aoi.terrain.roughness],
-    ["Readiness Level", aoi.terrain.readiness],
+    ["Average Slope", terrain ? `${terrain.mean_slope_deg.toFixed(2)}°` : "Unavailable for map-selected site"],
+    ["Elevation", terrain ? `${terrain.mean_elevation_m.toFixed(2)} m MSL` : "Unavailable for map-selected site"],
+    ["Elevation Range", terrain ? `${terrain.min_elevation_m.toFixed(2)}–${terrain.max_elevation_m.toFixed(2)} m` : "Unavailable for map-selected site"],
+    ["Flat Area Percentage", terrain ? `${terrain.flat_land_percentage.toFixed(2)}%` : "Unavailable for map-selected site"],
+    ["Terrain Roughness", terrain ? `${terrain.terrain_roughness_m.toFixed(2)} m` : "Unavailable for map-selected site"],
+    ["Readiness Level", terrain ? "Terrain metrics available" : "Unavailable for map-selected site"],
   ];
 
   doc.setFontSize(8);
@@ -284,8 +309,24 @@ function generateClientPdfBlob(aoi: AOI): Blob {
   doc.line(12, y, pageWidth - 12, y);
   y += 6;
 
-  const otherAois = NASHIK_AOIS.filter((item) => item.id !== aoi.id).slice(0, 4);
-  const allComp = [aoi, ...otherAois];
+  let otherAois: AOI[] = [];
+  try {
+    const res = await fetch(`http://localhost:8000/api/v1/builder/aois/compare/${aoi.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      otherAois = data.nearest_aois.map((n: any) => ({
+        id: n.id,
+        name: n.name,
+        suitabilityScore: n.suitability_score,
+        constraints: { floodZoneOverlapPercent: n.flood_zone_percent },
+        terrain: { slope: n.avg_slope }
+      })) as AOI[];
+    }
+  } catch (err) {
+    console.warn("Failed to fetch comparison for PDF", err);
+  }
+
+  const allComp = [aoi, ...otherAois].slice(0, 5);
 
   doc.setFillColor(30, 41, 59);
   doc.rect(12, y, pageWidth - 24, 6, "F");
@@ -303,9 +344,11 @@ function generateClientPdfBlob(aoi: AOI): Blob {
     doc.setFontSize(7.5);
     doc.setTextColor(15, 23, 42);
     doc.text(site.name + (site.id === aoi.id ? " (Selected)" : ""), 15, y + 4);
-    doc.text(`${site.suitabilityScore}/100`, 80, y + 4);
+    const siteScore = site.id === aoi.id ? suitability?.overall_score : site.suitabilityScore;
+    doc.text(siteScore === null || siteScore === undefined ? "Incomplete" : `${siteScore}/100`, 80, y + 4);
     doc.text(`${site.constraints.floodZoneOverlapPercent}%`, 120, y + 4);
-    doc.text(`${site.terrain.slope}°`, 160, y + 4);
+    const slope = site.id === aoi.id ? terrain?.mean_slope_deg : site.terrain.slope;
+    doc.text(slope === undefined || !Number.isFinite(slope) ? "Unavailable" : `${slope.toFixed(2)}°`, 160, y + 4);
     y += 5.5;
   });
   y += 10;
@@ -351,8 +394,21 @@ export function BuilderReportModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected";
+  const { data: terrain, isLoading: isTerrainLoading, isError: isTerrainError } = useBuilderTerrain(
+    aoi.id,
+    isCanonicalAoi,
+  );
+  const { data: suitability, isLoading: isSuitabilityLoading, isError: isSuitabilityError } = useBuilderSuitability(
+    aoi.id,
+    isCanonicalAoi,
+  );
 
   const generateReport = async () => {
+    if (isCanonicalAoi && (!terrain || !suitability)) {
+      setError(isTerrainError || isSuitabilityError ? "Terrain or suitability data could not be loaded for this AOI." : "Terrain and suitability data are still loading. Please try again shortly.");
+      return;
+    }
     setIsGenerating(true);
     setError(null);
     setPdfBlobUrl(null);
@@ -363,22 +419,7 @@ export function BuilderReportModal({
     }, 450);
 
     try {
-      let blob: Blob | null = null;
-      try {
-        const response = await fetch(`http://localhost:8000/api/v1/reports/intelligence/${aoi.id}`);
-        if (response.ok) {
-          blob = await response.blob();
-        }
-      } catch (backendErr) {
-        console.warn(
-          "Backend report API unreachable, utilizing browser jsPDF compilation fallback.",
-          backendErr,
-        );
-      }
-
-      if (!blob) {
-        blob = generateClientPdfBlob(aoi);
-      }
+      const blob = await generateClientPdfBlob(aoi, terrain, suitability);
 
       const blobUrl = URL.createObjectURL(blob);
       setPdfBlobUrl(blobUrl);
@@ -400,9 +441,9 @@ export function BuilderReportModal({
   };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || (isCanonicalAoi && (isTerrainLoading || isSuitabilityLoading))) return;
     generateReport();
-  }, [isOpen, aoi.id]);
+  }, [isOpen, aoi.id, isCanonicalAoi, isTerrainLoading, isSuitabilityLoading, isTerrainError, isSuitabilityError, terrain, suitability]);
 
   if (!isOpen) return null;
 
@@ -519,7 +560,7 @@ export function BuilderReportModal({
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground">Suitability Score:</span>
-                  <p className="font-bold text-primary">{aoi.suitabilityScore} / 100</p>
+                  <p className="font-bold text-primary">{suitability?.overall_score == null ? "Suitability Assessment: Incomplete" : `${suitability.overall_score.toFixed(2)} / 100`}</p>
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground">Location:</span>
