@@ -5,7 +5,6 @@ import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
 import { RoleCards } from "@/components/urbancore/RoleCards";
 import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
-import { WorkflowVisualization } from "@/components/urbancore/WorkflowVisualization";
 import heroBg from "@/assets/hero-bg.png";
 import {
   Layers,
@@ -187,29 +186,7 @@ function PlatformPage() {
         </div>
       </section>
 
-      {/* 4. LIVE PRODUCT PREVIEW */}
-      <section className="relative z-10 py-24 sm:py-32 w-full max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
-        <div className="w-full rounded-2xl border border-white/10 bg-[#050a15] p-2 backdrop-blur-xl shadow-2xl overflow-hidden relative">
-          {/* Mac window header */}
-          <div className="h-8 border-b border-white/5 flex items-center px-4 gap-2 bg-white/[0.02]">
-            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-            <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
-          </div>
-          {/* Satellite Change Detection Map */}
-          <div className="relative w-full aspect-video overflow-hidden">
-            <WorkflowVisualization />
-          </div>
-        </div>
-
-        <div className="mt-12 text-center">
-          <button className="text-[12px] font-bold uppercase tracking-wider text-black bg-cyan-400 hover:bg-cyan-300 px-8 py-3.5 rounded-full transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:shadow-[0_0_30px_rgba(34,211,238,0.4)]">
-            Explore UrbanCore ↗
-          </button>
-        </div>
-      </section>
-
-      {/* 5. BUILT FOR DIFFERENT USERS */}
+      {/* 4. BUILT FOR DIFFERENT USERS */}
       <section className="relative z-10 py-24 sm:py-32 w-full max-w-7xl mx-auto px-6 sm:px-10">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-light text-white">
@@ -219,7 +196,7 @@ function PlatformPage() {
         <RoleCards pointer={{ x: 0, y: 0 }} visible={true} />
       </section>
 
-      {/* 6. TECHNICAL FOUNDATION */}
+      {/* 5. TECHNICAL FOUNDATION */}
       <section className="relative z-10 py-24 border-t border-white/5 backdrop-blur-sm bg-black/30">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col items-center">
           <h2 className="font-display text-2xl font-light text-slate-300 mb-12 uppercase tracking-[0.2em]">
@@ -246,7 +223,7 @@ function PlatformPage() {
         </div>
       </section>
 
-      {/* 7. FINAL CTA */}
+      {/* 6. FINAL CTA */}
       <section className="relative z-10 py-32 sm:py-48 flex flex-col items-center justify-center text-center px-6">
         <h2 className="font-display text-4xl sm:text-5xl font-light text-white mb-8">
           Understand how your city is changing.

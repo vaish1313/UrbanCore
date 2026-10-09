@@ -1,22 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { Navbar } from "@/components/urbancore/Navbar";
 import { Footer } from "@/components/urbancore/Footer";
 import { NashikBackgroundCarousel } from "@/components/urbancore/NashikBackgroundCarousel";
 import { ComparativeVisualization } from "@/components/urbancore/ComparativeVisualization";
-import heroBg from "@/assets/hero-bg.png";
-import {
-  Building2,
-  Landmark,
-  Users,
-  CheckCircle2,
-  Search,
-  ArrowRight,
-  Activity,
-  Map,
-  Radar,
-} from "lucide-react";
+import { Building2, Landmark, Users, CheckCircle2 } from "lucide-react";
 import type { RoleType } from "@/types/urbancore";
 
 export const Route = createFileRoute("/solutions")({
@@ -27,8 +16,6 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 function SolutionsPage() {
   const [activeRole, setActiveRole] = useState<RoleType>(null);
-  const [activeTab, setActiveTab] = useState<"builder" | "authority" | "citizen">("builder");
-
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
@@ -36,7 +23,7 @@ function SolutionsPage() {
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30 selection:text-cyan-200 overflow-hidden">
       <NashikBackgroundCarousel />
-      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => { }} />
+      <Navbar entered={true} activeRole={activeRole} onLoginClick={() => {}} />
 
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[90vh] flex items-center pt-24 pb-12 overflow-hidden">
@@ -112,10 +99,20 @@ function SolutionsPage() {
           </div>
 
           <div className="lg:w-1/2 w-full relative flex justify-center">
-            <div className="w-full max-w-sm rounded-2xl overflow-hidden transition-all duration-500 ease-out hover:-translate-y-3 cursor-pointer"
-              style={{ boxShadow: "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)" }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 0 1px rgba(34,211,238,0.45), 0 0 60px -6px rgba(34,211,238,0.25), 0 40px 80px -12px rgba(0,0,0,0.8)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)")}
+            <div
+              className="w-full max-w-sm rounded-2xl overflow-hidden transition-all duration-500 ease-out hover:-translate-y-3 hover:scale-110 transform-gpu cursor-pointer"
+              style={{
+                boxShadow:
+                  "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 0 0 1px rgba(34,211,238,0.45), 0 0 60px -6px rgba(34,211,238,0.25), 0 40px 80px -12px rgba(0,0,0,0.8)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)")
+              }
             >
               <img
                 src="/builder-report.png"
@@ -131,10 +128,20 @@ function SolutionsPage() {
       <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 flex flex-col-reverse lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 w-full relative">
-            <div className="aspect-square sm:aspect-[4/3] rounded-2xl overflow-hidden transition-all duration-500 ease-out hover:-translate-y-3 cursor-pointer relative"
-              style={{ boxShadow: "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)" }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 0 1px rgba(34,211,238,0.45), 0 0 60px -6px rgba(34,211,238,0.25), 0 40px 80px -12px rgba(0,0,0,0.8)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)")}
+            <div
+              className="aspect-square sm:aspect-[4/3] rounded-2xl overflow-hidden transition-all duration-500 ease-out hover:-translate-y-3 hover:scale-110 transform-gpu cursor-pointer relative"
+              style={{
+                boxShadow:
+                  "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 0 0 1px rgba(34,211,238,0.45), 0 0 60px -6px rgba(34,211,238,0.25), 0 40px 80px -12px rgba(0,0,0,0.8)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.boxShadow =
+                  "0 0 0 1px rgba(34,211,238,0.25), 0 0 40px -8px rgba(34,211,238,0.15), 0 25px 50px -12px rgba(0,0,0,0.6)")
+              }
             >
               <img
                 src="/municipalnsk-heatmap.png"
@@ -143,9 +150,17 @@ function SolutionsPage() {
               />
 
               {/* Color legend overlay */}
-              <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 px-3 py-2.5 rounded-xl"
-                style={{ background: "rgba(4,10,22,0.82)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(8px)" }}>
-                <p className="font-mono text-[8px] text-white/40 tracking-widest uppercase mb-1">Zone Legend</p>
+              <div
+                className="absolute bottom-3 right-3 flex flex-col gap-1.5 px-3 py-2.5 rounded-xl"
+                style={{
+                  background: "rgba(4,10,22,0.82)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <p className="font-mono text-[8px] text-white/40 tracking-widest uppercase mb-1">
+                  Zone Legend
+                </p>
                 {[
                   { color: "#ef4444", label: "High Construction Activity" },
                   { color: "#f97316", label: "Moderate Growth" },
@@ -154,8 +169,13 @@ function SolutionsPage() {
                   { color: "#3b82f6", label: "Water Bodies" },
                 ].map(({ color, label }) => (
                   <div key={label} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: color }} />
-                    <span className="font-mono text-[9px] text-white/70 tracking-wide whitespace-nowrap">{label}</span>
+                    <span
+                      className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                      style={{ background: color }}
+                    />
+                    <span className="font-mono text-[9px] text-white/70 tracking-wide whitespace-nowrap">
+                      {label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -235,113 +255,7 @@ function SolutionsPage() {
           </div>
 
           <div className="lg:w-1/2 w-full relative">
-            <ComparativeVisualization onComplete={() => { }} />
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4 - ONE SHARED MAP */}
-      <section className="relative z-10 py-24 sm:py-32 w-full bg-black/30 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 text-center mb-12">
-          <h2 className="font-display text-3xl sm:text-4xl font-light text-white mb-4">
-            One Shared Map
-          </h2>
-          <p className="text-slate-400 font-light">
-            Experience the same location through three distinct lenses.
-          </p>
-        </div>
-
-        <div className="w-full max-w-7xl mx-auto px-6 sm:px-10">
-          {/* Custom Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            <button
-              onClick={() => setActiveTab("builder")}
-              className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${activeTab === "builder" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"}`}
-            >
-              Builder Context
-            </button>
-            <button
-              onClick={() => setActiveTab("authority")}
-              className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${activeTab === "authority" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"}`}
-            >
-              Authority View
-            </button>
-            <button
-              onClick={() => setActiveTab("citizen")}
-              className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${activeTab === "citizen" ? "bg-purple-500/20 text-purple-400 border border-purple-500/30" : "bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10"}`}
-            >
-              Citizen Explorer
-            </button>
-          </div>
-
-          <div className="w-full h-[60vh] rounded-3xl border border-white/10 bg-[#050a15] overflow-hidden relative shadow-2xl">
-            <img
-              src={heroBg}
-              alt="Base Map"
-              className="absolute inset-0 w-full h-full object-cover opacity-50"
-            />
-
-            <AnimatePresence mode="wait">
-              {activeTab === "builder" && (
-                <motion.div
-                  key="builder"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0"
-                >
-                  <div className="absolute inset-0 bg-orange-900/10 mix-blend-color" />
-                  <div className="absolute top-1/4 left-1/4 w-1/3 h-1/3 border-2 border-orange-400 bg-orange-400/20 flex flex-col items-center justify-center backdrop-blur-sm">
-                    <Map className="h-8 w-8 text-orange-400 mb-2" />
-                    <span className="font-mono text-[12px] text-orange-200 tracking-widest">
-                      DEVELOPMENT ZONE
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === "authority" && (
-                <motion.div
-                  key="authority"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0"
-                >
-                  <div className="absolute inset-0 bg-blue-900/20 mix-blend-color" />
-                  <div className="absolute top-1/3 right-1/4 w-64 h-64 border border-blue-400/50 bg-blue-500/10 rounded-full flex flex-col items-center justify-center backdrop-blur-sm">
-                    <Radar className="h-8 w-8 text-blue-400 mb-2 animate-spin-slow" />
-                    <span className="font-mono text-[10px] text-blue-200 tracking-widest">
-                      MONITORING ACTIVE
-                    </span>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === "citizen" && (
-                <motion.div
-                  key="citizen"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0"
-                >
-                  <div className="absolute inset-0 bg-purple-900/10 mix-blend-color" />
-                  <div className="absolute bottom-1/4 left-1/3 flex items-center gap-2 p-3 bg-black/80 border border-purple-500/30 rounded-xl backdrop-blur-md shadow-2xl">
-                    <Search className="h-5 w-5 text-purple-400" />
-                    <div>
-                      <p className="font-mono text-[10px] text-purple-300">Panchavati Region</p>
-                      <p className="text-sm font-light text-white">
-                        Historical growth view enabled
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <ComparativeVisualization onComplete={() => {}} />
           </div>
         </div>
       </section>

@@ -13,10 +13,9 @@ import type { RoleFeatureMenuItem } from "./RoleFeaturesDropdown";
 
 export const BUILDER_FEATURE_MENU: RoleFeatureMenuItem[] = [
   { id: "suitability", label: "AI Land Suitability Score", icon: SlidersHorizontal },
-  { id: "terrain", label: "Site Readiness Analysis", icon: Activity },
-  { id: "constraints", label: "Zoning Check", icon: AlertTriangle },
-  { id: "risk", label: "Neighbourhood Comparison", icon: TrendingUp },
-  { id: "reports", label: "Land Intelligence Report", icon: FileText, isReportModalTrigger: true },
+  { id: "terrain",     label: "Site Readiness Analysis",  icon: Activity },
+  { id: "constraints", label: "Zoning Check",             icon: AlertTriangle },
+  { id: "risk",        label: "Neighbourhood Comparison", icon: TrendingUp },
 ];
 
 export const MUNICIPAL_FEATURE_MENU: RoleFeatureMenuItem[] = [
