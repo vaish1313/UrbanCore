@@ -6,6 +6,7 @@ import { HeroSearch } from "./HeroSearch";
 import { InteractiveMap } from "./InteractiveMap";
 import { AnalysisProgress } from "./AnalysisProgress";
 import { ConstructionTimeline } from "./ConstructionTimeline";
+import { ConstructionTimelineStatic } from "./ConstructionTimelineStatic";
 import { MyReports } from "./MyReports";
 import { ComplaintReportModal } from "./ComplaintReportModal";
 
@@ -218,6 +219,11 @@ export function CitizenDashboard({
               {analysisStatus && (
                 <p className="mb-6 text-center text-sm text-cyan-300">{analysisStatus}</p>
               )}
+
+              {/* ── 3. Construction Timeline Static Preview ── */}
+              <section id="construction-timeline-preview" style={{ width: "100%" }}>
+                <ConstructionTimelineStatic />
+              </section>
 
               {/* ── 4. Construction Timeline or Analysis Progress ── */}
               <AnimatePresence>
