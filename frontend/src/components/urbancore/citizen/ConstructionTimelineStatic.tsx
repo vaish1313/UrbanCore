@@ -82,7 +82,7 @@ export function ConstructionTimelineStatic() {
         </div>
 
         {/* YEAR CARDS ROW */}
-        <div className="mb-8 flex items-center gap-4 overflow-x-auto pb-4">
+        <div className="mb-8 flex items-center gap-2">
           <button
             onClick={() => {
               if (yearIndex > 0) setSelectedYear(TIMELINE_SAMPLE_DATA[yearIndex - 1].year);
@@ -93,22 +93,27 @@ export function ConstructionTimelineStatic() {
             <ChevronLeft className="w-6 h-6 text-slate-300" />
           </button>
 
-          <div className="flex gap-3 flex-shrink-0">
+          <div className="flex gap-3 flex-1 overflow-x-auto pb-2">
             {TIMELINE_SAMPLE_DATA.map((data) => (
               <button
                 key={data.year}
                 onClick={() => setSelectedYear(data.year)}
-                className={`flex flex-col gap-2 p-3 rounded-lg transition border-2 ${
+                className={`flex flex-col gap-2 p-3 rounded-lg transition border-2 flex-1 min-w-[120px] ${
                   selectedYear === data.year
                     ? "border-cyan-400 bg-cyan-500/10"
                     : "border-slate-600 bg-slate-800/50 hover:bg-slate-700/50"
                 }`}
               >
-                {/* Year Badge */}
-                <div className="text-xs font-bold text-slate-300">{data.year}</div>
+                {/* Year Badge + Expand Icon */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-slate-300">{data.year}</div>
+                  <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6m4 0l6-6m0 0h-6v6" />
+                  </svg>
+                </div>
 
                 {/* Thumbnail SVG */}
-                <div className="w-24 h-16 bg-gradient-to-b from-slate-700 to-slate-800 rounded flex items-center justify-center overflow-hidden border border-slate-600">
+                <div className="w-full h-16 bg-gradient-to-b from-slate-700 to-slate-800 rounded flex items-center justify-center overflow-hidden border border-slate-600">
                   <svg
                     viewBox="0 0 400 300"
                     className="w-full h-full"
@@ -125,7 +130,7 @@ export function ConstructionTimelineStatic() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="w-24 h-2 bg-slate-600 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-slate-600 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-red-500 transition-all"
                     style={{ width: `${data.construction_percentage}%` }}
@@ -134,13 +139,6 @@ export function ConstructionTimelineStatic() {
 
                 {/* Built-up Label */}
                 <div className="text-xs text-slate-300">Built-up: {data.construction_percentage.toFixed(1)}%</div>
-
-                {/* Expand Icon */}
-                <div className="flex justify-center pt-1">
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6m4 0l6-6m0 0h-6v6" />
-                  </svg>
-                </div>
               </button>
             ))}
           </div>
