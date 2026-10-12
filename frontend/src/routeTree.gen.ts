@@ -17,6 +17,7 @@ import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as MunicipalRouteRouteImport } from './routes/municipal/route'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as SolutionsRouteImport } from './routes/solutions'
+import { Route as TimelinePreviewRouteImport } from './routes/timeline-preview'
 import { Route as BuilderIndexRouteImport } from './routes/builder/index'
 import { Route as BuilderConstructionHistoryRouteImport } from './routes/builder/construction-history'
 import { Route as BuilderLandReportsRouteImport } from './routes/builder/land-reports'
@@ -73,6 +74,11 @@ const PlatformRoute = PlatformRouteImport.update({
 const SolutionsRoute = SolutionsRouteImport.update({
   id: '/solutions',
   path: '/solutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimelinePreviewRoute = TimelinePreviewRouteImport.update({
+  id: '/timeline-preview',
+  path: '/timeline-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuilderIndexRoute = BuilderIndexRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/platform': typeof PlatformRoute
   '/solutions': typeof SolutionsRoute
+  '/timeline-preview': typeof TimelinePreviewRoute
   '/builder/construction-history': typeof BuilderConstructionHistoryRoute
   '/builder/land-reports': typeof BuilderLandReportsRoute
   '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/platform': typeof PlatformRoute
   '/solutions': typeof SolutionsRoute
+  '/timeline-preview': typeof TimelinePreviewRoute
   '/builder/construction-history': typeof BuilderConstructionHistoryRoute
   '/builder/land-reports': typeof BuilderLandReportsRoute
   '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/platform': typeof PlatformRoute
   '/solutions': typeof SolutionsRoute
+  '/timeline-preview': typeof TimelinePreviewRoute
   '/builder/construction-history': typeof BuilderConstructionHistoryRoute
   '/builder/land-reports': typeof BuilderLandReportsRoute
   '/builder/land-suitability': typeof BuilderLandSuitabilityRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/platform'
     | '/solutions'
+    | '/timeline-preview'
     | '/builder/construction-history'
     | '/builder/land-reports'
     | '/builder/land-suitability'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/platform'
     | '/solutions'
+    | '/timeline-preview'
     | '/builder/construction-history'
     | '/builder/land-reports'
     | '/builder/land-suitability'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/platform'
     | '/solutions'
+    | '/timeline-preview'
     | '/builder/construction-history'
     | '/builder/land-reports'
     | '/builder/land-suitability'
@@ -334,6 +346,7 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   PlatformRoute: typeof PlatformRoute
   SolutionsRoute: typeof SolutionsRoute
+  TimelinePreviewRoute: typeof TimelinePreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       path: '/solutions'
       fullPath: '/solutions'
       preLoaderRoute: typeof SolutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timeline-preview': {
+      id: '/timeline-preview'
+      path: '/timeline-preview'
+      fullPath: '/timeline-preview'
+      preLoaderRoute: typeof TimelinePreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/builder/': {
@@ -578,6 +598,7 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   PlatformRoute: PlatformRoute,
   SolutionsRoute: SolutionsRoute,
+  TimelinePreviewRoute: TimelinePreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
