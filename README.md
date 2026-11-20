@@ -1,451 +1,342 @@
 # UrbanCore
 
-**AI-Powered Geospatial Platform for Illegal Construction Detection**
-
-UrbanCore is a production-ready enterprise platform that uses satellite imagery, machine learning, and GIS technology to automatically detect newly constructed buildings and identify zoning violations.
+> AI-powered urban intelligence platform for satellite-based land change detection, builder site suitability, and municipal compliance management — built for Nashik, Maharashtra.
 
 ---
 
-## 🌟 Features
+## Table of Contents
 
-### Core Capabilities
-- **🛰️ Satellite Imagery Download**: Automatic download of Sentinel-2 imagery from Google Earth Engine (2021-2025)
-- **🤖 AI Building Detection**: Fine-tuned U-Net deep learning model for accurate building segmentation
-- **📊 Change Detection**: Multi-year comparison to identify new, removed, and expanded buildings
-- **🎯 SAM Refinement**: Segment Anything Model for precise building boundary detection
-- **⚠️ Violation Detection**: Automated checking against zoning regulations, protected areas, and buffer zones
-- **🗺️ Terrain Analysis**: SRTM DEM analysis for elevation, slope, aspect, and terrain ruggedness
-- **📈 Land Suitability Scoring**: 0-100 score based on terrain, accessibility, and environmental factors
-- **📄 Professional Reports**: Auto-generated PDF reports with maps, charts, and analysis
-- **✍️ AI Complaint Letters**: Automatically generated official complaints with evidence
-- **🔔 Multi-Channel Notifications**: Email, SMS, and push notifications
-
-### Interactive Map Features
-- Zoom and pan
-- Search by location name
-- Enter coordinates (lat/long)
-- Draw custom polygons
-- Upload GeoJSON files
-- Upload Shapefiles
-- Click anywhere on map
-
-### User Roles
-- **Admin**: Full system access and user management
-- **Government Officer**: Create projects, review violations, generate complaints
-- **Builder**: View detection results and reports
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+  - [Citizen Dashboard](#-citizen-dashboard)
+  - [Builder Dashboard](#-builder-dashboard)
+  - [Municipal Dashboard](#-municipal-dashboard)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Environment Variables](#environment-variables)
+- [API Reference](#api-reference)
+- [Screenshots](#screenshots)
 
 ---
 
-## 🏗️ Architecture
+## Overview
+
+UrbanCore is a full-stack geospatial intelligence platform that combines satellite imagery, AI inference, and interactive 3D visualisation to serve three distinct user roles:
+
+| Role | Purpose |
+|---|---|
+| **Citizen** | Detect new construction near a pinned location using satellite AI analysis |
+| **Builder** | Evaluate land parcels for terrain suitability, zoning constraints and regulatory risk |
+| **Municipal Corporation** | Track, review and act on construction compliance cases and citizen complaints |
+
+---
+
+## Architecture
 
 ```
-┌─────────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│   Next.js       │◄────►│   FastAPI        │◄────►│  PostgreSQL     │
-│   Frontend      │      │   Backend        │      │  + PostGIS      │
-└─────────────────┘      └──────────────────┘      └─────────────────┘
-                                  │
-                    ┌─────────────┼─────────────┐
-                    │             │             │
-          ┌─────────▼────┐ ┌─────▼──────┐ ┌───▼────────┐
-          │   Celery     │ │   Redis    │ │  AWS S3    │
-          │   Workers    │ │            │ │  Storage   │
-          └──────────────┘ └────────────┘ └────────────┘
-                    │
-          ┌─────────┴─────────────┐
-          │                       │
-    ┌─────▼──────┐      ┌────────▼────────┐
-    │  PyTorch   │      │  Google Earth   │
-    │  U-Net/SAM │      │  Engine API     │
-    └────────────┘      └─────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                    Frontend (Vite + React)            │
+│  TanStack Router · Three.js · Mapbox GL · Tailwind   │
+└────────────────────┬────────────────────────────────┘
+                     │  REST  /api/v1
+┌────────────────────▼────────────────────────────────┐
+│               Backend (FastAPI + Python)              │
+│  GEE · UNet Inference · PostGIS · SQLite · Supabase  │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## Features
+
+### 🏘 Citizen Dashboard
+
+**Interactive Map & Location Search**
+- Search any location by name (geocoded via backend) or drop a pin on a Mapbox satellite map
+- Auto-detects and highlights the selected area
+
+**Satellite Analysis Pipeline**
+- Submit a 2 km radius analysis around any coordinates
+- Backend submits Google Earth Engine (GEE) export tasks for 6 years of Sentinel-2 imagery
+- Real-time progress tracking through 9 pipeline stages: `queued → exporting → downloading → processing → completed`
+- UNet deep learning model runs inference to classify each grid cell as: **Non-built-up**, **Existing construction**, or **New construction**
+
+**Land Change Explorer** *(the main UI feature)*
+- Interactive 3D block grid rendered with Three.js / `@react-three/fiber` using `InstancedMesh`
+- Each cell is extruded by its built-up height score; colour-coded by class (green / orange / red)
+- **Year timeline slider** — scrub or auto-play through 2021–2026; grid updates live
+- **Changes only mode** — dims unchanged cells, highlights only new construction
+- **3D / Top view toggle** — smooth camera tween between perspective and orthographic
+- **Auto-rotate** — continuous orbit animation with pause on interaction
+- **Click any red block** to open the detail panel
+- **Before/After satellite comparison** — drag slider to compare real Mapbox satellite imagery between two years
+- **Show on Map** — flies a Mapbox map to the exact cell location with a red polygon overlay and popup
+- **Cell list** — searchable, sortable list of all new construction cells with detection year and height
+- **Stats strip** — Built-up %, New Construction Cells count, Total Change since start year
+
+**Complaint / Report System**
+- Citizens can file a concern directly from the Land Change Explorer
+- Generates a reference number and downloadable PDF receipt
+
+---
+
+### 🏗 Builder Dashboard
+
+**AOI (Area of Interest) Browser**
+- Lists all 30 pre-loaded Nashik AOIs with search, category filter (`residential / commercial / industrial / protected / highway / dam`) and status filter (`green / yellow / red`)
+- Each AOI card shows name, village, area, suitability score and status badge
+
+**Terrain Analysis**
+- Powered by Copernicus GLO-30 DEM raster (30 m resolution)
+- Metrics per AOI: mean elevation, min/max elevation, mean slope, max slope, flat-land %, terrain roughness
+- Arbitrary coordinate lookup — enter any lat/lng and get instant terrain metrics
+
+**Land Suitability Scoring**
+- 3-component weighted score (slope 40%, flat-land 15%, roughness 20%)
+- Drainage/flood risk component is explicitly marked `UNAVAILABLE` (no fabricated scores)
+- Warnings when localized steep slopes exist even if mean is low
+- Overall `GREEN / YELLOW / RED` verdict with detailed breakdown
+
+**Zoning & Regulatory Constraints**
+- True PostGIS geodesic intersection against constraint layers: `RIVER`, `FOREST`, `HIGHWAY`, `LAKE`, `WATERBODY`
+- Returns intersection area in hectares and % overlap per layer
+- Status: `ASSESSED_NO_INTERSECTION`, `POTENTIAL_RESTRICTION_REVIEW`, or `CONFIRMED_BLOCKER`
+
+**Construction History**
+- 5-year timeline of construction activity per AOI
+- Visual chart of built-up change over time
+
+**Site Readiness Report**
+- Consolidated PDF-style report combining terrain, constraints, suitability and history
+
+---
+
+### 🏛 Municipal Dashboard
+
+**Compliance Cases**
+- Lists all municipal compliance cases with pagination, status filter and year filter
+- Statuses: `pending_review`, `under_investigation`, `notice_issued`, `resolved`, `closed`
+- Case detail view with full metadata, coordinates and evidence
+
+**Case Status Management**
+- Municipal officers can update case status directly from the dashboard
+- Full audit trail of status changes
+
+**Complaints Management**
+- View all citizen-submitted complaints
+- Filter by status, search by reference number or location
+- Update complaint status and add resolution notes
+
+**District Map**
+- Interactive Mapbox map of all AOIs and cases across Nashik
+- Colour-coded markers by status
+
+**Encroachment Tracker**
+- Dedicated view for encroachment-type cases with map overlay
+
+**Heatmap**
+- Construction activity heatmap across the district
+
+**Legal & Export**
+- Export case data
+- Legal documentation view
+
+---
+
+## Tech Stack
 
 ### Frontend
-- **Next.js 14** - React framework
-- **TypeScript** - Type safety
-- **TailwindCSS** - Styling
-- **ShadCN UI** - Component library
-- **React Query** - Data fetching
-- **Leaflet/Mapbox GL** - Interactive maps
-- **Chart.js** - Data visualization
+| Technology | Purpose |
+|---|---|
+| React 19 + TypeScript | UI framework |
+| TanStack Router | File-based routing |
+| Vite 8 | Build tool & dev server |
+| Three.js / `@react-three/fiber` | 3D grid rendering |
+| `react-map-gl` + Mapbox GL | Interactive maps |
+| Tailwind CSS | Styling |
+| `motion/react` (Framer Motion) | Animations |
+| Zustand | Global state (land change store) |
+| Lucide React | Icons |
 
 ### Backend
-- **FastAPI** - Python web framework
-- **SQLAlchemy** - ORM
-- **PostgreSQL + PostGIS** - Spatial database
-- **Redis** - Caching and message broker
-- **Celery** - Background task queue
-
-### AI/ML
-- **PyTorch** - Deep learning framework
-- **U-Net** - Building segmentation model
-- **SAM** - Segment Anything Model for refinement
-- **OpenCV** - Image processing
-- **Rasterio/GDAL** - Geospatial data processing
-
-### Satellite Data
-- **Google Earth Engine** - Sentinel-2 imagery
-- **SRTM DEM** - Terrain data
-
-### DevOps
-- **Docker & Docker Compose** - Containerization
-- **Nginx** - Reverse proxy
-- **GitHub Actions** - CI/CD
+| Technology | Purpose |
+|---|---|
+| FastAPI | REST API framework |
+| Python 3.11+ | Runtime |
+| Google Earth Engine (GEE) | Satellite imagery export |
+| UNet (PyTorch) | Land classification inference |
+| Rasterio + NumPy | DEM / raster processing |
+| PostGIS / SQLAlchemy | Geospatial database |
+| SQLite | Local development fallback |
+| Supabase | Auth & cloud database |
+| Google Cloud Storage | Satellite imagery storage |
+| ReportLab | PDF generation |
 
 ---
 
-## 🚀 Quick Start
+## Project Structure
+
+```
+UrbanCore/
+├── frontend/                     # React + Vite frontend
+│   ├── src/
+│   │   ├── api/                  # Typed API client + Zod schemas
+│   │   ├── components/
+│   │   │   ├── land-change/      # Land Change Explorer components
+│   │   │   └── urbancore/        # Citizen / Builder / Municipal UI
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── routes/               # TanStack file-based routes
+│   │   │   ├── builder/          # Builder dashboard pages
+│   │   │   └── municipal/        # Municipal dashboard pages
+│   │   ├── scene/                # Three.js 3D scene components
+│   │   └── store/                # Zustand stores
+│   └── vite.config.ts
+├── backend/
+│   ├── app/
+│   │   ├── main.py               # FastAPI app + analysis endpoints
+│   │   ├── auth.py               # Register / login
+│   │   ├── service.py            # Analysis pipeline orchestration
+│   │   ├── gee_service.py        # Google Earth Engine integration
+│   │   ├── model_service.py      # UNet inference
+│   │   ├── terrain_service.py    # DEM / slope analysis
+│   │   ├── suitability_service.py# Land suitability scoring
+│   │   ├── builder_router.py     # Builder API endpoints
+│   │   ├── municipal_router.py   # Municipal cases API
+│   │   └── complaints_router.py  # Citizen complaints API
+│   └── data/
+│       ├── dem/                  # Copernicus GLO-30 DEM raster
+│       └── builder/              # Nashik AOI GeoJSON boundaries
+└── docker-compose.yml
+```
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Docker and Docker Compose
-- Git
-- Google Earth Engine account (for satellite data)
-- 16GB RAM minimum (32GB recommended for AI training)
-- GPU recommended for AI inference
 
-### Installation
+- Node.js 20+
+- Python 3.11+
+- PostgreSQL with PostGIS extension (or SQLite for local dev)
+- Google Earth Engine service account (for live satellite analysis)
+- Mapbox account (for interactive maps)
 
-1. **Clone the repository**
+### Backend Setup
+
 ```bash
-git clone https://github.com/yourusername/urbancore.git
-cd urbancore
+cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create environment file
+cp .env.example .env
+# Edit .env with your credentials (see Environment Variables section)
+
+# Start the server
+python start.py
+# or: uvicorn app.main:app --reload --port 8000
 ```
 
-2. **Configure environment variables**
-```bash
-# Backend
-cp backend/.env.example backend/.env
-# Edit backend/.env with your configuration
+The API will be available at `http://localhost:8000`.  
+Interactive docs: `http://localhost:8000/docs`
 
-# Frontend
-cp frontend/.env.example frontend/.env
-# Edit frontend/.env with your configuration
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env
+# Edit .env — at minimum set VITE_MAPBOX_TOKEN
+
+# Start dev server
+npm run dev
 ```
 
-3. **Set up Google Earth Engine**
-```bash
-# Place your GEE service account key
-cp your-gee-key.json backend/gee-private-key.json
-```
-
-4. **Start the application**
-```bash
-docker-compose up -d
-```
-
-5. **Initialize the database**
-```bash
-docker-compose exec backend alembic upgrade head
-```
-
-6. **Create admin user**
-```bash
-docker-compose exec backend python scripts/create_admin.py
-```
-
-7. **Access the application**
-- Frontend: http://localhost:3000
-- API Docs: http://localhost:8000/docs
-- Flower (Celery Monitor): http://localhost:5555
+Open `http://localhost:8080` in your browser.
 
 ---
 
-## 📚 API Documentation
+## Environment Variables
 
-### Authentication
-```bash
-# Register
-POST /api/v1/auth/register
-{
-  "email": "user@example.com",
-  "password": "securepassword",
-  "full_name": "John Doe",
-  "role": "builder"
-}
+### Frontend (`frontend/.env`)
 
-# Login
-POST /api/v1/auth/login
-{
-  "email": "user@example.com",
-  "password": "securepassword"
-}
-```
-
-### Project Management
-```bash
-# Create project
-POST /api/v1/projects
-{
-  "name": "Nashik Development Zone A",
-  "description": "Analysis of construction in Zone A",
-  "start_year": 2021,
-  "end_year": 2024
-}
-
-# Get project
-GET /api/v1/projects/{project_id}
-
-# List projects
-GET /api/v1/projects?skip=0&limit=10
-```
-
-### Satellite Imagery
-```bash
-# Download Sentinel-2 imagery
-POST /api/v1/satellite/download
-{
-  "project_id": 1,
-  "bbox": [73.78, 19.99, 73.82, 20.02],
-  "years": [2021, 2022, 2023, 2024]
-}
-```
-
-### Building Detection
-```bash
-# Run detection
-POST /api/v1/detection/run
-{
-  "project_id": 1,
-  "image_id": 5
-}
-
-# Get detection results
-GET /api/v1/detection/results/{project_id}
-```
-
-For complete API documentation, visit: http://localhost:8000/docs
-
----
-
-## 🎯 Usage Workflow
-
-1. **Create Project**
-   - Login as Government Officer or Admin
-   - Create new project with name and description
-   - Define area of interest (AOI) by drawing or uploading
-
-2. **Download Satellite Imagery**
-   - System automatically downloads Sentinel-2 imagery for specified years
-   - Cloud filtering and compositing performed automatically
-
-3. **Process Imagery**
-   - Calculate vegetation indices (NDVI, NDBI, NDWI)
-   - Normalize and align images
-   - Generate patches for model input
-
-4. **Run Building Detection**
-   - U-Net model detects buildings in each image
-   - SAM refines building boundaries
-   - Results stored with confidence scores
-
-5. **Perform Change Detection**
-   - Compare multi-year results
-   - Identify new, removed, and expanded buildings
-   - Generate change maps
-
-6. **Check Violations**
-   - Overlay buildings with zoning layers
-   - Check river buffers, flood zones, forest boundaries
-   - Flag violations with severity levels
-
-7. **Terrain Analysis**
-   - Download SRTM DEM
-   - Calculate elevation, slope, aspect
-   - Compute land suitability scores
-
-8. **Generate Reports**
-   - Create professional PDF reports
-   - Include maps, charts, and statistics
-   - Export for official use
-
-9. **Create Complaints**
-   - AI generates official complaint letters
-   - Include GPS coordinates and evidence
-   - Attach satellite images and maps
-
----
-
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Backend (.env)
 ```env
-# Database
-POSTGRES_SERVER=postgres
-POSTGRES_DB=urbancore
-POSTGRES_USER=urbancore_user
-POSTGRES_PASSWORD=your_secure_password
-
-# Google Earth Engine
-GEE_SERVICE_ACCOUNT_EMAIL=your-account@project.iam.gserviceaccount.com
-GEE_PRIVATE_KEY_PATH=/app/gee-private-key.json
-
-# AWS S3
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-S3_BUCKET_NAME=urbancore-storage
-
-# Email (SendGrid)
-SENDGRID_API_KEY=your_sendgrid_api_key
-
-# SMS (Twilio)
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
+VITE_API_URL=/api/v1
+VITE_USE_MOCK=false
+VITE_MAPBOX_TOKEN=your_mapbox_public_token
 ```
 
-#### Frontend (.env.local)
+> `VITE_API_URL=/api/v1` uses the Vite dev proxy so the browser stays same-origin.  
+> `VITE_USE_MOCK=true` enables the offline mock layer — no backend needed.
+
+### Backend (`backend/.env`)
+
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+DATABASE_URL=postgresql://user:pass@localhost:5432/urbancore
+SUPABASE_URL=your_supabase_url
+SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+GEE_SERVICE_ACCOUNT_EMAIL=your_gee_service_account@project.iam.gserviceaccount.com
+GEE_PRIVATE_KEY_PATH=app/gee_key.json
+GOOGLE_DRIVE_FOLDER_ID=your_drive_folder_id
+GCS_BUCKET_NAME=your_gcs_bucket
 ```
 
----
-
-## 🧪 Testing
-
-### Backend Tests
-```bash
-# Run all tests
-docker-compose exec backend pytest
-
-# Run with coverage
-docker-compose exec backend pytest --cov=app --cov-report=html
-
-# Run specific test file
-docker-compose exec backend pytest tests/test_detection.py
-```
-
-### Frontend Tests
-```bash
-# Run tests
-cd frontend && npm test
-
-# Run with coverage
-npm test -- --coverage
-```
+> Never commit `.env` files. Add them to `.gitignore`.
 
 ---
 
-## 📊 Model Training
+## API Reference
 
-### Prepare Training Data
-```bash
-# Organize your data
-data/
-├── training/
-│   ├── images/
-│   └── masks/
-├── validation/
-│   ├── images/
-│   └── masks/
-└── test/
-    ├── images/
-    └── masks/
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/api/v1/auth/register` | Register a new user |
+| `POST` | `/api/v1/auth/login` | Login and get token |
+| `GET` | `/api/v1/locations/search?q=` | Geocode a location name |
+| `POST` | `/api/v1/analyses` | Submit a new satellite analysis |
+| `GET` | `/api/v1/analyses/{id}` | Poll analysis status |
+| `GET` | `/api/v1/analyses/{id}/results/{year}` | Get per-year inference results |
+| `GET` | `/api/v1/analyses/{id}/geojson/{year}/{type}` | Download GeoJSON for a year |
+| `GET` | `/api/v1/builder/aois` | List all builder AOIs |
+| `GET` | `/api/v1/builder/aois/{id}` | Get a single AOI |
+| `GET` | `/api/v1/builder/terrain/coordinate?lat=&lng=` | Terrain metrics for any coordinate |
+| `GET` | `/api/v1/builder/violations/constraints/{id}` | Zoning constraint intersections |
+| `GET` | `/api/v1/municipal/cases` | List municipal compliance cases |
+| `GET` | `/api/v1/municipal/cases/{id}` | Get case detail |
+| `PATCH` | `/api/v1/municipal/cases/{id}/status` | Update case status |
+| `POST` | `/api/v1/complaints` | Submit a citizen complaint |
+| `GET` | `/api/v1/complaints/{id}/receipt` | Download PDF receipt |
 
-### Train Model
-```bash
-docker-compose exec backend python ai/training/train.py \
-  --epochs 100 \
-  --batch-size 8 \
-  --learning-rate 1e-4 \
-  --device cuda
-```
-
-### Monitor Training
-```bash
-# TensorBoard
-tensorboard --logdir=backend/logs/tensorboard
-```
+Full interactive API docs available at `http://localhost:8000/docs` when backend is running.
 
 ---
 
-## 🚢 Deployment
+## Screenshots
 
-### Production Deployment
+| Citizen — Land Change Explorer | Builder — Suitability Score |
+|---|---|
+| 3D grid with red new-construction blocks | Terrain + constraint breakdown |
 
-1. **Update environment variables**
-   - Set `DEBUG=False`
-   - Configure production database
-   - Set secure `SECRET_KEY`
-
-2. **Use production Docker Compose**
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-3. **Set up SSL certificates**
-```bash
-# Using Let's Encrypt
-certbot certonly --standalone -d your-domain.com
-```
-
-4. **Configure domain and firewall**
-   - Point DNS to your server
-   - Open ports 80, 443
-   - Configure firewall rules
-
-5. **Set up monitoring**
-   - Prometheus for metrics
-   - Grafana for dashboards
-   - Sentry for error tracking
+| Municipal — Compliance Cases | Show on Map |
+|---|---|
+| Case list with status filters | Mapbox satellite map with cell polygon |
 
 ---
 
-## 📈 Performance
-
-- **Building Detection**: ~500ms per 256x256 patch (GPU)
-- **Change Detection**: ~2s for 1km² area
-- **Violation Check**: ~100ms per building
-- **Report Generation**: ~5s for comprehensive PDF
-- **API Response Time**: <200ms (p95)
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Google Earth Engine for satellite imagery
-- Meta AI for Segment Anything Model
-- PostGIS community
-- Open source contributors
-
----
-
-## 📞 Support
-
-- **Email**: support@urbancore.com
-- **Documentation**: https://docs.urbancore.com
-- **Issues**: https://github.com/yourusername/urbancore/issues
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Multi-spectral index support
-- [ ] Real-time detection alerts
-- [ ] Mobile app (iOS/Android)
-- [ ] Integration with municipal GIS systems
-- [ ] Support for additional satellite sources
-- [ ] Automated drone integration
-- [ ] 3D building reconstruction
-- [ ] Temporal analysis and predictions
-
----
-
-**Built with ❤️ for sustainable urban development**
+<div align="center">
+  <sub>Built for Nashik, Maharashtra · Final Year Project · UrbanCore Team</sub>
+</div>
