@@ -84,3 +84,56 @@ def test_municipal_update_status():
     # Invalid status
     patch_res_bad = client.patch(f"/api/v1/municipal/complaints/{ref}/status", json={"status": "FAKE_STATUS"})
     assert patch_res_bad.status_code == 400
+
+def test_submit_complaint_validation_failure():
+    # Missing required citizen_name and description
+    response = client.post("/api/v1/complaints", json={
+        "location_name": "Incomplete Location",
+        "latitude": 19.99,
+        "longitude": 73.78
+    })
+    # FastAPI pydantic validation error code is 422
+    assert response.status_code == 422
+    
+    # Missing coordinates
+    response_no_coords = client.post("/api/v1/complaints", json={
+        "citizen_name": "Jane Citizen",
+        "description": "Missing coordinates report",
+        "location_name": "Nashik"
+    })
+    assert response_no_coords.status_code == 422
+
+def test_submit_and_verify_municipal_queue():
+    # Submit 2 complaints
+    res1 = client.post("/api/v1/complaints", json={
+        "citizen_name": "Citizen One",
+        "title": "Unapproved Digging",
+        "description": "Digging without municipal permit near Gangapur Road.",
+        "location_name": "Gangapur Road",
+        "latitude": 20.0123,
+        "longitude": 73.7891
+    })
+    assert res1.status_code == 200
+    ref1 = res1.json()["reference_number"]
+
+    res2 = client.post("/api/v1/complaints", json={
+        "citizen_name": "Citizen Two",
+        "title": "Encroachment on Green Zone",
+        "description": "Fencing placed into designated buffer zone.",
+        "location_name": "Panchavati",
+        "latitude": 20.0051,
+        "longitude": 73.7952
+    })
+    assert res2.status_code == 200
+    ref2 = res2.json()["reference_number"]
+
+    # Retrieve municipal queue
+    queue_res = client.get("/api/v1/municipal/complaints")
+    assert queue_res.status_code == 200
+    queue_data = queue_res.json()
+    assert queue_data["count"] == 2
+    
+    refs = [item["reference_number"] for item in queue_data["complaints"]]
+    assert ref1 in refs
+    assert ref2 in refs
+

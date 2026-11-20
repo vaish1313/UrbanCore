@@ -10,48 +10,60 @@ import {
   Search,
   FileText,
   Eye,
+  Download,
+  Loader2,
 } from "lucide-react";
-import { MOCK_CITIZEN_REPORTS } from "@/data/citizenMockData";
-import type { CitizenReportFull, StatusType } from "@/data/citizenMockData";
+import { useMunicipalComplaints } from "@/hooks/use-municipal";
+import type { MunicipalComplaint } from "@/types/urbancore";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 const ease = [0.16, 1, 0.3, 1] as const;
 
+type CitizenStatus = "New" | "Under Review" | "Action Taken" | "Closed";
+
 const STATUS_STYLES: Record<
-  StatusType,
+  string,
   { bg: string; text: string; border: string; icon: React.ElementType; label: string }
 > = {
-  Pending: {
-    bg: "rgba(250,204,21,0.1)",
-    text: "#fbbf24",
-    border: "rgba(250,204,21,0.25)",
+  New: {
+    bg: "rgba(99,102,241,0.1)",
+    text: "#a5b4fc",
+    border: "rgba(99,102,241,0.3)",
     icon: Clock,
-    label: "Pending",
+    label: "New",
+  },
+  SUBMITTED: {
+    bg: "rgba(99,102,241,0.1)",
+    text: "#a5b4fc",
+    border: "rgba(99,102,241,0.3)",
+    icon: Clock,
+    label: "Submitted",
   },
   "Under Review": {
-    bg: "rgba(251,146,60,0.1)",
-    text: "#fb923c",
-    border: "rgba(251,146,60,0.25)",
+    bg: "rgba(251,191,36,0.1)",
+    text: "#fbbf24",
+    border: "rgba(251,191,36,0.3)",
     icon: Search,
     label: "Under Review",
   },
-  Resolved: {
+  "Action Taken": {
+    bg: "rgba(251,146,60,0.1)",
+    text: "#fb923c",
+    border: "rgba(251,146,60,0.3)",
+    icon: AlertCircle,
+    label: "Action Taken",
+  },
+  Closed: {
     bg: "rgba(52,211,153,0.1)",
     text: "#34d399",
-    border: "rgba(52,211,153,0.25)",
+    border: "rgba(52,211,153,0.3)",
     icon: CheckCircle2,
-    label: "Resolved",
-  },
-  Rejected: {
-    bg: "rgba(248,113,113,0.1)",
-    text: "#f87171",
-    border: "rgba(248,113,113,0.25)",
-    icon: XCircle,
-    label: "Rejected",
+    label: "Closed",
   },
 };
 
-function StatusBadge({ status }: { status: StatusType }) {
-  const s = STATUS_STYLES[status]!;
+function StatusBadge({ status }: { status: string }) {
+  const s = STATUS_STYLES[status] || STATUS_STYLES["New"];
   const Icon: React.ElementType = s.icon;
   const style: React.CSSProperties = { background: s.bg, color: s.text, borderColor: s.border };
   return (
@@ -62,22 +74,16 @@ function StatusBadge({ status }: { status: StatusType }) {
   );
 }
 
-function TimelineDot({ done, label, date }: { done: boolean; label: string; date: string }) {
-  return (
-    <div className="cs-tl-step">
-      <div className={`cs-tl-dot ${done ? "cs-tl-dot--done" : ""}`}>
-        {done && <CheckCircle2 className="h-3 w-3" />}
-      </div>
-      <div>
-        <p className="cs-tl-step-label">{label}</p>
-        <p className="cs-tl-step-date">{date}</p>
-      </div>
-    </div>
-  );
-}
-
-function ReportCard({ report }: { report: CitizenReportFull }) {
+function ReportCard({ complaint }: { complaint: MunicipalComplaint }) {
   const [expanded, setExpanded] = useState(false);
+
+  const formattedDate = complaint.created_at
+    ? new Date(complaint.created_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "Recent";
 
   return (
     <motion.div
@@ -94,13 +100,13 @@ function ReportCard({ report }: { report: CitizenReportFull }) {
         aria-expanded={expanded}
       >
         <div className="cs-myr-card-left">
-          <span className="cs-myr-refid">{report.refId}</span>
-          <StatusBadge status={report.status} />
+          <span className="cs-myr-refid">{complaint.reference_number}</span>
+          <StatusBadge status={complaint.status} />
         </div>
         <div className="cs-myr-card-info">
-          <p className="cs-myr-location">{report.location}</p>
+          <p className="cs-myr-location">{complaint.location_name || "Nashik Location"}</p>
           <p className="cs-myr-meta">
-            {report.type} · {report.date}
+            {complaint.title || "Citizen Report"} · {formattedDate}
           </p>
         </div>
         <motion.div
@@ -126,41 +132,38 @@ function ReportCard({ report }: { report: CitizenReportFull }) {
               {/* Description */}
               <div className="cs-myr-block">
                 <h4 className="cs-myr-block-title">Description</h4>
-                <p className="cs-myr-block-text">{report.description}</p>
+                <p className="cs-myr-block-text">{complaint.description}</p>
               </div>
 
-              {/* Officer remarks */}
+              {/* Citizen Details */}
               <div className="cs-myr-block">
-                <h4 className="cs-myr-block-title">Officer Remarks</h4>
+                <h4 className="cs-myr-block-title">Complainant / Coordinates</h4>
                 <div className="cs-myr-remarks">
-                  <AlertCircle className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <p className="cs-myr-block-text">{report.officerRemarks}</p>
+                  <p className="cs-myr-block-text">
+                    <strong>Reported by:</strong> {complaint.citizen_name || "Citizen"}<br />
+                    <strong>GPS Coordinates:</strong> {complaint.latitude?.toFixed(4)}° N, {complaint.longitude?.toFixed(4)}° E
+                    {complaint.evidence_reference && (
+                      <>
+                        <br />
+                        <strong>Reference Link:</strong> {complaint.evidence_reference}
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
 
-              {/* Timeline */}
+              {/* Status & PDF Receipt */}
               <div className="cs-myr-block">
-                <h4 className="cs-myr-block-title">Progress Timeline</h4>
-                <div className="cs-tl-steps">
-                  {report.timeline.map((step, i) => (
-                    <TimelineDot key={i} done={step.done} label={step.label} date={step.date} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Evidence thumbnails */}
-              <div className="cs-myr-block">
-                <h4 className="cs-myr-block-title">Evidence</h4>
-                <div className="cs-myr-evidence">
-                  {[
-                    { label: "Before", src: report.evidenceBefore },
-                    { label: "After", src: report.evidenceAfter },
-                  ].map(({ label, src }) => (
-                    <div key={label} className="cs-myr-thumb">
-                      <img src={src} alt={label} className="cs-myr-thumb-img" />
-                      <span className="cs-myr-thumb-label">{label}</span>
-                    </div>
-                  ))}
+                <h4 className="cs-myr-block-title">Official Documentation</h4>
+                <div className="flex items-center gap-3 pt-1">
+                  <a
+                    href={`${API_BASE_URL}/complaints/${complaint.reference_number}/receipt`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-4 py-2 text-xs font-semibold text-cyan-300 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download Sworn PDF Receipt
+                  </a>
                 </div>
               </div>
             </div>
@@ -176,19 +179,21 @@ interface MyReportsProps {
 }
 
 export function MyReports({ onNewReport }: MyReportsProps) {
-  const [filter, setFilter] = useState<StatusType | "All">("All");
-  const filters: (StatusType | "All")[] = [
-    "All",
-    "Pending",
-    "Under Review",
-    "Resolved",
-    "Rejected",
-  ];
+  const [filter, setFilter] = useState<string>("All");
+  const filters = ["All", "New", "Under Review", "Action Taken", "Closed"];
+
+  const { data, isLoading, error } = useMunicipalComplaints(100, 0);
+  const complaints = data?.complaints || [];
 
   const filtered =
     filter === "All"
-      ? MOCK_CITIZEN_REPORTS
-      : MOCK_CITIZEN_REPORTS.filter((r) => r.status === filter);
+      ? complaints
+      : complaints.filter((c) => {
+          if (filter === "New") {
+            return c.status === "New" || c.status === "SUBMITTED";
+          }
+          return c.status === filter;
+        });
 
   return (
     <motion.section
@@ -207,7 +212,7 @@ export function MyReports({ onNewReport }: MyReportsProps) {
           </p>
           <h2 className="cs-myr-title">My Submitted Reports</h2>
           <p className="cs-myr-subtitle">
-            {MOCK_CITIZEN_REPORTS.length} reports filed · click to expand
+            {isLoading ? "Fetching reports..." : `${complaints.length} registered reports · click to expand`}
           </p>
         </div>
         <motion.button
@@ -215,7 +220,7 @@ export function MyReports({ onNewReport }: MyReportsProps) {
           id="new-report-btn"
           whileHover={{ scale: 1.03, boxShadow: "0 0 28px rgba(34,211,238,0.25)" }}
           whileTap={{ scale: 0.97 }}
-          className="cs-myr-new-btn"
+          className="cs-myr-new-btn cursor-pointer"
           onClick={onNewReport}
         >
           + New Report
@@ -224,43 +229,61 @@ export function MyReports({ onNewReport }: MyReportsProps) {
 
       {/* Filter chips */}
       <div className="cs-myr-filters">
-        {filters.map((f) => (
-          <button
-            key={f}
-            type="button"
-            id={`filter-${f.toLowerCase().replace(" ", "-")}-btn`}
-            className={`cs-filter-chip ${filter === f ? "cs-filter-chip--active" : ""}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-            {f !== "All" && (
-              <span className="cs-filter-count">
-                {MOCK_CITIZEN_REPORTS.filter((r) => r.status === f).length}
-              </span>
-            )}
-          </button>
-        ))}
+        {filters.map((f) => {
+          const count =
+            f === "All"
+              ? complaints.length
+              : complaints.filter((c) =>
+                  f === "New" ? c.status === "New" || c.status === "SUBMITTED" : c.status === f
+                ).length;
+
+          return (
+            <button
+              key={f}
+              type="button"
+              id={`filter-${f.toLowerCase().replace(" ", "-")}-btn`}
+              className={`cs-filter-chip ${filter === f ? "cs-filter-chip--active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+              {f !== "All" && <span className="cs-filter-count">{count}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Reports */}
       <div className="cs-myr-list">
-        <AnimatePresence mode="popLayout">
-          {filtered.map((r, i) => (
-            <motion.div
-              key={r.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.4, delay: i * 0.06, ease }}
-            >
-              <ReportCard report={r} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {filtered.length === 0 && (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16 text-slate-400 gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            <span>Loading registered complaints...</span>
+          </div>
+        ) : error ? (
           <div className="cs-myr-empty">
-            <Eye className="h-8 w-8 text-slate-600" />
-            <p>No reports with this status</p>
+            <AlertCircle className="h-8 w-8 text-rose-500 mb-2" />
+            <p className="text-rose-300">Unable to load complaints from server.</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filtered.map((r, i) => (
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4, delay: i * 0.04, ease }}
+              >
+                <ReportCard complaint={r} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
+
+        {!isLoading && !error && filtered.length === 0 && (
+          <div className="cs-myr-empty">
+            <Eye className="h-8 w-8 text-slate-600 mb-2" />
+            <p>No complaints found with this status.</p>
           </div>
         )}
       </div>

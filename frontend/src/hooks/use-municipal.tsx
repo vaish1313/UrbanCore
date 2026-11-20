@@ -75,6 +75,7 @@ export function useMunicipalComplaints(limit = 50, offset = 0) {
       if (!response.ok) throw new Error("Failed to fetch complaints");
       return response.json();
     },
+    refetchInterval: 10000, // Lightweight 10s auto-refresh for real-time monitoring
   });
 }
 
@@ -101,12 +102,84 @@ export function useUpdateComplaintStatus() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!response.ok) throw new Error("Failed to update complaint status");
+      if (!response.ok) {
+        let errMessage = "Failed to update complaint status";
+        try {
+          const errData = await response.json();
+          if (errData?.detail) {
+            errMessage = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch {
+          // fallback
+        }
+        throw new Error(errMessage);
+      }
       return response.json();
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const updatedStatus = data.status || variables.status;
+      
+      // Update all complaints lists in cache
+      queryClient.setQueriesData({ queryKey: ["municipal-complaints"] }, (old: any) => {
+        if (!old || !Array.isArray(old.complaints)) return old;
+        return {
+          ...old,
+          complaints: old.complaints.map((c: MunicipalComplaint) =>
+            c.id === variables.complaintId || c.reference_number === variables.complaintId
+              ? { ...c, ...(data.complaint || {}), status: updatedStatus }
+              : c
+          ),
+        };
+      });
+
+      // Update single complaint cache
+      queryClient.setQueriesData({ queryKey: ["municipal-complaint", variables.complaintId] }, (old: any) => {
+        if (!old) return old;
+        return { ...old, ...(data.complaint || {}), status: updatedStatus };
+      });
+
       queryClient.invalidateQueries({ queryKey: ["municipal-complaints"] });
       queryClient.invalidateQueries({ queryKey: ["municipal-complaint", variables.complaintId] });
+    },
+  });
+}
+
+export function useSubmitComplaint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      citizen_name: string;
+      description: string;
+      location_name: string;
+      latitude: number;
+      longitude: number;
+      title?: string;
+      evidence_reference?: string;
+    }) => {
+      const response = await fetch(`${API_BASE_URL}/complaints`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let errMessage = "Failed to submit complaint";
+        try {
+          const errData = await response.json();
+          if (errData?.detail) {
+            errMessage = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch {
+          // fallback to statusText or generic message
+        }
+        throw new Error(errMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["municipal-complaints"] });
     },
   });
 }

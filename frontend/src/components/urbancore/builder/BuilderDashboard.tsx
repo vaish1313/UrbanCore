@@ -84,17 +84,24 @@ export function BuilderDashboard({
   }, []);
 
   const handleSearch = useCallback(
-    (suggestion: { label: string; lat: number; lng: number }) => {
-      const qLower = suggestion.label.toLowerCase();
-      const matched = aois.find(
-        (a) =>
-          a.name.toLowerCase().includes(qLower) ||
-          (a.location && a.location.toLowerCase().includes(qLower)) ||
-          a.id.toLowerCase().includes(qLower),
-      );
+    (suggestion: { id?: string; label: string; lat: number; lng: number; selectionSource?: "canonical-aoi" | "map-selected" }) => {
+      const qLower = suggestion.label.toLowerCase().trim();
+      const matched =
+        (suggestion.id ? aois.find((a) => a.id.toLowerCase() === suggestion.id?.toLowerCase()) : undefined) ||
+        aois.find((a) => a.id.toLowerCase() === qLower || a.name.toLowerCase() === qLower) ||
+        aois.find(
+          (a) =>
+            a.name.toLowerCase().includes(qLower) ||
+            (a.location && a.location.toLowerCase().includes(qLower)) ||
+            a.id.toLowerCase().includes(qLower) ||
+            qLower.includes(a.name.toLowerCase()),
+        );
 
       if (matched) {
-        setPendingAoi(matched);
+        setPendingAoi({
+          ...matched,
+          selectionSource: "canonical-aoi",
+        });
       } else {
         const customAoi: AOI = {
           id: `aoi-${Date.now()}`,
@@ -107,19 +114,19 @@ export function BuilderDashboard({
             x: 50,
             y: 50,
           },
-          suitabilityScore: 82,
+          suitabilityScore: 0,
           selectionSource: "map-selected",
           terrain: {
             elevation: Number.NaN,
             slope: Number.NaN,
-            roughness: "Unavailable",
+            roughness: "Pending Screening",
             flatLandPercent: Number.NaN,
             readiness: "LOW",
           },
-          accessibilityScore: 85,
-          waterAvailabilityScore: 80,
-          environmentalRiskScore: 85,
-          developmentPotentialScore: 85,
+          accessibilityScore: 0,
+          waterAvailabilityScore: 0,
+          environmentalRiskScore: 0,
+          developmentPotentialScore: 0,
           constructionHistory: [],
           constraints: {
             floodZoneOverlapPercent: 0,
@@ -128,7 +135,7 @@ export function BuilderDashboard({
             protectedAreaOverlapPercent: 0,
             environmentalRestriction: "Low",
           },
-          summary: `Site intelligence analysis for ${suggestion.label}.`,
+          summary: `Preliminary coordinate screening for ${suggestion.label}. Parcel boundary polygon not registered.`,
         };
         setPendingAoi(customAoi);
       }
@@ -224,10 +231,6 @@ export function BuilderDashboard({
             {isFeatureOnlyPage ? (
               /* FEATURE-ONLY PAGE: Renders ONLY the selected feature page */
               <div className="w-full pt-4">
-                <SectionDivider
-                  label={`MODULE FEATURE: ${FEATURE_LABELS[activeFeatureId] || activeFeatureId}`}
-                />
-
                 {activeFeatureId === "suitability" && (
                   <SuitabilityScore
                     aoi={selectedAoi}

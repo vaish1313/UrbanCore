@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Map, { Source, Layer, Popup, NavigationControl } from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
 import type { MapRef } from "react-map-gl/mapbox";
 import { motion } from "motion/react";
 import { X, ArrowLeft } from "lucide-react";
@@ -128,7 +129,8 @@ export function CellMapView({
 
   return (
     <motion.div
-      className="relative w-full h-full min-h-[480px] rounded-2xl overflow-hidden border border-white/10"
+      className="relative w-full rounded-2xl overflow-hidden border border-white/10"
+      style={{ minHeight: "480px", height: "480px" }}
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -141,7 +143,7 @@ export function CellMapView({
         onMove={(e: { viewState: typeof viewState }) => setViewState(e.viewState)}
         mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
         mapboxAccessToken={MAPBOX_TOKEN}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "480px" }}
         onLoad={() => setMapReady(true)}
         reuseMaps
       >
@@ -251,7 +253,7 @@ export function CellMapView({
 
       {/* Pulsing ring overlay at the cell centre while map loads */}
       {!mapReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#070b16]/80">
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(7,11,22,0.80)" }}>
           <div className="flex flex-col items-center gap-3">
             <div className="relative w-10 h-10">
               <div className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-75" />

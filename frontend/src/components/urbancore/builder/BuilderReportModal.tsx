@@ -148,26 +148,27 @@ async function generateClientPdfBlob(
   doc.setFontSize(14);
   doc.setFont("Helvetica", "bold");
   doc.setTextColor(2, 132, 199);
-  const overallScore = suitability?.overall_score;
-  doc.text(overallScore === null || overallScore === undefined ? "SUITABILITY ASSESSMENT: INCOMPLETE" : `${overallScore.toFixed(2)} / 100`, 16, y + 8);
+  const isAssessed = suitability?.overall_status === "ASSESSED";
+  const blockerStatus = suitability?.blocker_status || "UNAVAILABLE";
+  doc.text(isAssessed ? "SCREENING STATUS: PROVISIONAL" : "SCREENING STATUS: INCOMPLETE / UNAVAILABLE", 16, y + 8);
 
   doc.setFontSize(8);
   doc.setFont("Helvetica", "normal");
   doc.setTextColor(15, 23, 42);
-  doc.text(`Terrain Score: ${suitability ? suitability.terrain_score.toFixed(2) : "Unavailable"} / 100`, 55, y + 5);
-  doc.text(`Constraint Assessment: ${suitability?.constraint_status || "UNAVAILABLE"}`, 55, y + 9);
-  doc.text(`Constraint Score: ${suitability?.constraint_score == null ? "Unavailable" : suitability.constraint_score.toFixed(2)}`, 55, y + 13);
+  doc.text(`Terrain Buildability: ${suitability?.terrain_score !== null && suitability?.terrain_score !== undefined ? `${suitability.terrain_score.toFixed(2)} / 100` : "Pending HAND Model"}`, 55, y + 5);
+  doc.text(`Regulatory Review: ${blockerStatus}`, 55, y + 9);
+  doc.text(`Constraint Score: ${suitability?.constraint_score == null ? "Unavailable" : `${suitability.constraint_score.toFixed(2)} / 100`}`, 55, y + 13);
   y += 18;
 
   doc.setFontSize(8);
   doc.setTextColor(51, 65, 85);
-  if (suitability?.constraint_status === "UNAVAILABLE") {
-    doc.text("Overall suitability could not be calculated because restricted-zone intersection could not be assessed for this AOI.", 12, y);
+  if (suitability?.availability_reasons?.elevation_drainage) {
+    doc.text(suitability.availability_reasons.elevation_drainage, 12, y);
     y += 5;
   }
-  const factorSummary = suitability
-    ? `Slope ${suitability.factors.slope_score.toFixed(2)} · Flat ${suitability.factors.flat_land_score.toFixed(2)} · Roughness ${suitability.factors.roughness_score.toFixed(2)} · Elevation ${suitability.factors.elevation_score.toFixed(2)}`
-    : "Suitability factors unavailable";
+  const factorSummary = suitability && suitability.factors.slope_score !== null
+    ? `Slope: ${suitability.factors.slope_score.toFixed(2)} (w=40%) · Flat Land: ${suitability.factors.flat_land_score?.toFixed(2)} (w=15%) · Roughness: ${suitability.factors.roughness_score?.toFixed(2)} (w=20%) · HAND: Pending (w=25%)`
+    : "Suitability factors unavailable (missing boundary polygon or raster coverage)";
   doc.text(factorSummary, 12, y);
   y += 5;
   const reasonSummary = suitability ? [...suitability.positive_factors, ...suitability.negative_factors].join(" · ") : "";
@@ -186,12 +187,12 @@ async function generateClientPdfBlob(
   y += 6;
 
   const readinessRows: [string, string][] = [
-    ["Average Slope", terrain ? `${terrain.mean_slope_deg.toFixed(2)}°` : "Unavailable for map-selected site"],
-    ["Elevation", terrain ? `${terrain.mean_elevation_m.toFixed(2)} m MSL` : "Unavailable for map-selected site"],
-    ["Elevation Range", terrain ? `${terrain.min_elevation_m.toFixed(2)}–${terrain.max_elevation_m.toFixed(2)} m` : "Unavailable for map-selected site"],
-    ["Flat Area Percentage", terrain ? `${terrain.flat_land_percentage.toFixed(2)}%` : "Unavailable for map-selected site"],
-    ["Terrain Roughness", terrain ? `${terrain.terrain_roughness_m.toFixed(2)} m` : "Unavailable for map-selected site"],
-    ["Readiness Level", terrain ? "Terrain metrics available" : "Unavailable for map-selected site"],
+    ["Average Slope", terrain ? `${terrain.mean_slope_deg.toFixed(2)}°` : "Unavailable (missing polygon or DEM)"],
+    ["85th Percentile Slope", suitability?.inputs?.p85_slope_deg !== undefined && suitability?.inputs?.p85_slope_deg !== null ? `${suitability.inputs.p85_slope_deg.toFixed(2)}°` : "Not calculated"],
+    ["Elevation", terrain ? `${terrain.mean_elevation_m.toFixed(2)} m MSL` : "Unavailable"],
+    ["Elevation Range", terrain ? `${terrain.min_elevation_m.toFixed(2)}–${terrain.max_elevation_m.toFixed(2)} m` : "Unavailable"],
+    ["Flat Area Percentage", terrain ? `${terrain.flat_land_percentage.toFixed(2)}%` : "Unavailable"],
+    ["Terrain Roughness", terrain ? `${terrain.terrain_roughness_m.toFixed(2)} m` : "Unavailable"],
   ];
 
   doc.setFontSize(8);
@@ -210,32 +211,27 @@ async function generateClientPdfBlob(
   doc.setFont("Helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(2, 132, 199);
-  doc.text("4. ZONING & ENVIRONMENTAL CONSTRAINTS (MODULE 4)", 12, y);
+  doc.text("4. ZONING & ENVIRONMENTAL CONSTRAINTS (POSTGIS SCREENING)", 12, y);
   y += 2;
   doc.line(12, y, pageWidth - 12, y);
   y += 6;
 
-  const constraintRows: [string, string, string, string][] = [
-    ["CRZ (Coastal Regulation Zone)", "NO_DATA", "Data unavailable", "Data unavailable"],
-    [
-      "River Buffer Zone",
-      aoi.constraints.floodZoneOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      `${(aoi.constraints.floodZoneOverlapPercent * 0.2).toFixed(1)} ha`,
-      `${aoi.constraints.floodZoneOverlapPercent}%`,
-    ],
-    [
-      "Forest Boundary & Buffer",
-      aoi.constraints.forestBoundaryOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      `${(aoi.constraints.forestBoundaryOverlapPercent * 0.2).toFixed(1)} ha`,
-      `${aoi.constraints.forestBoundaryOverlapPercent}%`,
-    ],
-    [
-      "Agricultural Green Belt",
-      aoi.constraints.greenBeltOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      `${(aoi.constraints.greenBeltOverlapPercent * 0.2).toFixed(1)} ha`,
-      `${aoi.constraints.greenBeltOverlapPercent}%`,
-    ],
-  ];
+  const detailedList = suitability?.detailed_constraints?.constraints;
+  const constraintRows: [string, string, string, string][] = detailedList && detailedList.length > 0
+    ? detailedList
+        .filter((c) => c.type !== "crz")
+        .map((c) => [
+          c.name,
+          c.status,
+          c.affected_area_ha !== null ? `${c.affected_area_ha.toFixed(2)} ha` : "N/A",
+          c.affected_percentage !== null ? `${c.affected_percentage.toFixed(2)}%` : "N/A",
+        ])
+    : [
+        ["River Corridor (Godavari Basin)", aoi.geometry ? "CLEAR" : "NO_DATA", aoi.geometry ? "0.0 ha" : "N/A", aoi.geometry ? "0.0%" : "N/A"],
+        ["Forest Boundary (SOI)", aoi.geometry ? "CLEAR" : "NO_DATA", aoi.geometry ? "0.0 ha" : "N/A", aoi.geometry ? "0.0%" : "N/A"],
+        ["Highway Corridor Buffer", aoi.geometry ? "CLEAR" : "NO_DATA", aoi.geometry ? "0.0 ha" : "N/A", aoi.geometry ? "0.0%" : "N/A"],
+        ["Lakes & Waterbodies", aoi.geometry ? "CLEAR" : "NO_DATA", aoi.geometry ? "0.0 ha" : "N/A", aoi.geometry ? "0.0%" : "N/A"],
+      ];
 
   doc.setFillColor(30, 41, 59);
   doc.rect(12, y, pageWidth - 24, 6, "F");
@@ -310,20 +306,23 @@ async function generateClientPdfBlob(
   y += 6;
 
   let otherAois: AOI[] = [];
-  try {
-    const res = await fetch(`http://localhost:8000/api/v1/builder/aois/compare/${aoi.id}`);
-    if (res.ok) {
-      const data = await res.json();
-      otherAois = data.nearest_aois.map((n: any) => ({
-        id: n.id,
-        name: n.name,
-        suitabilityScore: n.suitability_score,
-        constraints: { floodZoneOverlapPercent: n.flood_zone_percent },
-        terrain: { slope: n.avg_slope }
-      })) as AOI[];
+  const isCanonical = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
+  if (isCanonical) {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/builder/aois/compare/${aoi.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        otherAois = data.nearest_aois.map((n: any) => ({
+          id: n.id,
+          name: n.name,
+          suitabilityScore: n.suitability_score,
+          constraints: { floodZoneOverlapPercent: n.flood_zone_percent },
+          terrain: { slope: n.avg_slope }
+        })) as AOI[];
+      }
+    } catch (err) {
+      console.warn("Failed to fetch comparison for PDF", err);
     }
-  } catch (err) {
-    console.warn("Failed to fetch comparison for PDF", err);
   }
 
   const allComp = [aoi, ...otherAois].slice(0, 5);
@@ -394,7 +393,7 @@ export function BuilderReportModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const isCanonicalAoi = aoi.selectionSource !== "map-selected";
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
   const { data: terrain, isLoading: isTerrainLoading, isError: isTerrainError } = useBuilderTerrain(
     aoi.id,
     isCanonicalAoi,

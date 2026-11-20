@@ -16,12 +16,12 @@
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  MapPin, X, ArrowRight, ChevronRight,
+  MapPin, X, ArrowRight, ChevronRight, ChevronDown, ChevronUp, Eye,
   ShieldAlert, AlertTriangle, CheckCircle2, Flag,
-  Satellite, Layers, Clock, User,
+  Satellite, Layers, Clock, User, MessageSquare, AlertCircle, Loader2, RefreshCw
 } from "lucide-react";
 // @ts-expect-error react-map-gl/mapbox types
 import Map, { Marker, Source, Layer, NavigationControl } from "react-map-gl/mapbox";
@@ -32,23 +32,28 @@ import type { MunicipalAOI } from "@/data/nashikAois";
 import { useMunicipalCases, useUpdateCaseStatus, useMunicipalComplaints } from "@/hooks/use-municipal";
 import { MUNICIPAL_FEATURE_MENU } from "@/components/urbancore/role/roleFeatureMenus";
 import type { MunicipalCase, MunicipalComplaint } from "@/types/urbancore";
+import { getComplaintStatusMeta, isValidComplaintCoordinate } from "@/utils/complaintMapUtils";
+import { ComplaintDetailModal } from "@/components/urbancore/municipal/ComplaintDetailModal";
 
 export const Route = createFileRoute("/municipal/")({
-  head: () => ({ meta: [{ title: "Command Overview — Municipal Authority" }] }),
+  head: () => ({ meta: [{ title: "Nashik District Map — Municipal Authority" }] }),
   component: CommandOverviewPage,
 });
+
+const TYPE_CONFIG: Record<string, string> = {
+  "Illegal Construction": "#f87171",
+  "Encroachment":         "#fb923c",
+  "Building Safety":      "#fbbf24",
+  "Zoning Violation":     "#c084fc",
+  "Road Obstruction":     "#38bdf8",
+  "Demolition Request":   "#94a3b8",
+};
 
 /* ── constants ──────────────────────────────────────────────────────────── */
 const MAPBOX_TOKEN =
   "pk.eyJ1IjoidmFpc2gxMzEzIiwiYSI6ImNtdTZuZTA5ZzBjZnMyeHNsY29xenc2N2wifQ.zVsfaUatB1-4H5ieoAfmsA";
 
-const NASHIK_CENTER = { longitude: 73.82, latitude: 20.01, zoom: 10.2 };
-
-const PULSE_COLOR: Record<string, string> = {
-  red:    "rgba(239,68,68,0.55)",
-  yellow: "rgba(251,191,36,0.55)",
-  green:  "rgba(52,211,153,0.0)",
-};
+const NASHIK_CENTER = { longitude: 73.82, latitude: 20.01, zoom: 10.4 };
 
 const PANEL: React.CSSProperties = {
   background: "rgba(10,16,34,0.82)",
@@ -71,9 +76,8 @@ const DISTRICT_BOUNDARY = {
 };
 
 const LAYER_TOGGLES = [
-  { id: "satellite" as const, label: "Satellite", icon: <Satellite size={12} /> },
-  { id: "heatmap"   as const, label: "Heatmap",   icon: <Layers size={12} /> },
-  { id: "zoning"    as const, label: "Zoning",    icon: <Layers size={12} /> },
+  { id: "satellite" as const, label: "Satellite View", icon: <Satellite size={12} /> },
+  { id: "boundary"  as const, label: "District Boundary", icon: <Layers size={12} /> },
 ];
 
 /* review state helpers */
@@ -82,8 +86,6 @@ const stateColors: Record<string, { bg: string; border: string; text: string; la
   reviewed: { bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.35)", text: "#34d399", label: "Reviewed ✓" },
   flagged:  { bg: "rgba(251,146,60,0.10)",  border: "rgba(251,146,60,0.35)", text: "#fb923c", label: "Action Required" },
 };
-
-
 
 const STATUS_CFG = {
   "New":          { bg:"rgba(99,102,241,0.10)",  border:"rgba(99,102,241,0.30)",  text:"#a5b4fc", dot:"#818cf8" },
@@ -111,19 +113,57 @@ function CommandOverviewPage() {
   const [activeFeature, setActiveFeature] = useState<FeatureId>("district-map");
   const featureSectionRef = useRef<HTMLDivElement>(null);
 
-  /* district-map state */
+  /* district-map (complaints monitoring) state */
   const districtMapRef = useRef<{ flyTo: (o: object) => void } | null>(null);
-  const [mapLayer,      setMapLayer]      = useState<"satellite"|"heatmap"|"zoning">("satellite");
-  const [hoveredId,     setHoveredId]     = useState<string | null>(null);
-  const [selectedAoi,   setSelectedAoi]   = useState<MunicipalAOI | null>(null);
+  const [showBoundary, setShowBoundary] = useState(true);
+  const [hoveredComplaintId, setHoveredComplaintId] = useState<string | null>(null);
+  const [selectedComplaint, setSelectedComplaint] = useState<MunicipalComplaint | null>(null);
+  const [isComplaintsExpanded, setIsComplaintsExpanded] = useState(false);
+  const [selectedModalComplaint, setSelectedModalComplaint] = useState<MunicipalComplaint | null>(null);
 
   /* data hooks */
   const { data: casesData } = useMunicipalCases();
   const cases = casesData?.cases || [];
   const updateCaseStatus = useUpdateCaseStatus();
   
-  const { data: complaintsData } = useMunicipalComplaints(1, 4); // Only need preview
-  const complaints = complaintsData?.complaints || [];
+  // Fetch up to 100 complaints starting at offset 0 so none are hidden by pagination
+  const { 
+    data: complaintsData, 
+    isLoading: isComplaintsLoading, 
+    isError: isComplaintsError,
+    refetch: refetchComplaints 
+  } = useMunicipalComplaints(100, 0);
+  
+  const rawComplaints = complaintsData?.complaints || [];
+
+  const activeComplaint = selectedComplaint
+    ? rawComplaints.find(
+        (c) => c.id === selectedComplaint.id || c.reference_number === selectedComplaint.reference_number
+      ) || selectedComplaint
+    : null;
+
+  // Filter valid coordinates vs omitted coordinates
+  const { validComplaints, omittedCount, statusCounts } = useMemo(() => {
+    const valid: MunicipalComplaint[] = [];
+    let omitted = 0;
+    const counts = { total: rawComplaints.length, newCount: 0, underReviewCount: 0, actionTakenCount: 0, closedCount: 0 };
+
+    for (const c of rawComplaints) {
+      const meta = getComplaintStatusMeta(c.status);
+      if (meta.category === "new") counts.newCount++;
+      else if (meta.category === "under_review") counts.underReviewCount++;
+      else if (meta.category === "action_taken") counts.actionTakenCount++;
+      else if (meta.category === "closed") counts.closedCount++;
+
+      if (isValidComplaintCoordinate(c.latitude, c.longitude)) {
+        valid.push(c);
+      } else {
+        omitted++;
+      }
+    }
+
+    return { validComplaints: valid, omittedCount: omitted, statusCounts: counts };
+  }, [rawComplaints]);
 
   /* encroachment state */
   const encMapRef    = useRef<{ flyTo: (o: object) => void } | null>(null);
@@ -155,6 +195,10 @@ function CommandOverviewPage() {
   useEffect(() => {
     const handler = (e: Event) => {
       const { featureId } = (e as CustomEvent<{ featureId: string }>).detail;
+      if (featureId === "case-detail") {
+        navigate({ to: "/municipal/case-detail" });
+        return;
+      }
       if (featureId === "overview") {
         setActiveFeature("district-map");
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -165,16 +209,22 @@ function CommandOverviewPage() {
     };
     window.addEventListener("municipal-feature-select", handler);
     return () => window.removeEventListener("municipal-feature-select", handler);
+  }, [navigate]);
+
+  const handleComplaintMarkerClick = useCallback((complaint: MunicipalComplaint) => {
+    setSelectedComplaint(complaint);
+    if (complaint.latitude && complaint.longitude) {
+      districtMapRef.current?.flyTo({
+        center: [complaint.longitude, complaint.latitude],
+        zoom: 14.5,
+        speed: 1.0,
+        curve: 1.4,
+      });
+    }
   }, []);
 
-  const handleMarkerClick = useCallback((aoi: MunicipalAOI) => {
-    setSelectedAoi(aoi);
-    districtMapRef.current?.flyTo({ center:[aoi.coords.lng, aoi.coords.lat], zoom:13.5, speed:0.9, curve:1.4 });
-  }, []);
-
-  const handleCloseAoi = useCallback(() => {
-    setSelectedAoi(null);
-    districtMapRef.current?.flyTo({ center:[NASHIK_CENTER.longitude, NASHIK_CENTER.latitude], zoom:NASHIK_CENTER.zoom, speed:0.6 });
+  const handleCloseComplaintPopup = useCallback(() => {
+    setSelectedComplaint(null);
   }, []);
 
   const handleUpdateCaseStatus = (id: string, newStatus: string) => {
@@ -188,13 +238,13 @@ function CommandOverviewPage() {
 
   /* section label map */
   const SECTION_LABELS: Record<FeatureId, string> = {
-    "district-map":  "── DISTRICT MAP",
+    "district-map":  "── CITIZEN COMPLAINT MAP",
     "encroachment":  "── ENCROACHMENT WATCH",
     "case-detail":   "── CASE DETAIL",
     "complaints":    "── CITIZEN COMPLAINTS",
   };
   const SECTION_H2: Record<FeatureId, string> = {
-    "district-map":  "Nashik District Map",
+    "district-map":  "Live Citizen Complaints Map",
     "encroachment":  "Detected Encroachment Flags",
     "case-detail":   "Satellite Evidence & Year Timeline",
     "complaints":    "Citizen Complaint Queue",
@@ -203,14 +253,14 @@ function CommandOverviewPage() {
   return (
     <>
       <style>{`
-        @keyframes aoi-pulse {
+        @keyframes complaint-pulse {
           0%   { transform:scale(1);   opacity:0.9; }
           70%  { transform:scale(2.6); opacity:0;   }
           100% { transform:scale(2.6); opacity:0;   }
         }
-        .aoi-pulse-ring {
+        .complaint-pulse-ring {
           position:absolute; inset:-4px; border-radius:50%;
-          animation:aoi-pulse 2.4s ease-out infinite;
+          animation:complaint-pulse 2.2s ease-out infinite;
           pointer-events:none;
         }
       `}</style>
@@ -256,10 +306,10 @@ function CommandOverviewPage() {
                 onSearch={() => {}}
                 onDropPin={() => {}}
                 mode="citizen"
-                badgeText="AI GIS PLATFORM · NASHIK MUNICIPAL CORPORATION"
+                badgeText="CITIZEN COMPLAINT MONITORING · NASHIK MUNICIPAL CORPORATION"
                 titlePrefix="Municipal"
                 titleSuffix="Intelligence"
-                subtitle="Monitor urban development, zoning compliance, protected zones and satellite-detected encroachments across Nashik."
+                subtitle="Live spatial map of citizen-submitted complaints across Nashik with review tracking and geographic coordination."
               />
             </motion.div>
           )}
@@ -291,43 +341,212 @@ function CommandOverviewPage() {
                 </h2>
               </div>
 
-              {/* ══ DISTRICT MAP ═══════════════════════════════════════════ */}
+              {/* ══ LIVE CITIZEN COMPLAINT MAP ════════════════════════════════ */}
               {activeFeature === "district-map" && (
                 <motion.div whileHover={{ boxShadow:"0 12px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,211,238,0.15)" }} style={{ ...PANEL, overflow:"hidden", position:"relative" }}>
-                  {/* layer toggles */}
-                  <div style={{ position:"absolute", top:14, left:14, zIndex:10, display:"flex", gap:8, flexWrap:"wrap" }}>
-                    {LAYER_TOGGLES.map((l) => (
-                      <button key={l.id} type="button" onClick={() => setMapLayer(l.id)}
-                        style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:999, cursor:"pointer", backdropFilter:"blur(12px)", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.72rem", letterSpacing:"0.04em", border: mapLayer===l.id?"1px solid rgba(34,211,238,0.5)":"1px solid rgba(255,255,255,0.1)", background: mapLayer===l.id?"rgba(34,211,238,0.15)":"rgba(10,16,34,0.75)", color: mapLayer===l.id?"#22d3ee":"#94a3b8", fontWeight: mapLayer===l.id?700:500, boxShadow: mapLayer===l.id?"0 0 14px rgba(34,211,238,0.18)":"none" }}>
-                        {l.icon}{l.label}
-                      </button>
-                    ))}
+                  {/* Top-left controls & summary badges */}
+                  <div style={{ position:"absolute", top:14, left:14, zIndex:10, display:"flex", gap:8, flexWrap:"wrap", maxWidth:"calc(100% - 28px)" }}>
+                    {/* Boundary toggle */}
+                    <button 
+                      type="button" 
+                      onClick={() => setShowBoundary(!showBoundary)}
+                      style={{ 
+                        display:"flex", 
+                        alignItems:"center", 
+                        gap:6, 
+                        padding:"6px 14px", 
+                        borderRadius:999, 
+                        cursor:"pointer", 
+                        backdropFilter:"blur(12px)", 
+                        fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", 
+                        fontSize:"0.72rem", 
+                        letterSpacing:"0.04em", 
+                        border: showBoundary ? "1px solid rgba(34,211,238,0.5)" : "1px solid rgba(255,255,255,0.1)", 
+                        background: showBoundary ? "rgba(34,211,238,0.15)" : "rgba(10,16,34,0.75)", 
+                        color: showBoundary ? "#22d3ee" : "#94a3b8", 
+                        fontWeight: showBoundary ? 700 : 500, 
+                        boxShadow: showBoundary ? "0 0 14px rgba(34,211,238,0.18)" : "none" 
+                      }}
+                    >
+                      <Layers size={12} /> {showBoundary ? "Hide District Boundary" : "Show District Boundary"}
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={() => refetchComplaints()}
+                      title="Refresh complaints from database"
+                      style={{ 
+                        display:"flex", 
+                        alignItems:"center", 
+                        gap:6, 
+                        padding:"6px 12px", 
+                        borderRadius:999, 
+                        cursor:"pointer", 
+                        backdropFilter:"blur(12px)", 
+                        fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", 
+                        fontSize:"0.72rem", 
+                        border: "1px solid rgba(255,255,255,0.15)", 
+                        background: "rgba(10,16,34,0.75)", 
+                        color: "#94a3b8" 
+                      }}
+                    >
+                      <RefreshCw size={12} /> Refresh
+                    </button>
                   </div>
 
-                  {/* map */}
-                  <div style={{ height:520, position:"relative" }}>
-                    <Map ref={districtMapRef as React.Ref<unknown>} initialViewState={NASHIK_CENTER}
+                  {/* Top-right Status Legend */}
+                  <div 
+                    style={{ 
+                      position:"absolute", 
+                      top:14, 
+                      right:14, 
+                      zIndex:10, 
+                      ...PANEL, 
+                      borderRadius:14, 
+                      padding:"10px 14px", 
+                      display:"flex", 
+                      flexDirection:"column", 
+                      gap:6,
+                      background:"rgba(10,16,34,0.90)",
+                      border:"1px solid rgba(34,211,238,0.2)"
+                    }}
+                  >
+                    <div style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", letterSpacing:"0.12em", textTransform:"uppercase", color:"#22d3ee", fontWeight:700 }}>
+                      Live Status Legend
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"auto 1fr", gap:"4px 8px", alignItems:"center", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.66rem" }}>
+                      <span style={{ width:10, height:10, borderRadius:"50%", background:"#F59E0B", boxShadow:"0 0 8px rgba(245,158,11,0.5)" }} />
+                      <span style={{ color:"#fde68a" }}>New / Submitted ({statusCounts.newCount})</span>
+
+                      <span style={{ width:10, height:10, borderRadius:"50%", background:"#3B82F6", boxShadow:"0 0 8px rgba(59,130,246,0.5)" }} />
+                      <span style={{ color:"#bfdbfe" }}>Under Review ({statusCounts.underReviewCount})</span>
+
+                      <span style={{ width:10, height:10, borderRadius:"50%", background:"#8B5CF6", boxShadow:"0 0 8px rgba(139,92,246,0.5)" }} />
+                      <span style={{ color:"#ddd6fe" }}>Action Taken ({statusCounts.actionTakenCount})</span>
+
+                      <span style={{ width:10, height:10, borderRadius:"50%", background:"#16A34A", boxShadow:"0 0 8px rgba(22,163,74,0.5)" }} />
+                      <span style={{ color:"#bbf7d0" }}>Closed / Resolved ({statusCounts.closedCount})</span>
+                    </div>
+                  </div>
+
+                  {/* map container */}
+                  <div style={{ height:540, position:"relative" }}>
+                    {isComplaintsLoading && (
+                      <div style={{ position:"absolute", inset:0, zIndex:25, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(10,16,34,0.75)", backdropFilter:"blur(6px)" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10, color:"#22d3ee", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.8rem" }}>
+                          <Loader2 className="animate-spin" size={20} /> Loading live citizen complaints...
+                        </div>
+                      </div>
+                    )}
+
+                    {isComplaintsError && (
+                      <div style={{ position:"absolute", top:60, left:14, zIndex:25, ...PANEL, borderRadius:12, padding:"12px 16px", color:"#f87171", display:"flex", alignItems:"center", gap:8 }}>
+                        <AlertCircle size={16} /> Unable to connect to complaints API.
+                      </div>
+                    )}
+
+                    <Map 
+                      ref={districtMapRef as React.Ref<unknown>} 
+                      initialViewState={NASHIK_CENTER}
                       mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
                       mapboxAccessToken={MAPBOX_TOKEN}
-                      style={{ width:"100%", height:"100%" }} attributionControl={false}>
+                      style={{ width:"100%", height:"100%" }} 
+                      attributionControl={false}
+                    >
                       <NavigationControl position="bottom-right" style={{ marginBottom:40 }} />
-                      <Source id="dist-bnd" type="geojson" data={DISTRICT_BOUNDARY}>
-                        <Layer id="dist-bnd-line" type="line" paint={{ "line-color":"#22d3ee","line-width":2,"line-dasharray":[4,3],"line-opacity":0.55 }} />
-                      </Source>
-                      {NASHIK_AOIS.map((aoi) => {
-                        const col=STATUS_COLORS[aoi.status]; const pulse=aoi.status!=="green";
-                        const isHov=hoveredId===aoi.id; const isSel=selectedAoi?.id===aoi.id;
+                      
+                      {/* District Boundary Layer */}
+                      {showBoundary && (
+                        <Source id="dist-bnd" type="geojson" data={DISTRICT_BOUNDARY}>
+                          <Layer id="dist-bnd-line" type="line" paint={{ "line-color":"#22d3ee","line-width":2,"line-dasharray":[4,3],"line-opacity":0.55 }} />
+                        </Source>
+                      )}
+
+                      {/* Live Citizen Complaint Markers */}
+                      {validComplaints.map((c) => {
+                        const meta = getComplaintStatusMeta(c.status);
+                        const isSelected = selectedComplaint?.id === c.id;
+                        const isHovered = hoveredComplaintId === c.id;
+                        const isClosed = meta.category === "closed";
+
                         return (
-                          <Marker key={aoi.id} longitude={aoi.coords.lng} latitude={aoi.coords.lat} anchor="center">
-                            <button type="button" title={aoi.name}
-                              onMouseEnter={() => setHoveredId(aoi.id)}
-                              onMouseLeave={() => setHoveredId(null)}
-                              onClick={() => handleMarkerClick(aoi)}
-                              style={{ position:"relative", width:isSel?18:isHov?15:11, height:isSel?18:isHov?15:11, borderRadius:"50%", background:col.stroke, border:`2px solid ${isSel?"#fff":col.stroke}`, boxShadow:`0 0 ${isSel?18:8}px ${col.glow}`, cursor:"pointer", transition:"all 0.2s", padding:0, outline:"none", flexShrink:0 }}>
-                              {pulse && <span className="aoi-pulse-ring" style={{ background:PULSE_COLOR[aoi.status] }} />}
-                              {isHov && !isSel && (
-                                <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", whiteSpace:"nowrap", background:"rgba(10,16,34,0.92)", border:"1px solid rgba(34,211,238,0.25)", borderRadius:8, padding:"4px 10px", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:11, color:"#e2e8f0", pointerEvents:"none", backdropFilter:"blur(12px)", zIndex:20 }}>
-                                  {aoi.name}
+                          <Marker 
+                            key={c.id} 
+                            longitude={c.longitude as number} 
+                            latitude={c.latitude as number} 
+                            anchor="center"
+                          >
+                            <button
+                              type="button"
+                              title={`${c.reference_number} - ${c.title}`}
+                              onMouseEnter={() => setHoveredComplaintId(c.id)}
+                              onMouseLeave={() => setHoveredComplaintId(null)}
+                              onClick={() => handleComplaintMarkerClick(c)}
+                              style={{
+                                position: "relative",
+                                width: isSelected ? 22 : isHovered ? 18 : 14,
+                                height: isSelected ? 22 : isHovered ? 18 : 14,
+                                borderRadius: "50%",
+                                background: meta.color,
+                                border: `2px solid ${isSelected ? "#ffffff" : "#ffffffcc"}`,
+                                boxShadow: `0 0 ${isSelected ? 20 : isHovered ? 14 : 8}px ${meta.color}`,
+                                cursor: "pointer",
+                                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                                padding: 0,
+                                outline: "none",
+                                flexShrink: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {/* Pulse ring for active/open complaints */}
+                              {!isClosed && (
+                                <span 
+                                  className="complaint-pulse-ring" 
+                                  style={{ background: meta.color }} 
+                                />
+                              )}
+
+                              {/* Hover Tooltip (Accessible & Viewport-safe) */}
+                              {isHovered && !isSelected && (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    bottom: "calc(100% + 10px)",
+                                    left: "50%",
+                                    transform: "translateX(-50%)",
+                                    width: 240,
+                                    background: "rgba(10,16,34,0.96)",
+                                    border: `1px solid ${meta.color}60`,
+                                    borderRadius: 10,
+                                    padding: "8px 12px",
+                                    fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                                    color: "#e2e8f0",
+                                    pointerEvents: "none",
+                                    backdropFilter: "blur(14px)",
+                                    boxShadow: "0 8px 30px rgba(0,0,0,0.65)",
+                                    zIndex: 30,
+                                    textAlign: "left",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                                    <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.62rem", fontWeight: 700, color: "#22d3ee" }}>
+                                      {c.reference_number}
+                                    </span>
+                                    <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.55rem", fontWeight: 700, padding: "1px 6px", borderRadius: 999, background: meta.badgeBg, border: `1px solid ${meta.badgeBorder}`, color: meta.color }}>
+                                      {meta.label}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "0.74rem", fontWeight: 700, color: "#f1f5f9", marginBottom: 3 }}>
+                                    {c.title}
+                                  </div>
+                                  <div style={{ fontSize: "0.65rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                                    <User size={10} color="#64748b" /> {c.citizen_name || "Anonymous"}
+                                  </div>
+                                  <div style={{ fontSize: "0.62rem", color: "#64748b", display: "flex", alignItems: "center", gap: 4 }}>
+                                    <MapPin size={9} color="#22d3ee" /> {c.latitude?.toFixed(4)}° N, {c.longitude?.toFixed(4)}° E
+                                  </div>
                                 </div>
                               )}
                             </button>
@@ -336,63 +555,150 @@ function CommandOverviewPage() {
                       })}
                     </Map>
 
-                    {/* AOI popup */}
+                    {/* Selected Complaint Detailed Popover */}
                     <AnimatePresence>
-                      {selectedAoi && (
-                        <motion.div key="aoi-popup" initial={{ opacity:0, scale:0.94, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.94 }} transition={{ duration:0.25, ease:[0.16,1,0.3,1] }}
-                          style={{ position:"absolute", top:14, right:14, zIndex:20, width:260, background:"rgba(10,16,34,0.92)", border:`1px solid ${STATUS_COLORS[selectedAoi.status].stroke}40`, borderRadius:16, backdropFilter:"blur(28px)", boxShadow:"0 8px 40px rgba(0,0,0,0.55)", overflow:"hidden" }}>
-                          <div style={{ padding:"12px 14px 10px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <MapPin size={13} color={STATUS_COLORS[selectedAoi.status].stroke} />
-                              <div>
-                                <div style={{ fontFamily:"var(--font-display,'Sora',sans-serif)", fontSize:"0.78rem", fontWeight:700, color:"#f1f5f9" }}>{selectedAoi.name}</div>
-                                <div style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.58rem", color:STATUS_COLORS[selectedAoi.status].stroke, textTransform:"uppercase", letterSpacing:"0.1em", marginTop:2 }}>{STATUS_COLORS[selectedAoi.status].label}</div>
+                      {activeComplaint && (
+                        <motion.div
+                          key="complaint-popup"
+                          initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.94 }}
+                          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                          style={{
+                            position: "absolute",
+                            top: 60,
+                            right: 14,
+                            zIndex: 25,
+                            width: 320,
+                            background: "rgba(10,16,34,0.96)",
+                            border: `1px solid ${getComplaintStatusMeta(activeComplaint.status).color}60`,
+                            borderRadius: 16,
+                            backdropFilter: "blur(28px)",
+                            boxShadow: "0 12px 50px rgba(0,0,0,0.7)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {/* Header */}
+                          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <MessageSquare size={13} color="#22d3ee" />
+                                <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.68rem", fontWeight: 700, color: "#22d3ee" }}>
+                                  {activeComplaint.reference_number}
+                                </span>
+                              </div>
+                              <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "0.86rem", fontWeight: 700, color: "#f1f5f9", marginTop: 4 }}>
+                                {activeComplaint.title}
                               </div>
                             </div>
-                            <button type="button" onClick={handleCloseAoi} style={{ background:"none", border:"none", cursor:"pointer", color:"#64748b", padding:2 }}><X size={14} /></button>
+                            <button 
+                              type="button" 
+                              onClick={handleCloseComplaintPopup} 
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4 }}
+                            >
+                              <X size={15} />
+                            </button>
                           </div>
-                          <div style={{ padding:"8px 14px 6px" }}>
-                            {([["Lat",`${selectedAoi.coords.lat.toFixed(4)}° N`],["Lng",`${selectedAoi.coords.lng.toFixed(4)}° E`],["Village",selectedAoi.village],["Built-Up",`${selectedAoi.estimatedConstructionAreaSqM.toLocaleString()} m²`]] as [string,string][]).map(([l,v]) => (
-                              <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,0.03)" }}>
-                                <span style={{ fontSize:"0.65rem", color:"#475569", fontFamily:"var(--font-sans,'Manrope',sans-serif)" }}>{l}</span>
-                                <span style={{ fontSize:"0.65rem", color:"#cbd5e1", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontWeight:600 }}>{v}</span>
+
+                          {/* Body */}
+                          <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.65rem", color: "#64748b" }}>Status</span>
+                              <span style={{ 
+                                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", 
+                                fontSize: "0.64rem", 
+                                fontWeight: 700, 
+                                padding: "2px 8px", 
+                                borderRadius: 999, 
+                                background: getComplaintStatusMeta(activeComplaint.status).badgeBg, 
+                                border: `1px solid ${getComplaintStatusMeta(activeComplaint.status).badgeBorder}`, 
+                                color: getComplaintStatusMeta(activeComplaint.status).color 
+                              }}>
+                                {getComplaintStatusMeta(activeComplaint.status).label}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.65rem", color: "#64748b" }}>Citizen</span>
+                              <span style={{ fontSize: "0.7rem", color: "#cbd5e1", fontWeight: 600 }}>{activeComplaint.citizen_name || "Anonymous"}</span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.65rem", color: "#64748b" }}>Reported Location</span>
+                              <span style={{ fontSize: "0.7rem", color: "#cbd5e1", fontWeight: 600, textAlign: "right", maxWidth: 180 }}>
+                                {activeComplaint.location_name || "Nashik"}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.65rem", color: "#64748b" }}>GPS Coordinates</span>
+                              <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.68rem", color: "#22d3ee" }}>
+                                {activeComplaint.latitude?.toFixed(5)}° N, {activeComplaint.longitude?.toFixed(5)}° E
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.65rem", color: "#64748b" }}>Submitted Date</span>
+                              <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.65rem", color: "#94a3b8" }}>
+                                {activeComplaint.created_at ? new Date(activeComplaint.created_at).toLocaleString() : "—"}
+                              </span>
+                            </div>
+
+                            {/* Narrative */}
+                            <div style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginTop: 4 }}>
+                              <div style={{ fontSize: "0.6rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
+                                Complaint Description
                               </div>
-                            ))}
+                              <p style={{ fontSize: "0.7rem", color: "#94a3b8", lineHeight: 1.45, margin: 0 }}>
+                                {activeComplaint.description || "No description provided."}
+                              </p>
+                            </div>
                           </div>
-                          <div style={{ padding:"8px 14px 12px", display:"flex", gap:8 }}>
-                            <motion.button type="button" whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-                              onClick={() => setActiveFeature("case-detail")}
-                              style={{ flex:1, padding:"7px 0", borderRadius:9, background:"linear-gradient(135deg,#06b6d4,#3b82f6)", border:"none", cursor:"pointer", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", fontWeight:700, color:"#fff" }}>
-                              Case Detail
-                            </motion.button>
-                            <motion.button type="button" whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-                              onClick={() => setActiveFeature("encroachment")}
-                              style={{ flex:1, padding:"7px 0", borderRadius:9, background:"rgba(239,68,68,0.12)", border:"1px solid rgba(239,68,68,0.3)", cursor:"pointer", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", fontWeight:700, color:"#f87171" }}>
-                              Encroachment
-                            </motion.button>
+
+                          {/* Action Footer */}
+                          <div style={{ padding: "10px 16px 14px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedModalComplaint(activeComplaint)}
+                              style={{
+                                flex: 1,
+                                padding: "8px 0",
+                                borderRadius: 10,
+                                background: "linear-gradient(135deg,#06b6d4,#3b82f6)",
+                                border: "none",
+                                cursor: "pointer",
+                                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                fontSize: "0.65rem",
+                                fontWeight: 700,
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 4
+                              }}
+                            >
+                              Review Details <Eye size={12} />
+                            </button>
                           </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
 
-                  {/* status bar */}
-                  <div style={{ padding:"9px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", background:"rgba(8,13,28,0.6)", display:"flex", gap:18, flexWrap:"wrap", alignItems:"center", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", color:"#475569" }}>
-                    <span style={{ color:"#22d3ee", fontWeight:700 }}>NASHIK DISTRICT</span>
+                  {/* Status Bar */}
+                  <div style={{ padding:"9px 18px", borderTop:"1px solid rgba(255,255,255,0.05)", background:"rgba(8,13,28,0.7)", display:"flex", gap:16, flexWrap:"wrap", alignItems:"center", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", color:"#475569" }}>
+                    <span style={{ color:"#22d3ee", fontWeight:700 }}>LIVE CITIZEN COMPLAINTS</span>
                     <span style={{ color:"rgba(255,255,255,0.08)" }}>|</span>
-                    <span>Sentinel-2 · 10m resolution</span>
+                    <span>Total Submissions: <strong style={{ color:"#f1f5f9" }}>{statusCounts.total}</strong></span>
                     <span style={{ color:"rgba(255,255,255,0.08)" }}>|</span>
-                    <span>Last update: Jan 2025</span>
-                    {(["red","yellow","green"] as const).map((s) => {
-                      const col=STATUS_COLORS[s];
-                      return (
-                        <div key={s} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                          <span style={{ width:6, height:6, borderRadius:"50%", background:col.stroke }} />
-                          <span style={{ color:col.stroke, fontWeight:700 }}>{AOI_COUNTS[s]}</span>
-                          <span>{col.label}</span>
-                        </div>
-                      );
-                    })}
+                    <span>Mapped Pins: <strong style={{ color:"#22d3ee" }}>{validComplaints.length}</strong></span>
+                    {omittedCount > 0 && (
+                      <>
+                        <span style={{ color:"rgba(255,255,255,0.08)" }}>|</span>
+                        <span style={{ color:"#f87171" }}>{omittedCount} unmapped (missing/invalid GPS)</span>
+                      </>
+                    )}
+                    <span style={{ marginLeft:"auto", color:"#64748b" }}>Source: PostgreSQL `complaints`</span>
                   </div>
                 </motion.div>
               )}
@@ -478,97 +784,80 @@ function CommandOverviewPage() {
                 </div>
               )}
 
-              {/* ══ CASE DETAIL ════════════════════════════════════════════ */}
+              {/* ══ CASE DETAIL & COMPLAINT ANALYTICS ════════════════════════ */}
               {activeFeature === "case-detail" && (
-                <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-                  {/* year cards */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:12 }}>
-                    {YEARS.map((yr) => {
-                      const st=YEAR_STAGE[yr]; const s=YEAR_STATS[yr];
-                      const isActive=yr===caseYear;
-                      return (
-                        <motion.div key={yr} whileHover={{ scale:1.02 }} onClick={() => setCaseYear(yr)}
-                          style={{ ...PANEL, borderRadius:14, padding:"18px", cursor:"pointer", background:isActive?`${st.color}08`:"rgba(10,16,34,0.72)", border:isActive?`1px solid ${st.color}40`:"1px solid rgba(34,211,238,0.10)", display:"flex", flexDirection:"column", gap:10, transition:"all 0.2s" }}>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                              <span style={{ width:10, height:10, borderRadius:"50%", background:st.color, boxShadow:`0 0 10px ${st.color}80` }} />
-                              <span style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"1rem", fontWeight:700, color:st.color }}>{yr}</span>
-                            </div>
-                            <span style={{ padding:"2px 8px", borderRadius:999, fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.58rem", fontWeight:700, background:`${st.color}14`, border:`1px solid ${st.color}30`, color:st.color }}>{st.label}</span>
-                          </div>
-                          <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                            {([["Buildings",String(s.buildings)],["Built-Up",`${s.area} m²`],["Change",s.change]] as [string,string][]).map(([l,v]) => (
-                              <div key={l} style={{ display:"flex", justifyContent:"space-between" }}>
-                                <span style={{ fontFamily:"var(--font-sans,'Manrope',sans-serif)", fontSize:"0.68rem", color:"#475569" }}>{l}</span>
-                                <span style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.7rem", fontWeight:600, color: l==="Change"&&yr>2021?"#f87171":l==="Change"?"#34d399":"#cbd5e1" }}>{v}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div style={{ height:3, borderRadius:999, background:"rgba(255,255,255,0.05)" }}>
-                            <div style={{ height:"100%", width:`${((yr-2021)/4)*100}%`, background:`linear-gradient(90deg,#10b981,${st.color})`, borderRadius:999, transition:"width 0.4s" }} />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  {/* GPS / AOI info + case actions */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:16 }}>
-                    {/* GPS card */}
-                    <div style={{ ...PANEL, borderRadius:16, padding:"20px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, paddingBottom:12, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
-                        <MapPin size={14} color="#22d3ee" />
-                        <span style={{ fontFamily:"var(--font-display,'Sora',sans-serif)", fontSize:"0.85rem", fontWeight:700, color:"#f1f5f9" }}>GPS / AOI Information</span>
+                <div style={{ ...PANEL, borderRadius: 16, padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span
+                          style={{
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            background: "rgba(56, 189, 248, 0.12)",
+                            border: "1px solid rgba(56, 189, 248, 0.3)",
+                            color: "#38bdf8",
+                            fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                            fontSize: "0.60rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          MUNICIPAL ANALYTICS
+                        </span>
+                        <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.64rem", color: "#64748b" }}>
+                          Live Database Aggregation
+                        </span>
                       </div>
-                      {([["AOI Name","Gangapur Road"],["Latitude","20.0124° N"],["Longitude","73.7548° E"],["Village","Gangapur"],["Taluka","Nashik"],["District","Nashik"],["Est. Built-Up","18,500 m²"],["Detection Status","Potential Encroachment"],["Case ID","UC-2025-0894"]] as [string,string][]).map(([l,v]) => (
-                        <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid rgba(255,255,255,0.03)", alignItems:"center" }}>
-                          <span style={{ fontSize:"0.68rem", color:"#475569", fontFamily:"var(--font-sans,'Manrope',sans-serif)" }}>{l}</span>
-                          <span style={{ fontSize:"0.7rem", color:"#cbd5e1", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontWeight:600, textAlign:"right" }}>{v}</span>
-                        </div>
-                      ))}
+                      <h3 style={{ margin: 0, fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "1.15rem", fontWeight: 700, color: "#f8fafc" }}>
+                        Municipal Complaint Analytics Dashboard
+                      </h3>
+                      <p style={{ margin: "4px 0 0", fontFamily: "var(--font-sans,'Manrope',sans-serif)", fontSize: "0.78rem", color: "#94a3b8" }}>
+                        Aggregated from {rawComplaints.length} persisted records across Nashik District with dynamic year-wise volume, status metrics, and locality density.
+                      </p>
                     </div>
 
-                    {/* case actions card */}
-                    <div style={{ ...PANEL, borderRadius:16, padding:"20px", display:"flex", flexDirection:"column", gap:16 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, paddingBottom:12, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
-                        <Satellite size={14} color="#22d3ee" />
-                        <span style={{ fontFamily:"var(--font-display,'Sora',sans-serif)", fontSize:"0.85rem", fontWeight:700, color:"#f1f5f9" }}>Case Actions</span>
-                      </div>
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => navigate({ to: "/municipal/case-detail" })}
+                      style={{
+                        padding: "10px 22px",
+                        borderRadius: 10,
+                        background: "rgba(34, 211, 238, 0.15)",
+                        border: "1px solid rgba(34, 211, 238, 0.4)",
+                        color: "#22d3ee",
+                        fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        boxShadow: "0 0 16px rgba(34, 211, 238, 0.15)",
+                      }}
+                    >
+                      Open Full Analytics Dashboard <ArrowRight size={14} />
+                    </motion.button>
+                  </div>
 
-                      {/* current state badge */}
-                      <AnimatePresence mode="wait">
-                        <motion.div key={caseState} initial={{ opacity:0, y:4 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-4 }}
-                          style={{ padding:"8px 12px", borderRadius:10, background:stateColors[caseState].bg, border:`1px solid ${stateColors[caseState].border}`, fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.7rem", fontWeight:700, color:stateColors[caseState].text, textAlign:"center" }}>
-                          {stateColors[caseState].label}
-                        </motion.div>
-                      </AnimatePresence>
-
-                      {/* selected year summary */}
-                      <div style={{ padding:"12px", borderRadius:10, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.05)" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                          <span style={{ width:8, height:8, borderRadius:"50%", background:YEAR_STAGE[caseYear].color, boxShadow:`0 0 8px ${YEAR_STAGE[caseYear].color}80` }} />
-                          <span style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.78rem", fontWeight:700, color:YEAR_STAGE[caseYear].color }}>{caseYear} — {YEAR_STAGE[caseYear].label}</span>
-                        </div>
-                        <div style={{ height:4, borderRadius:999, background:"rgba(255,255,255,0.05)", overflow:"hidden" }}>
-                          <motion.div key={caseYear} initial={{ width:0 }} animate={{ width:`${((caseYear-2021)/4)*100}%` }} transition={{ duration:0.5, ease:[0.16,1,0.3,1] }}
-                            style={{ height:"100%", background:"linear-gradient(90deg,#10b981,#fbbf24,#ef4444)", borderRadius:999 }} />
-                        </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.58rem", color:"#475569" }}>
-                          <span>2021 Baseline</span><span style={{ color:YEAR_STAGE[caseYear].color }}>{YEAR_STATS[caseYear].change}</span><span style={{ color:"#f87171", fontWeight:700 }}>Critical 2025</span>
-                        </div>
-                      </div>
-
-                      {/* action buttons */}
-                      <div style={{ display:"flex", gap:10 }}>
-                        <motion.button type="button" whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} disabled={caseState==="reviewed"} onClick={() => setCaseState("reviewed")}
-                          style={{ flex:1, padding:"11px 0", borderRadius:11, border:"1px solid rgba(52,211,153,0.35)", background:caseState==="reviewed"?"rgba(52,211,153,0.14)":"rgba(52,211,153,0.07)", color:"#34d399", cursor:caseState==="reviewed"?"default":"pointer", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.7rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:caseState==="reviewed"?0.7:1, transition:"all 0.2s" }}>
-                          <CheckCircle2 size={14} />{caseState==="reviewed"?"Reviewed ✓":"Mark Reviewed"}
-                        </motion.button>
-                        <motion.button type="button" whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} disabled={caseState==="flagged"} onClick={() => setCaseState("flagged")}
-                          style={{ flex:1, padding:"11px 0", borderRadius:11, border:"1px solid rgba(251,146,60,0.35)", background:caseState==="flagged"?"rgba(251,146,60,0.14)":"rgba(251,146,60,0.07)", color:"#fb923c", cursor:caseState==="flagged"?"default":"pointer", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.7rem", fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:6, opacity:caseState==="flagged"?0.7:1, transition:"all 0.2s" }}>
-                          <Flag size={14} />{caseState==="flagged"?"Flagged":"Flag for Action"}
-                        </motion.button>
-                      </div>
+                  {/* Quick Dynamic Status Metric Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 4 }}>
+                    <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.25)" }}>
+                      <div style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.62rem", color: "#38bdf8", fontWeight: 700 }}>NEW / SUBMITTED</div>
+                      <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", marginTop: 4 }}>{statusCounts.newCount}</div>
+                    </div>
+                    <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(251, 191, 36, 0.08)", border: "1px solid rgba(251, 191, 36, 0.25)" }}>
+                      <div style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.62rem", color: "#fbbf24", fontWeight: 700 }}>UNDER REVIEW</div>
+                      <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", marginTop: 4 }}>{statusCounts.underReviewCount}</div>
+                    </div>
+                    <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(192, 132, 252, 0.08)", border: "1px solid rgba(192, 132, 252, 0.25)" }}>
+                      <div style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.62rem", color: "#c084fc", fontWeight: 700 }}>ACTION TAKEN</div>
+                      <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", marginTop: 4 }}>{statusCounts.actionTakenCount}</div>
+                    </div>
+                    <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.25)" }}>
+                      <div style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.62rem", color: "#34d399", fontWeight: 700 }}>CLOSED / RESOLVED</div>
+                      <div style={{ fontFamily: "var(--font-display,'Sora',sans-serif)", fontSize: "1.5rem", fontWeight: 700, color: "#f8fafc", marginTop: 4 }}>{statusCounts.closedCount}</div>
                     </div>
                   </div>
                 </div>
@@ -576,36 +865,314 @@ function CommandOverviewPage() {
 
               {/* ══ CITIZEN COMPLAINTS ═════════════════════════════════════ */}
               {activeFeature === "complaints" && (
-                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                  {complaints.map((c, i) => {
-                    const scfg=STATUS_CFG[c.status as keyof typeof STATUS_CFG] || STATUS_CFG["New"];
-                    return (
-                      <motion.div key={c.id} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.3, delay:i*0.06 }} whileHover={{ x:4 }} onClick={() => navigate({ to:"/municipal/complaints" })}
-                        style={{ ...PANEL, borderRadius:14, padding:"16px 20px", cursor:"pointer", display:"grid", gridTemplateColumns:"1fr auto", gap:"8px 20px", alignItems:"center" }}>
-                        <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-                            <span style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.65rem", fontWeight:700, color:"#22d3ee" }}>{c.reference_number}</span>
-                            <span style={{ padding:"2px 8px", borderRadius:999, fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.58rem", fontWeight:700, background:"rgba(239,68,68,0.10)", border:"1px solid rgba(239,68,68,0.22)", color:"#f87171" }}>{c.title}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Status Summary & Counts Bar */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 12,
+                      padding: "12px 18px",
+                      borderRadius: 14,
+                      background: "linear-gradient(135deg, rgba(16, 28, 58, 0.72) 0%, rgba(9, 17, 36, 0.6) 100%)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                      border: "1px solid rgba(56, 189, 248, 0.16)",
+                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          color: "#22d3ee",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        Live Citizen Queue ({rawComplaints.length})
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      {(["New", "Under Review", "Action Taken", "Closed"] as const).map((s) => {
+                        const count =
+                          s === "New"
+                            ? statusCounts.newCount
+                            : s === "Under Review"
+                            ? statusCounts.underReviewCount
+                            : s === "Action Taken"
+                            ? statusCounts.actionTakenCount
+                            : statusCounts.closedCount;
+                        const meta = getComplaintStatusMeta(s);
+                        return (
+                          <div
+                            key={s}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "3px 10px",
+                              borderRadius: 999,
+                              background: meta.badgeBg,
+                              border: `1px solid ${meta.badgeBorder}`,
+                              fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                              fontSize: "0.62rem",
+                              fontWeight: 600,
+                              color: meta.color,
+                            }}
+                          >
+                            <span
+                              style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dotColor }}
+                            />
+                            <span>{s}:</span>
+                            <strong style={{ color: meta.color }}>{count}</strong>
                           </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:5 }}><User size={11} color="#475569" /><span style={{ fontFamily:"var(--font-sans,'Manrope',sans-serif)", fontSize:"0.75rem", fontWeight:600, color:"#cbd5e1" }}>{c.citizen_name}</span></div>
-                            <div style={{ display:"flex", alignItems:"center", gap:5 }}><MapPin size={10} color="#22d3ee" /><span style={{ fontFamily:"var(--font-sans,'Manrope',sans-serif)", fontSize:"0.7rem", color:"#64748b" }}>{c.latitude?.toFixed(4)}, {c.longitude?.toFixed(4)}</span></div>
-                            <div style={{ display:"flex", alignItems:"center", gap:5 }}><Clock size={10} color="#475569" /><span style={{ fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", color:"#475569" }}>{new Date(c.created_at).toLocaleDateString()}</span></div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Complaint Cards List (Preview 4 items OR Expanded all items) */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(isComplaintsExpanded ? rawComplaints : rawComplaints.slice(0, 4)).map((c, i) => {
+                      const meta = getComplaintStatusMeta(c.status);
+                      const typeColor = TYPE_CONFIG[c.title] || "#94a3b8";
+                      const hasCoords = isValidComplaintCoordinate(c.latitude, c.longitude);
+
+                      return (
+                        <motion.div
+                          key={c.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.25) }}
+                          whileHover={{
+                            scale: 1.006,
+                            x: 4,
+                            borderColor: "rgba(56, 189, 248, 0.42)",
+                            boxShadow:
+                              "0 14px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+                          }}
+                          onClick={() => setSelectedModalComplaint(c)}
+                          style={{
+                            background:
+                              "linear-gradient(135deg, rgba(16, 28, 58, 0.78) 0%, rgba(9, 17, 38, 0.70) 100%)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)",
+                            border: "1px solid rgba(56, 189, 248, 0.18)",
+                            borderRadius: 16,
+                            padding: "16px 22px",
+                            cursor: "pointer",
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto",
+                            gap: "12px 20px",
+                            alignItems: "center",
+                            boxShadow:
+                              "0 8px 32px 0 rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 16px rgba(34, 211, 238, 0.03)",
+                            transition: "border-color 0.25s, background 0.25s, box-shadow 0.25s",
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                              <span
+                                style={{
+                                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 700,
+                                  color: "#22d3ee",
+                                  letterSpacing: "0.06em",
+                                }}
+                              >
+                                {c.reference_number}
+                              </span>
+                              <span
+                                style={{
+                                  padding: "2px 8px",
+                                  borderRadius: 999,
+                                  fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                  fontSize: "0.58rem",
+                                  fontWeight: 700,
+                                  background: `${typeColor}15`,
+                                  border: `1px solid ${typeColor}30`,
+                                  color: typeColor,
+                                }}
+                              >
+                                {c.title}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <User size={12} color="#64748b" />
+                                <span
+                                  style={{
+                                    fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    color: "#cbd5e1",
+                                  }}
+                                >
+                                  {c.citizen_name || "Anonymous Citizen"}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <MapPin size={11} color={hasCoords ? "#22d3ee" : "#f87171"} />
+                                <span
+                                  style={{
+                                    fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                                    fontSize: "0.7rem",
+                                    color: hasCoords ? "#94a3b8" : "#fca5a5",
+                                  }}
+                                >
+                                  {c.location_name
+                                    ? hasCoords
+                                      ? `${c.location_name} (${c.latitude?.toFixed(4)}, ${c.longitude?.toFixed(4)})`
+                                      : `${c.location_name} · Location coordinates unavailable`
+                                    : hasCoords
+                                    ? `${c.latitude?.toFixed(4)}, ${c.longitude?.toFixed(4)}`
+                                    : "Location coordinates unavailable"}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <Clock size={11} color="#64748b" />
+                                <span
+                                  style={{
+                                    fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                    fontSize: "0.62rem",
+                                    color: "#64748b",
+                                  }}
+                                >
+                                  {c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {c.description && (
+                              <p
+                                style={{
+                                  fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                                  fontSize: "0.72rem",
+                                  color: "#94a3b8",
+                                  lineHeight: 1.45,
+                                  margin: 0,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: "vertical" as React.CSSProperties["WebkitBoxOrient"],
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {c.description}
+                              </p>
+                            )}
                           </div>
-                        </div>
-                        <span style={{ padding:"4px 12px", borderRadius:999, fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.62rem", fontWeight:700, background:scfg.bg, border:`1px solid ${scfg.border}`, color:scfg.text, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:5 }}>
-                          <span style={{ width:5, height:5, borderRadius:"50%", background:scfg.dot }} />{c.status}
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                  {complaints.length === 0 && (
-                    <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>No complaints found</div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span
+                              style={{
+                                padding: "4px 12px",
+                                borderRadius: 999,
+                                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                fontSize: "0.62rem",
+                                fontWeight: 700,
+                                background: meta.badgeBg,
+                                border: `1px solid ${meta.badgeBorder}`,
+                                color: meta.color,
+                                whiteSpace: "nowrap",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                boxShadow: `0 0 10px ${meta.dotColor}25`,
+                              }}
+                            >
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dotColor }} />
+                              {meta.label}
+                            </span>
+                            <span
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: 8,
+                                background: "rgba(34, 211, 238, 0.08)",
+                                border: "1px solid rgba(34, 211, 238, 0.25)",
+                                color: "#38bdf8",
+                                fontSize: "0.64rem",
+                                fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Eye size={12} /> Details
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {isComplaintsLoading && (
+                    <div style={{ padding: "30px", textAlign: "center", color: "#94a3b8" }}>
+                      <Loader2 className="animate-spin" size={24} color="#22d3ee" style={{ margin: "0 auto 8px" }} />
+                      <span style={{ fontFamily: "var(--font-mono,'JetBrains Mono',monospace)", fontSize: "0.72rem" }}>
+                        Loading citizen complaints...
+                      </span>
+                    </div>
                   )}
-                  <motion.button type="button" whileHover={{ scale:1.02 }} onClick={() => navigate({ to:"/municipal/complaints" })}
-                    style={{ alignSelf:"center", marginTop:8, display:"flex", alignItems:"center", gap:6, padding:"10px 24px", borderRadius:10, background:"rgba(34,211,238,0.08)", border:"1px solid rgba(34,211,238,0.25)", cursor:"pointer", fontFamily:"var(--font-mono,'JetBrains Mono',monospace)", fontSize:"0.72rem", fontWeight:700, color:"#22d3ee" }}>
-                    View All Complaints <ArrowRight size={13} />
-                  </motion.button>
+
+                  {!isComplaintsLoading && rawComplaints.length === 0 && (
+                    <div
+                      style={{
+                        padding: "40px",
+                        textAlign: "center",
+                        color: "#64748b",
+                        fontFamily: "var(--font-sans,'Manrope',sans-serif)",
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      No citizen complaints submitted yet.
+                    </div>
+                  )}
+
+                  {/* Expand / Collapse Button in-place without page navigation */}
+                  {rawComplaints.length > 4 && (
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.02, background: "rgba(34,211,238,0.14)" }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setIsComplaintsExpanded(!isComplaintsExpanded)}
+                      style={{
+                        alignSelf: "center",
+                        marginTop: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "10px 24px",
+                        borderRadius: 12,
+                        background: "rgba(34,211,238,0.08)",
+                        border: "1px solid rgba(34,211,238,0.3)",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-mono,'JetBrains Mono',monospace)",
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        color: "#22d3ee",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {isComplaintsExpanded ? (
+                        <>
+                          Show Less <ChevronUp size={14} />
+                        </>
+                      ) : (
+                        <>
+                          View All Complaints ({rawComplaints.length}) <ChevronDown size={14} />
+                        </>
+                      )}
+                    </motion.button>
+                  )}
                 </div>
               )}
 
@@ -613,6 +1180,13 @@ function CommandOverviewPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Centered Complaint Detail Modal */}
+      <ComplaintDetailModal
+        complaint={selectedModalComplaint}
+        isOpen={!!selectedModalComplaint}
+        onClose={() => setSelectedModalComplaint(null)}
+      />
     </>
   );
 }

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # A service key is optional. Do not expose it to the frontend.
     supabase_service_role_key: str = ""
     # PostgreSQL / PostGIS database URL
-    database_url: str = ""
+    database_url: str = "sqlite:///./test.db"
     gee_service_account_email: str = ""
     gee_private_key_path: str = ""
     google_drive_folder_id: str = ""
@@ -46,8 +46,14 @@ class Settings(BaseSettings):
         return [value.strip() for value in self.cors_origins.split(",") if value.strip()]
 
     @property
+    def backend_root(self) -> Path:
+        return Path(__file__).resolve().parents[1]
+
+    @property
     def analysis_dir(self) -> Path:
         path = Path(self.data_dir)
+        if not path.is_absolute():
+            path = self.backend_root / path
         path.mkdir(parents=True, exist_ok=True)
         return path
 

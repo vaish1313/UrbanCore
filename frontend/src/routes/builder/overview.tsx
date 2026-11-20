@@ -37,17 +37,24 @@ function OverviewRoutePage() {
   }, []);
 
   const handleSearch = useCallback(
-    (suggestion: { label: string; lat: number; lng: number }) => {
-      const qLower = suggestion.label.toLowerCase();
-      const matched = aois.find(
-        (a) =>
-          a.name.toLowerCase().includes(qLower) ||
-          (a.location && a.location.toLowerCase().includes(qLower)) ||
-          a.id.toLowerCase().includes(qLower),
-      );
+    (suggestion: { id?: string; label: string; lat: number; lng: number; selectionSource?: "canonical-aoi" | "map-selected" }) => {
+      const qLower = suggestion.label.toLowerCase().trim();
+      const matched =
+        (suggestion.id ? aois.find((a) => a.id.toLowerCase() === suggestion.id?.toLowerCase()) : undefined) ||
+        aois.find((a) => a.id.toLowerCase() === qLower || a.name.toLowerCase() === qLower) ||
+        aois.find(
+          (a) =>
+            a.name.toLowerCase().includes(qLower) ||
+            (a.location && a.location.toLowerCase().includes(qLower)) ||
+            a.id.toLowerCase().includes(qLower) ||
+            qLower.includes(a.name.toLowerCase()),
+        );
 
       if (matched) {
-        setSelectedAoi(matched);
+        setSelectedAoi({
+          ...matched,
+          selectionSource: "canonical-aoi",
+        });
       } else {
         const customAoi: AOI = {
           id: `aoi-${Date.now()}`,
@@ -60,18 +67,19 @@ function OverviewRoutePage() {
             x: 50,
             y: 50,
           },
-          suitabilityScore: 82,
+          selectionSource: "map-selected",
+          suitabilityScore: 0,
           terrain: {
-            elevation: 600,
-            slope: 5,
-            roughness: "Flat Plains",
-            flatLandPercent: 85,
-            readiness: "HIGH",
+            elevation: Number.NaN,
+            slope: Number.NaN,
+            roughness: "Pending Screening",
+            flatLandPercent: Number.NaN,
+            readiness: "LOW",
           },
-          accessibilityScore: 85,
-          waterAvailabilityScore: 80,
-          environmentalRiskScore: 85,
-          developmentPotentialScore: 85,
+          accessibilityScore: 0,
+          waterAvailabilityScore: 0,
+          environmentalRiskScore: 0,
+          developmentPotentialScore: 0,
           constructionHistory: [],
           constraints: {
             floodZoneOverlapPercent: 0,
@@ -80,13 +88,25 @@ function OverviewRoutePage() {
             protectedAreaOverlapPercent: 0,
             environmentalRestriction: "Low",
           },
-          summary: `Site intelligence analysis for ${suggestion.label}.`,
+          summary: `Preliminary coordinate screening for selected location (${suggestion.lat.toFixed(4)}°N, ${suggestion.lng.toFixed(4)}°E). Parcel boundary polygon not registered.`,
         };
         setSelectedAoi(customAoi);
       }
       scrollToMap();
     },
-    [setSelectedAoi, scrollToMap],
+    [aois, setSelectedAoi, scrollToMap],
+  );
+
+  const handleMapClick = useCallback(
+    (coords: { lat: number; lng: number }) => {
+      handleSearch({
+        label: `Pinned Location (${coords.lat.toFixed(4)}°N, ${coords.lng.toFixed(4)}°E)`,
+        lat: coords.lat,
+        lng: coords.lng,
+        selectionSource: "map-selected",
+      });
+    },
+    [handleSearch],
   );
 
   return (
@@ -105,7 +125,7 @@ function OverviewRoutePage() {
       {/* Selected Site Information Card & Interactive Location Map */}
       <div ref={mapSectionRef} className="w-full flex flex-col gap-6">
         <SelectedSiteCard aoi={selectedAoi} onChangeLocation={handleChangeLocation} />
-        <BuilderMap aoi={selectedAoi} />
+        <BuilderMap aoi={selectedAoi} onSelectLocation={handleMapClick} />
       </div>
     </div>
   );

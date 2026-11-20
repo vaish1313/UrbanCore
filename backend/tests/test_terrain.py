@@ -85,3 +85,32 @@ def test_terrain_aoi_id_is_unique_and_upsert_is_idempotent():
         conn.execute(upsert, params)
         count = conn.execute(text("SELECT COUNT(*) FROM builder_aoi_terrain WHERE aoi_id = :aoi_id"), {"aoi_id": aoi_id}).scalar()
         assert count == 1
+
+
+def test_coordinate_terrain_valid_nashik():
+    # Gangapur Road approximate coordinates (inside Nashik DEM)
+    response = client.get("/api/v1/builder/terrain/coordinate?lat=20.0094&lng=73.7635")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["lat"] == 20.0094
+    assert data["lng"] == 73.7635
+    assert isinstance(data["elevation_m"], (int, float))
+    assert isinstance(data["slope_deg"], (int, float))
+    assert isinstance(data["terrain_roughness_m"], (int, float))
+    assert data["is_preliminary"] is True
+    assert "DEM" in data["dem_source"]
+    assert "preliminary" in data["screening_note"].lower()
+
+
+def test_coordinate_terrain_outside_dem():
+    # Coordinates far outside Nashik DEM bounds
+    response = client.get("/api/v1/builder/terrain/coordinate?lat=10.0&lng=70.0")
+    assert response.status_code == 422
+    assert "outside" in response.json()["detail"].lower()
+
+
+def test_coordinate_terrain_invalid_range():
+    # Invalid latitude
+    response = client.get("/api/v1/builder/terrain/coordinate?lat=120.0&lng=73.7635")
+    assert response.status_code == 422
+

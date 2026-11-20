@@ -11,9 +11,10 @@ const MAPBOX_TOKEN =
 
 interface BuilderMapProps {
   aoi: AOI;
+  onSelectLocation?: (coords: { lat: number; lng: number }) => void;
 }
 
-export function BuilderMap({ aoi }: BuilderMapProps) {
+export function BuilderMap({ aoi, onSelectLocation }: BuilderMapProps) {
   const [viewState, setViewState] = useState({
     longitude: aoi.coords.lng,
     latitude: aoi.coords.lat,
@@ -32,18 +33,8 @@ export function BuilderMap({ aoi }: BuilderMapProps) {
     }
   }, [aoi]);
 
-  // Construct GeoJSON polygon feature for the selected AOI
-  const polygonCoordinates = aoi.geometry?.coordinates || [
-    [
-      [aoi.coords.lng - 0.005, aoi.coords.lat + 0.003],
-      [aoi.coords.lng + 0.005, aoi.coords.lat + 0.003],
-      [aoi.coords.lng + 0.005, aoi.coords.lat - 0.003],
-      [aoi.coords.lng - 0.005, aoi.coords.lat - 0.003],
-      [aoi.coords.lng - 0.005, aoi.coords.lat + 0.003],
-    ],
-  ];
-
-  const geoJsonData: GeoJSON.FeatureCollection = {
+  // Construct GeoJSON polygon feature for the selected AOI only if verified geometry exists
+  const geoJsonData: GeoJSON.FeatureCollection | null = aoi.geometry?.coordinates ? {
     type: "FeatureCollection",
     features: [
       {
@@ -54,11 +45,11 @@ export function BuilderMap({ aoi }: BuilderMapProps) {
         },
         geometry: {
           type: "Polygon",
-          coordinates: polygonCoordinates,
+          coordinates: aoi.geometry.coordinates,
         },
       },
     ],
-  };
+  } : null;
 
   return (
     <div className="glass-panel relative overflow-hidden rounded-3xl border border-border/80 shadow-2xl">
@@ -98,40 +89,47 @@ export function BuilderMap({ aoi }: BuilderMapProps) {
         <Map
           {...viewState}
           onMove={(evt: { viewState: typeof viewState }) => setViewState(evt.viewState)}
+          onClick={(evt: { lngLat: { lng: number; lat: number } }) => {
+            if (onSelectLocation && evt.lngLat) {
+              onSelectLocation({ lat: evt.lngLat.lat, lng: evt.lngLat.lng });
+            }
+          }}
           mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
           mapboxAccessToken={MAPBOX_TOKEN}
-          cursor="default"
+          cursor={onSelectLocation ? "crosshair" : "default"}
         >
           <NavigationControl position="bottom-right" />
 
-          {/* Polygon Fill Layer */}
-          <Source id="selected-aoi-source" type="geojson" data={geoJsonData}>
-            <Layer
-              id="selected-aoi-fill"
-              type="fill"
-              paint={{
-                "fill-color": "#38bdf8",
-                "fill-opacity": 0.25,
-              }}
-            />
-            <Layer
-              id="selected-aoi-stroke"
-              type="line"
-              paint={{
-                "line-color": "#ef4444",
-                "line-width": 2.5,
-                "line-dasharray": [2, 2],
-              }}
-            />
-            <Layer
-              id="selected-aoi-stroke-inner"
-              type="line"
-              paint={{
-                "line-color": "#ffffff",
-                "line-width": 2,
-              }}
-            />
-          </Source>
+          {/* Polygon Fill Layer - only rendered when verified polygon geometry exists */}
+          {geoJsonData && (
+            <Source id="selected-aoi-source" type="geojson" data={geoJsonData}>
+              <Layer
+                id="selected-aoi-fill"
+                type="fill"
+                paint={{
+                  "fill-color": "#38bdf8",
+                  "fill-opacity": 0.25,
+                }}
+              />
+              <Layer
+                id="selected-aoi-stroke"
+                type="line"
+                paint={{
+                  "line-color": "#ef4444",
+                  "line-width": 2.5,
+                  "line-dasharray": [2, 2],
+                }}
+              />
+              <Layer
+                id="selected-aoi-stroke-inner"
+                type="line"
+                paint={{
+                  "line-color": "#ffffff",
+                  "line-width": 2,
+                }}
+              />
+            </Source>
+          )}
 
           {/* Marker Pin */}
           <Marker longitude={aoi.coords.lng} latitude={aoi.coords.lat} anchor="bottom">
@@ -147,7 +145,7 @@ export function BuilderMap({ aoi }: BuilderMapProps) {
         {/* Map Legend Overlay */}
         <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl bg-background/80 px-3 py-1.5 backdrop-blur-md border border-border/50 text-[11px] font-mono text-muted-foreground">
           <Compass className="h-3.5 w-3.5 text-primary" />
-          <span>Interactive AOI Vector Layer</span>
+          <span>{geoJsonData ? "Interactive AOI Vector Layer" : "Point Selected · Click map to drop pin"}</span>
         </div>
       </div>
     </div>

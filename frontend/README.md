@@ -1,29 +1,70 @@
-# Welcome to your Lovable project
+# UrbanCore Frontend
 
-This project was built with [Lovable](https://lovable.dev).
+TanStack Start + React + TypeScript client for the UrbanCore API.
 
-## Build with Lovable
+## Land Change Explorer
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Citizen Intelligence now includes a **Land Change Explorer** — a mobile-first 3D grid of built-up vs non-built-up change, driven by the real analysis API.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- Three.js (`@react-three/fiber`) + `InstancedMesh`
+- Year scrubber / play, Auto-rotate, Changes only, 3D / Top view
+- Typed API client + zod validation (`src/api`)
+- Contract: [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md)
 
-## Development
+## Prerequisites
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+- Node.js 20+
+- Backend running at `http://localhost:8000` (`python start.py` in `backend/`)
+
+## Setup
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+cd UrbanCore/frontend
+npm install
+```
+
+Create / edit `.env`:
+
+```env
+VITE_API_URL=/api/v1
+VITE_USE_MOCK=false
+VITE_MAPBOX_TOKEN=your_mapbox_token
+```
+
+`VITE_API_URL=/api/v1` uses the Vite dev proxy (see `vite.config.ts`) so the browser stays same-origin. For production builds pointed straight at the API, set the full URL, e.g. `https://api.example.com/api/v1`.
+
+`VITE_USE_MOCK=true` enables the isolated mock layer in `src/api/mock.ts`. Leave it `false` for real backend data.
+
+## Run
+
+```sh
+# Terminal 1 — backend
+cd UrbanCore/backend
+python start.py
+
+# Terminal 2 — frontend
+cd UrbanCore/frontend
 npm run dev
 ```
 
-## Built with
+Open the Citizen workspace, drop a pin (or search), run Analyse, then use the Land Change Explorer when the run completes.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+## Verify (against real backend)
+
+1. **Year slider** — scrubbing changes extruded blocks; play advances ~1s/year.
+2. **Changes only** — dims everything except new-construction cells vs the previous year.
+3. **Top view** — camera tweens to a flat orthographic-style view (matches the 2D square grid).
+4. **Scan** — posts `POST /api/v1/analyses` and polls until complete.
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Vite / TanStack Start dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+
+## Notes
+
+- Backend is **read-only** for this feature. Gaps (no cell API, cached GeoJSON path mismatch) are listed in `docs/API_CONTRACT.md` with frontend workarounds.
+- Analysis records are in-memory on the API — restarting the backend invalidates old analysis IDs; re-run Scan.

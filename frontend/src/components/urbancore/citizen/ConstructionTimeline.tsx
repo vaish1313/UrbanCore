@@ -184,8 +184,9 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
   };
 
   const currentYearData = yearlyData[selectedYear];
-  const previousYearData = selectedYear > (availableYears[0] || 2021) 
-    ? yearlyData[selectedYear - 1] 
+  const currentYearIndex = availableYears.indexOf(selectedYear);
+  const previousYearData = currentYearIndex > 0
+    ? yearlyData[availableYears[currentYearIndex - 1]]
     : null;
 
   // Calculate growth percentage (percentage points)
@@ -405,7 +406,7 @@ export function ConstructionTimeline({ analysisId, onReportConcern }: Constructi
                         <span className="text-lg text-slate-400">pp</span>
                       </div>
                       <p className="text-xs text-slate-400 mt-2">
-                        percentage points vs {selectedYear - 1}
+                        percentage points vs {availableYears[currentYearIndex - 1]}
                       </p>
                     </>
                   ) : (

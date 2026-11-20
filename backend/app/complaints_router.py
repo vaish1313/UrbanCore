@@ -6,6 +6,7 @@ from .complaints_service import (
     get_municipal_complaints, 
     get_complaint_by_id_or_ref, 
     update_complaint_status,
+    normalize_status,
     generate_pdf_receipt
 )
 
@@ -75,9 +76,15 @@ async def get_complaint_detail(identifier: str):
 async def update_status(identifier: str, update: StatusUpdate):
     """Update complaint status from the municipal dashboard."""
     try:
-        success = update_complaint_status(identifier, update.status)
+        normalized_status = normalize_status(update.status)
+        success = update_complaint_status(identifier, normalized_status)
         if not success:
             raise HTTPException(status_code=404, detail="Complaint not found")
-        return {"message": "Status updated successfully", "status": update.status}
+        complaint = get_complaint_by_id_or_ref(identifier)
+        return {
+            "message": "Status updated successfully", 
+            "status": normalized_status,
+            "complaint": complaint
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

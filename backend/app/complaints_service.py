@@ -187,10 +187,26 @@ def get_municipal_complaints(limit: int = 50, offset: int = 0) -> list[dict]:
             })
         return complaints
 
+def normalize_status(raw_status: str) -> str:
+    """Normalize input status to standard canonical representation."""
+    s = (raw_status or "").strip().lower()
+    if s in ("new", "pending", "pending review"):
+        return "New"
+    if s in ("submitted",):
+        return "SUBMITTED"
+    if s in ("under review", "under_review", "reviewed"):
+        return "Under Review"
+    if s in ("action taken", "action_taken", "notice issued", "notice_issued"):
+        return "Action Taken"
+    if s in ("closed", "resolved", "completed"):
+        return "Closed"
+    return raw_status
+
 def update_complaint_status(complaint_id: str, status: str) -> bool:
+    normalized = normalize_status(status)
     allowed_statuses = {"New", "Under Review", "Action Taken", "Closed", "SUBMITTED"}
-    if status not in allowed_statuses:
-        raise ValueError(f"Invalid status. Must be one of {allowed_statuses}")
+    if normalized not in allowed_statuses:
+        raise ValueError(f"Invalid status '{status}'. Must be one of {allowed_statuses}")
         
     is_uuid = False
     try:
@@ -208,5 +224,5 @@ def update_complaint_status(complaint_id: str, status: str) -> bool:
     """)
     
     with engine.begin() as conn:
-        result = conn.execute(query, {"status": status, "complaint_id": complaint_id})
+        result = conn.execute(query, {"status": normalized, "complaint_id": complaint_id})
         return result.rowcount > 0

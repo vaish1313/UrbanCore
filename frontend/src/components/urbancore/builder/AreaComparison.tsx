@@ -39,10 +39,17 @@ interface AreaComparisonProps {
 
 export function AreaComparison({ aoi }: AreaComparisonProps) {
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
+
   const fetchComparison = async () => {
+    if (!isCanonicalAoi) {
+      setIsLoading(false);
+      setComparisonData(null);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -62,7 +69,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
 
   useEffect(() => {
     fetchComparison();
-  }, [aoi.id]);
+  }, [aoi.id, aoi.selectionSource]);
 
   if (isLoading) {
     return (
@@ -85,6 +92,20 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
           ))}
         </div>
         <div className="h-48 animate-pulse rounded-2xl border border-border/30 bg-card/20" />
+      </div>
+    );
+  }
+
+  if (!isCanonicalAoi) {
+    return (
+      <div className="glass-panel flex flex-col items-center justify-center gap-4 rounded-3xl p-8 text-center border border-amber-400/20 bg-amber-400/5">
+        <ShieldAlert className="h-10 w-10 text-amber-400" />
+        <h3 className="font-display text-lg font-semibold text-foreground">
+          Comparison Unavailable for Map-Selected Site
+        </h3>
+        <p className="text-xs text-muted-foreground max-w-md">
+          Spatial neighborhood comparisons are computed across verified database AOIs. Arbitrary map-selected locations do not have neighborhood matrix scores.
+        </p>
       </div>
     );
   }
@@ -123,7 +144,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-primary/90">
-              MODULE 6 — NEIGHBOURHOOD COMPARISON
+              MODULE 6 — NEIGHBOURHOOD BENCHMARK
             </span>
           </div>
           <h3 className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
@@ -131,7 +152,7 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Comparing <strong className="text-foreground">{selected_aoi.name}</strong> with the 4
-            geographically nearest candidate locations in Nashik.
+            geographically nearest candidate locations in Nashik district (great-circle distance).
           </p>
         </div>
 
@@ -383,17 +404,17 @@ export function AreaComparison({ aoi }: AreaComparisonProps) {
       </div>
 
       {/* Neutral Factual Observations Box */}
-      <div className="glass-panel flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <h4 className="font-display text-xs font-bold uppercase tracking-wider text-primary">
+      <div className="glass-panel flex flex-col gap-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-500/[0.06] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+        <div className="flex items-center gap-2 pb-2.5 border-b border-primary/20">
+          <Info className="h-4.5 w-4.5 text-cyan-400 shrink-0" />
+          <h4 className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-cyan-400">
             Spatial Benchmark Observations
           </h4>
         </div>
-        <ul className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+        <ul className="grid gap-3.5 md:grid-cols-2">
           {observations.map((obs, idx) => (
-            <li key={idx} className="flex items-start gap-2">
-              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+            <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-100 font-normal leading-relaxed">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]" />
               <span>{obs}</span>
             </li>
           ))}

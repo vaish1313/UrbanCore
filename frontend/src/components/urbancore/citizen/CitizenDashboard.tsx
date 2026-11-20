@@ -5,7 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { HeroSearch } from "./HeroSearch";
 import { InteractiveMap } from "./InteractiveMap";
 import { AnalysisProgress } from "./AnalysisProgress";
-import { ConstructionTimeline } from "./ConstructionTimeline";
+import { LandChangeExplorer } from "@/components/land-change/LandChangeExplorer";
 import { MyReports } from "./MyReports";
 import { ComplaintReportModal } from "./ComplaintReportModal";
 
@@ -176,6 +176,15 @@ export function CitizenDashboard({
           z-index: -1;
           pointer-events: none;
         }
+        .cs-page-bg::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 60% 40% at 50% 30%, rgba(0,150,255,0.08) 0%, transparent 70%),
+            rgba(3,8,18,0.72);
+          pointer-events: none;
+        }
         .cs-content {
           flex: 1;
           display: flex;
@@ -185,8 +194,8 @@ export function CitizenDashboard({
         }
         .cs-section-divider {
           display: flex; align-items: center; gap: 16px;
-          width: 100%; max-width: 1280px;
-          padding: 0 24px; margin: 0 auto 32px;
+          width: 94vw; max-width: 1400px;
+          padding: 0 0; margin: 0 auto 24px;
         }
         .cs-section-divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
         .cs-section-divider-label {
@@ -238,9 +247,29 @@ export function CitizenDashboard({
                       />
                     ) : analysisCompleted && analysisId ? (
                       <>
-                        <SectionDivider label="Construction Timeline 2021 – 2025" />
-                        <ConstructionTimeline
+                        <SectionDivider label="Land Change Explorer" />
+                        <LandChangeExplorer
                           analysisId={analysisId}
+                          locationLabel={
+                            selectedLocation
+                              ? `${selectedLocation.village || "Selected site"}, Nashik`
+                              : searchLocation?.label || "Nashik, Maharashtra"
+                          }
+                          scanCoords={
+                            selectedLocation
+                              ? {
+                                  latitude: selectedLocation.lat,
+                                  longitude: selectedLocation.lng,
+                                  radius_m: 2000,
+                                }
+                              : searchLocation
+                                ? {
+                                    latitude: searchLocation.lat,
+                                    longitude: searchLocation.lng,
+                                    radius_m: 2000,
+                                  }
+                                : null
+                          }
                           onReportConcern={() => setIsEvidenceModalOpen(true)}
                         />
                       </>

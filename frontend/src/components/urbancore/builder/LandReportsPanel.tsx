@@ -9,7 +9,7 @@ export function LandReportsPanel({
   aoi: AOI;
   onGenerateReport: () => void;
 }) {
-  const isMapSelected = aoi.selectionSource === "map-selected";
+  const isMapSelected = aoi.selectionSource === "map-selected" || aoi.id.startsWith("aoi-");
   const { data: suitability, isLoading } = useBuilderSuitability(aoi.id, !isMapSelected);
   const { data: terrain, isLoading: isTerrainLoading, isError: isTerrainError } = useBuilderTerrain(aoi.id, !isMapSelected);
 
@@ -51,14 +51,20 @@ export function LandReportsPanel({
           </span>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
-          <span className="font-mono text-[10px] uppercase text-slate-400">Suitability Score</span>
+          <span className="font-mono text-[10px] uppercase text-slate-400">Screening Status</span>
           <span className="text-lg font-bold text-cyan-400">
-            {isMapSelected || isLoading || suitability?.overall_score == null
-              ? "Assessment Incomplete"
-              : `${suitability.overall_score.toFixed(2)} / 100`}
+            {isMapSelected || isLoading || suitability?.overall_status === "UNAVAILABLE"
+              ? "Unavailable"
+              : suitability?.overall_status === "INCOMPLETE"
+                ? "Provisional (Pending HAND)"
+                : "Assessed"}
           </span>
           <span className="text-xs text-slate-400">
-            {isMapSelected ? "Suitability unavailable for this location" : suitability?.constraint_status === "UNAVAILABLE" ? "Constraint assessment unavailable" : "Backend site screening result"}
+            {isMapSelected
+              ? "Screening unavailable for map coordinates"
+              : suitability?.availability_reasons?.elevation_drainage
+                ? "Pending hydrological model"
+                : "Preliminary GIS screening result"}
           </span>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">

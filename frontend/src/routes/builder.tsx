@@ -24,6 +24,7 @@ import { BuilderReportModal } from "@/components/urbancore/builder/BuilderReport
 import { RoleNavigation } from "@/components/urbancore/role/RoleNavigation";
 import { BUILDER_FEATURE_MENU } from "@/components/urbancore/role/roleFeatureMenus";
 import type { RoleFeatureMenuItem } from "@/components/urbancore/role/RoleFeaturesDropdown";
+import { Footer } from "@/components/urbancore/Footer";
 
 export const Route = createFileRoute("/builder")({
   head: () => ({
@@ -47,7 +48,10 @@ function BuilderLayout() {
   const matchRoute = useMatchRoute();
 
   /* Shared AOI state — survives navigation between sub-routes */
-  const [selectedAoi, setSelectedAoi] = useState<AOI>(NASHIK_AOIS[0]!);
+  const [selectedAoi, setSelectedAoi] = useState<AOI>({
+    ...NASHIK_AOIS[0]!,
+    selectionSource: "canonical-aoi",
+  });
   const [isReportOpen, setIsReportOpen] = useState(false);
 
   /* Determine active sidebar item from current URL */
@@ -134,6 +138,8 @@ function BuilderLayout() {
                 <Outlet />
               </div>
             </div>
+
+            <Footer />
           </div>
         </motion.div>
 

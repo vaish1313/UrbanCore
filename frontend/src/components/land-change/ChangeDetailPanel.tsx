@@ -210,20 +210,34 @@ export function ChangeDetailPanel({
   if (!selectedCellId || !cellChange) {
     return (
       <div
-        className="hidden lg:flex w-full max-w-md bg-[#070b16] border-l border-white/10 flex-col overflow-y-auto"
-        style={{ borderColor: "rgba(239,68,68,0.2)" }}
+        className="flex flex-col h-full"
+        style={{ minHeight: "460px" }}
       >
-        <div className="flex flex-col items-center justify-center text-center p-8 border-b border-white/10">
-          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
-            <CircleAlert className="w-7 h-7 text-red-400" />
+        {/* Empty / prompt state */}
+        <div
+          className="flex flex-col items-center justify-center text-center p-8"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <div
+            className="w-14 h-14 flex items-center justify-center mb-4"
+            style={{
+              borderRadius: "16px",
+              border: "1px solid rgba(239,68,68,0.20)",
+              background: "rgba(239,68,68,0.08)",
+            }}
+          >
+            <CircleAlert className="w-7 h-7" style={{ color: "#f87171" }} />
           </div>
-          <h3 className="text-base font-semibold text-white mb-1">Click a Red Block</h3>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            Click any <span className="text-red-400 font-medium">red block</span> in the 3D grid,
-            or pick one from the list below.
+          <h3 className="text-base font-semibold mb-1" style={{ color: "#f1f5f9" }}>
+            Click a Red Block
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: "#94a3b8" }}>
+            Click any{" "}
+            <span style={{ color: "#f87171", fontWeight: 500 }}>red block</span> in the 3D
+            grid, or pick one from the list below.
           </p>
         </div>
-        <div className="p-4">
+        <div className="p-4 flex-1 overflow-y-auto">
           <ChangesList grids={grids} year={year} onCellSelect={setSelectedCellId} />
         </div>
       </div>
@@ -322,7 +336,8 @@ export function ChangeDetailPanel({
         {showMap ? (
           <motion.div
             key="map-view"
-            className="flex flex-col h-full p-4 gap-3"
+            className="flex flex-col p-4 gap-3"
+            style={{ minHeight: "520px" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -347,7 +362,7 @@ export function ChangeDetailPanel({
             transition={{ duration: 0.2 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-white/10">
+            <div className="flex items-center justify-between p-6 pb-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                 <div>
@@ -378,7 +393,7 @@ export function ChangeDetailPanel({
             </div>
 
             {/* Before/After Comparison */}
-            <div className="p-6 border-b border-white/10">
+            <div className="p-6 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-slate-300 mb-2">BEFORE/AFTER COMPARISON</h3>
                 <p className="text-xs text-slate-500">Drag to compare before and after imagery</p>
@@ -487,8 +502,16 @@ export function ChangeDetailPanel({
             </div>
 
             {/* Detail Tiles */}
-            <div className="grid grid-cols-2 gap-4 p-6 border-b border-white/10">
-              <div className="bg-white/5 rounded-xl p-4">
+            <div className="grid grid-cols-2 gap-4 p-6 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+              <div
+                className="lce-inner-panel rounded-xl p-4"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="w-4 h-4 text-cyan-400" />
                   <span className="text-xs font-medium text-slate-400">Land Change</span>
@@ -513,7 +536,15 @@ export function ChangeDetailPanel({
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
+              <div
+                className="lce-inner-panel rounded-xl p-4"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-green-400" />
                   <span className="text-xs font-medium text-slate-400">Detected In</span>
@@ -524,7 +555,15 @@ export function ChangeDetailPanel({
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
+              <div
+                className="lce-inner-panel rounded-xl p-4"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-purple-400" />
                   <span className="text-xs font-medium text-slate-400">AI Confidence</span>
@@ -535,7 +574,15 @@ export function ChangeDetailPanel({
                 </div>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-4">
+              <div
+                className="lce-inner-panel rounded-xl p-4"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                }}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="w-4 h-4 text-orange-400" />
                   <span className="text-xs font-medium text-slate-400">Built-up Share</span>
@@ -553,7 +600,7 @@ export function ChangeDetailPanel({
             </div>
 
             {/* Actions */}
-            <div className="p-6 border-b border-white/10">
+            <div className="p-6 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
               <div className="flex gap-3">
                 <button className="flex-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl font-medium text-sm transition-colors flex items-center justify-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
@@ -650,8 +697,14 @@ export function ChangeDetailPanel({
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="fixed inset-x-0 bottom-0 z-50 bg-[#070b16] border-t border-white/10 rounded-t-2xl shadow-2xl"
-          style={{ height: "85vh" }}
+          className="fixed inset-x-0 bottom-0 z-50 border-t rounded-t-2xl shadow-2xl"
+          style={{
+            height: "85vh",
+            background: "rgba(8,21,37,0.75)",
+            backdropFilter: "blur(22px) saturate(160%)",
+            WebkitBackdropFilter: "blur(22px) saturate(160%)",
+            borderColor: "rgba(255,255,255,0.12)",
+          }}
         >
           <div className="pt-3 pb-2 flex justify-center">
             <div className="w-12 h-1.5 bg-white/30 rounded-full" />
@@ -669,10 +722,11 @@ export function ChangeDetailPanel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 20, opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="hidden lg:flex w-full max-w-md bg-[#070b16] border-l border-white/10 overflow-y-auto flex-col"
+      className="hidden lg:flex w-full overflow-y-auto flex-col"
       style={{
-        boxShadow: "0 0 40px rgba(239, 68, 68, 0.1)",
-        borderColor: "rgba(239, 68, 68, 0.35)",
+        background: "transparent",
+        border: "none",
+        maxHeight: "none",
       }}
     >
       {panelContent}

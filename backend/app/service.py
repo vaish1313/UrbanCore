@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import shutil
 import time
 from datetime import datetime
@@ -109,12 +110,48 @@ def enrich_with_compliance(result: dict, year: int, analysis_id: str) -> None:
 
 
 
+_ANALYSIS_ID_RE = re.compile(
+    r"analyses[\\/]([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+)
+
+
+def resolve_data_path(path_value: str) -> Path:
+    """Find a saved analysis file whether the API was started from the repo or backend folder."""
+    path = Path(path_value)
+    if path.is_absolute() and path.exists():
+        return path.resolve()
+    backend_root = Path(__file__).resolve().parents[1]
+    candidates = [backend_root / path, Path.cwd() / path] if not path.is_absolute() else [path]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate.resolve()
+    return (backend_root / path).resolve() if not path.is_absolute() else path
+
+
+def _plain(value):
+    """Convert raster and numpy values into JSON-safe data."""
+    if isinstance(value, dict):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    item = getattr(value, "item", None)
+    if callable(item):
+        try:
+            return item()
+        except Exception:
+            pass
+    return value
+
+
 class AnalysisStore:
-    """In-memory storage for analysis state and results."""
+    """Analysis state stored in memory and written beside each analysis on disk."""
     
     def __init__(self):
         self.data: dict[str, dict] = {}
         self.lock = Lock()
+        self._load_saved_records()
 
     def create(self, request: AnalysisRequest) -> dict:
         """Create a new analysis record."""
@@ -138,6 +175,7 @@ class AnalysisStore:
         }
         with self.lock:
             self.data[record["id"]] = record
+            self._persist_unlocked(record["id"])
         return record.copy()
 
     def get(self, analysis_id: str) -> dict | None:
@@ -152,13 +190,118 @@ class AnalysisStore:
             if analysis_id in self.data:
                 self.data[analysis_id].update(values)
                 self.data[analysis_id]["updated_at"] = datetime.now().isoformat()
+                self._persist_unlocked(analysis_id)
+
+    def _persist_unlocked(self, analysis_id: str) -> None:
+        record = self.data.get(analysis_id)
+        if not record:
+            return
+        path = settings.analysis_dir / analysis_id / "record.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(_plain(record), indent=2), encoding="utf-8")
+
+    def _load_saved_records(self) -> None:
+        root = settings.analysis_dir
+        if root.exists():
+            for record_path in root.glob("*/record.json"):
+                try:
+                    record = json.loads(record_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                analysis_id = str(record.get("id") or record_path.parent.name)
+                record["id"] = analysis_id
+                self._finish_if_inference_ready(record)
+                self.data[analysis_id] = record
+        self._recover_from_inference_cache()
+
+    def _finish_if_inference_ready(self, record: dict) -> None:
+        results = record.get("inference_results") or {}
+        if results and record.get("status") in {"failed", "visualizing", "processing"}:
+            record["status"] = "completed"
+            record["error"] = None
+            record["message"] = "Analysis completed from saved yearly construction results"
+
+    def _recover_from_inference_cache(self) -> None:
+        """Rebuild timelines whose detection finished but whose in-memory record was lost."""
+        cache_dir = settings.analysis_dir.parent / "cache" / "inference"
+        if not cache_dir.exists():
+            return
+        grouped: dict[str, list[dict]] = {}
+        for path in cache_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            blob = f"{payload.get('mask_path', '')} {payload.get('geojson_path', '')}"
+            match = _ANALYSIS_ID_RE.search(blob)
+            if not match:
+                continue
+            grouped.setdefault(match.group(1), []).append(payload)
+
+        for analysis_id, rows in grouped.items():
+            existing = self.data.get(analysis_id)
+            if existing and existing.get("status") == "completed" and existing.get("inference_results"):
+                continue
+            years = sorted({int(row["year"]) for row in rows if row.get("year") is not None})
+            if not years:
+                continue
+            inference = {}
+            for row in rows:
+                year = str(int(row["year"]))
+                inference[year] = {
+                    "mask_path": str(resolve_data_path(str(row.get("mask_path") or ""))),
+                    "geojson_path": str(resolve_data_path(str(row.get("geojson_path") or ""))),
+                    "total_pixels": int(row.get("total_pixels") or 0),
+                    "construction_pixels": int(row.get("construction_pixels") or 0),
+                    "construction_percentage": float(row.get("construction_percentage") or 0),
+                    "metadata": row.get("metadata") or {},
+                    "compliance": [],
+                }
+            sample = rows[0]
+            self.data[analysis_id] = {
+                "id": analysis_id,
+                "status": "completed",
+                "latitude": float(sample["latitude"]),
+                "longitude": float(sample["longitude"]),
+                "radius_m": int(sample["radius_m"]),
+                "start_year": years[0],
+                "end_year": years[-1],
+                "years": years,
+                "gee_tasks": [],
+                "downloads": {},
+                "inference_results": inference,
+                "visualization_results": {},
+                "error": None,
+                "message": f"Restored construction timeline for {years[0]}–{years[-1]}",
+                "created_at": sample.get("created_at") or datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat(),
+            }
+            self._persist_unlocked(analysis_id)
+            print(f"[{analysis_id}] Restored timeline for years {years[0]}–{years[-1]}")
 
 
 analyses = AnalysisStore()
 
 
+def _lookup_year(results: dict, year):
+    """Return a per-year record whether the key was stored as an int or a string."""
+    candidates = [year, str(year)]
+    try:
+        as_int = int(year)
+    except (TypeError, ValueError):
+        as_int = None
+    else:
+        candidates.append(as_int)
+        candidates.append(str(as_int))
+    for key in candidates:
+        if key in results:
+            return results[key]
+    available = ", ".join(str(key) for key in results)
+    raise KeyError(f"No result for year {year}. Available years: {available or 'none'}")
+
+
 async def geocode(query: str) -> list[dict]:
-    """Search OpenStreetMap Nominatim without exposing a third-party browser key."""
+    """Search coordinates and locations for Mapbox GL map without exposing a third-party browser key."""
     # Coordinate input is useful for direct GPS searches, e.g. "20.0059, 73.7912".
     try:
         lat, lon = (float(part.strip()) for part in query.split(",", 1))
@@ -227,17 +370,14 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
         
         exports = []
         if missing_years:
-            # Calculate start_year/end_year for missing years range
-            min_year = min(missing_years)
-            max_year = max(missing_years)
-            
             exports = gee_service.export_imagery_to_drive(
                 latitude=request.latitude,
                 longitude=request.longitude,
                 radius_m=request.radius_m,
-                start_year=min_year,
-                end_year=max_year,
-                analysis_id=analysis_id
+                start_year=min(missing_years),
+                end_year=max(missing_years),
+                analysis_id=analysis_id,
+                years=missing_years,
             )
             
             print(f"[{analysis_id}] Submitted {len(exports)} export tasks to GEE for {len(missing_years)} missing years")
@@ -389,7 +529,7 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
         analyses.update(
             analysis_id,
             status="visualizing",
-            inference_results=inference_results
+            inference_results={str(k): v for k, v in inference_results.items()}
         )
         
         # Step 5: Create detailed visualizations with SAM-3D
@@ -399,8 +539,8 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
             viz_results = {}
             
             for year, tif_path in all_tiff_paths.items():
-                # Get construction mask and metadata from inference
-                inf_result = inference_results[year]
+                # Keys are ints while the analysis record stores them as strings.
+                inf_result = _lookup_year(inference_results, year)
                 
                 # Read the mask
                 import rasterio
@@ -415,7 +555,7 @@ def run_analysis(analysis_id: str, request: AnalysisRequest) -> None:
                     metadata=inf_result["metadata"],
                     output_dir=year_viz_dir
                 )
-                viz_results[year] = viz_result
+                viz_results[str(year)] = viz_result
             
             analyses.update(
                 analysis_id,
@@ -498,7 +638,7 @@ def process_downloaded_images(analysis_id: str) -> None:
         analyses.update(
             analysis_id,
             status="visualizing",
-            inference_results=inference_results
+            inference_results={str(k): v for k, v in inference_results.items()}
         )
         
         # Step 5: Create detailed visualizations with SAM-3D
@@ -507,8 +647,7 @@ def process_downloaded_images(analysis_id: str) -> None:
             viz_results = {}
             
             for year, tif_path in downloaded_files.items():
-                # Get construction mask and metadata from inference
-                inf_result = inference_results[year]
+                inf_result = _lookup_year(inference_results, year)
                 
                 # Read the mask
                 import rasterio
@@ -523,7 +662,7 @@ def process_downloaded_images(analysis_id: str) -> None:
                     metadata=inf_result["metadata"],
                     output_dir=year_viz_dir
                 )
-                viz_results[year] = viz_result
+                viz_results[str(year)] = viz_result
             
             analyses.update(
                 analysis_id,

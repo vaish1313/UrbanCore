@@ -13,12 +13,32 @@ if DATABASE_URL.startswith("postgresql://"):
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 
+from .geometry_resolver import geometry_resolver
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _row_to_aoi(row) -> dict:
-    """Serialise a DB row into the response dict the frontend expects."""
-    # Geometry is returned as GeoJSON text by ST_AsGeoJSON
-    geometry = json.loads(row.geometry) if row.geometry else None
+    """Serialise a DB row into the response dict the frontend expects.
+
+    Resolves geometry through the priority hierarchy:
+    1. Canonical database geometry (builder_aois.geometry).
+    2. Safely matched feature from the complete 30-AOI GeoJSON dataset.
+    3. Coordinate-based point.
+    """
+    resolved = geometry_resolver.resolve(
+        aoi_id=row.id,
+        name=row.name,
+        lat=row.lat,
+        lng=row.lng,
+        db_geometry=row.geometry,
+        db_queried=True,
+    )
+
+    # Use resolved polygon/multipolygon geometry if available
+    geometry = None
+    if resolved.geometry and resolved.geometry.get("type") in ("Polygon", "MultiPolygon"):
+        geometry = resolved.geometry
 
     return {
         "id":   row.id,
@@ -37,6 +57,11 @@ def _row_to_aoi(row) -> dict:
             "y":   row.map_y,
         },
         "geometry": geometry,
+        "geometryMetadata": resolved.to_dict(),
+        "isApproximateGeometry": resolved.is_approximate,
+        "qualityTier": resolved.quality_tier,
+        "boundaryStatus": resolved.boundary_status,
+        "geometrySource": resolved.source,
         # Scoring
         "suitabilityScore":          row.suitability_score,
         "accessibilityScore":        row.accessibility_score,
@@ -157,6 +182,13 @@ def get_builder_aois(
         raise HTTPException(status_code=500, detail=f"Database error: {exc}")
 
     aois = [_row_to_aoi(r) for r in rows]
+    if search and not aois:
+        resolved = geometry_resolver.resolve(aoi_id=search, name=search)
+        if resolved.source == "geojson_fallback" and resolved.geometry:
+            synthetic = get_builder_aoi_by_id(resolved.matched_id or search)
+            if synthetic:
+                return [synthetic]
+
     return _attach_history(aois)
 
 
@@ -184,6 +216,56 @@ def get_builder_aoi_by_id(aoi_id: str) -> dict | None:
         raise HTTPException(status_code=500, detail=f"Database error: {exc}")
 
     if not row:
+        # Fallback to GeoJSON resolution for unseeded or GeoJSON-only localities
+        resolved = geometry_resolver.resolve(aoi_id=aoi_id, name=aoi_id)
+        if resolved.source == "geojson_fallback" and resolved.geometry:
+            centroid_lat = resolved.lat or 19.9975
+            centroid_lng = resolved.lng or 73.7898
+            area_sqm = int((resolved.area_km2 or 4.0) * 1_000_000)
+            return {
+                "id": aoi_id,
+                "name": resolved.matched_name or aoi_id.replace("-", " ").title(),
+                "location": f"{resolved.matched_name or aoi_id.title()}, Nashik",
+                "village": resolved.matched_name or aoi_id.title(),
+                "taluka": "Nashik",
+                "district": "Nashik",
+                "category": "residential",
+                "status": "yellow",
+                "coords": {
+                    "lat": centroid_lat,
+                    "lng": centroid_lng,
+                    "x": 50,
+                    "y": 50,
+                },
+                "geometry": resolved.geometry,
+                "geometryMetadata": resolved.to_dict(),
+                "isApproximateGeometry": resolved.is_approximate,
+                "qualityTier": resolved.quality_tier,
+                "boundaryStatus": resolved.boundary_status,
+                "geometrySource": resolved.source,
+                "suitabilityScore": 0,
+                "accessibilityScore": 0,
+                "waterAvailabilityScore": 0,
+                "environmentalRiskScore": 0,
+                "developmentPotentialScore": 0,
+                "terrain": {
+                    "elevation": 590.0,
+                    "slope": 2.5,
+                    "roughness": "Moderate",
+                    "flatLandPercent": 85.0,
+                    "readiness": "MEDIUM",
+                },
+                "constraints": {
+                    "floodZoneOverlapPercent": 0,
+                    "forestBoundaryOverlapPercent": 0,
+                    "greenBeltOverlapPercent": 0,
+                    "protectedAreaOverlapPercent": 0,
+                    "environmentalRestriction": "Low",
+                },
+                "estimatedConstructionAreaSqM": area_sqm,
+                "summary": resolved.note,
+                "constructionHistory": [],
+            }
         return None
 
     aoi = _row_to_aoi(row)

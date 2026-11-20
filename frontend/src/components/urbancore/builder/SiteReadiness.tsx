@@ -13,26 +13,52 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
-import { useBuilderTerrain } from "@/hooks/use-builder";
+import { useBuilderTerrain, useBuilderPointTerrain } from "@/hooks/use-builder";
 
 interface SiteReadinessProps {
   aoi: AOI;
 }
 
 export function SiteReadiness({ aoi }: SiteReadinessProps) {
-  const isCanonicalAoi = aoi.selectionSource !== "map-selected";
-  const { data: terrain, isLoading, isError, refetch } = useBuilderTerrain(aoi.id, isCanonicalAoi);
-  const readinessLevel = aoi.terrain.readiness;
-  const averageSlope = terrain?.mean_slope_deg;
-  const maxSlope = terrain?.max_slope_deg;
-  const averageElevation = terrain?.mean_elevation_m;
-  const minElevation = terrain?.min_elevation_m;
-  const maxElevation = terrain?.max_elevation_m;
-  const flatAreaPercentage = terrain?.flat_land_percentage;
-  const terrainRoughness = terrain?.terrain_roughness_m;
-  const factualInterpretation = terrain
-    ? `Approximately ${terrain.flat_land_percentage.toFixed(2)}% of the selected AOI has slope at or below 5°, with a mean terrain slope of ${terrain.mean_slope_deg.toFixed(2)}°.`
-    : "";
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
+  const {
+    data: canonicalTerrain,
+    isLoading: isCanonicalLoading,
+    isError: isCanonicalError,
+    refetch: refetchCanonical,
+  } = useBuilderTerrain(aoi.id, isCanonicalAoi);
+
+  const {
+    data: pointTerrain,
+    isLoading: isPointLoading,
+    isError: isPointError,
+    refetch: refetchPoint,
+  } = useBuilderPointTerrain(aoi.coords, !isCanonicalAoi);
+
+  const isLoading = isCanonicalAoi ? isCanonicalLoading : isPointLoading;
+  const isError = isCanonicalAoi ? isCanonicalError : isPointError;
+  const refetch = isCanonicalAoi ? refetchCanonical : refetchPoint;
+
+  const averageSlope = isCanonicalAoi ? canonicalTerrain?.mean_slope_deg : pointTerrain?.slope_deg;
+  const maxSlope = isCanonicalAoi ? canonicalTerrain?.max_slope_deg : pointTerrain?.slope_deg;
+  const averageElevation = isCanonicalAoi ? canonicalTerrain?.mean_elevation_m : pointTerrain?.elevation_m;
+  const minElevation = isCanonicalAoi ? canonicalTerrain?.min_elevation_m : pointTerrain?.min_elevation_m;
+  const maxElevation = isCanonicalAoi ? canonicalTerrain?.max_elevation_m : pointTerrain?.max_elevation_m;
+  const flatAreaPercentage = isCanonicalAoi ? canonicalTerrain?.flat_land_percentage : (pointTerrain?.is_flat ? 100 : 0);
+  const terrainRoughness = isCanonicalAoi ? canonicalTerrain?.terrain_roughness_m : pointTerrain?.terrain_roughness_m;
+  const demSource = isCanonicalAoi ? canonicalTerrain?.dem_source : (pointTerrain?.dem_source || "Copernicus GLO-30 DEM");
+
+  const readinessLevel = isCanonicalAoi
+    ? aoi.terrain.readiness
+    : pointTerrain
+      ? (pointTerrain.slope_deg <= 5.0 ? "HIGH" : pointTerrain.slope_deg <= 15.0 ? "MEDIUM" : "LOW")
+      : "LOW";
+
+  const factualInterpretation = isCanonicalAoi && canonicalTerrain
+    ? `Approximately ${canonicalTerrain.flat_land_percentage.toFixed(2)}% of the selected AOI has slope at or below 5°, with a mean terrain slope of ${canonicalTerrain.mean_slope_deg.toFixed(2)}°.`
+    : pointTerrain
+      ? `Preliminary coordinate screening: Local elevation is ${pointTerrain.elevation_m.toFixed(1)} m MSL with a local slope gradient of ${pointTerrain.slope_deg.toFixed(2)}° and local relief variation of ${pointTerrain.terrain_roughness_m.toFixed(2)} m. (Copernicus GLO-30 30m DEM).`
+      : "";
 
   const readinessColor =
     readinessLevel === "HIGH"
@@ -62,9 +88,14 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             <MapPin className="h-4.5 w-4.5 text-primary shrink-0" />
             <span>{aoi.name}</span>
             <span className="text-muted-foreground font-normal text-base">
-              — Site Readiness Analysis
+              — DEM Terrain Analysis
             </span>
           </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isCanonicalAoi
+              ? "Copernicus GLO-30 30m topographic screening; preliminary relief metrics only."
+              : "Preliminary coordinate-based point screening from Copernicus GLO-30 30m DEM."}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -109,22 +140,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </p>
             </div>
           </motion.div>
-        ) : !isCanonicalAoi ? (
-          <motion.div
-            key="map-selected-unavailable"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-12 text-center"
-          >
-            <AlertTriangle className="mb-3 h-10 w-10 text-amber-400" />
-            <h4 className="font-mono text-sm font-semibold uppercase tracking-wider text-amber-400">
-              TERRAIN ANALYSIS NOT AVAILABLE
-            </h4>
-            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-              This map-selected site is confirmed, but the backend does not yet provide coordinate-based DEM terrain analysis for arbitrary locations.
-            </p>
-          </motion.div>
-        ) : isError || !terrain ? (
+        ) : isError || (!isCanonicalAoi && !pointTerrain) || (isCanonicalAoi && !canonicalTerrain) ? (
           /* Error State UI */
           <motion.div
             key="error"
@@ -138,8 +154,7 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               SITE READINESS UNAVAILABLE
             </h4>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Unable to retrieve terrain information for {aoi.name}. Please check connection or
-              retry.
+              Unable to retrieve terrain information for {aoi.name}. The location may be outside the DEM raster coverage area.
             </p>
             <button
               type="button"
@@ -159,6 +174,21 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             transition={{ duration: 0.4 }}
             className="flex flex-col gap-6"
           >
+            {!isCanonicalAoi && pointTerrain && (
+              <div className="flex items-start gap-2.5 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4 backdrop-blur-xl">
+                <Info className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-xs font-semibold uppercase tracking-wider text-amber-400">
+                    PRELIMINARY POINT-BASED TERRAIN SCREENING
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    Terrain metrics are sampled from the Copernicus GLO-30 DEM at coordinate ({aoi.coords.lat.toFixed(4)}°N, {aoi.coords.lng.toFixed(4)}°E).
+                    Because this map-selected point lacks a registered parcel polygon boundary, full polygon slope masking, area distributions, and zoning audits are unavailable.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 3 Primary Metric Cards */}
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {/* CARD 1: AVERAGE SLOPE */}
@@ -305,40 +335,43 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
             {/* Compact Site Profile Summary & Factual Interpretation */}
             <div className="grid gap-4 md:grid-cols-12">
               {/* Compact Site Profile Table */}
-              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3 block">
-                  SITE PROFILE SUMMARY
-                </span>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
-                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">
+              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.065] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-200">
+                    SITE PROFILE SUMMARY
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3.5 sm:p-4">
+                    <span className="block font-mono text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                       Average Slope
                     </span>
-                    <span className="font-mono text-xs font-bold text-foreground mt-0.5 block">
+                    <span className="font-mono text-lg sm:text-xl font-bold text-foreground block">
                       {averageSlope?.toFixed(2)}°
                     </span>
                   </div>
-                  <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
-                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3.5 sm:p-4">
+                    <span className="block font-mono text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                       Average Elevation
                     </span>
-                    <span className="font-mono text-xs font-bold text-foreground mt-0.5 block">
+                    <span className="font-mono text-lg sm:text-xl font-bold text-foreground block">
                       {averageElevation?.toFixed(2)} m
                     </span>
                   </div>
-                  <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
-                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3.5 sm:p-4">
+                    <span className="block font-mono text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                       Flat Area
                     </span>
-                    <span className="font-mono text-xs font-bold text-cyan-400 mt-0.5 block">
+                    <span className="font-mono text-lg sm:text-xl font-bold text-cyan-400 block">
                       {flatAreaPercentage?.toFixed(2)}%
                     </span>
                   </div>
-                  <div className="rounded-xl border border-border/40 bg-foreground/[0.02] p-2.5">
-                    <span className="block font-mono text-[10px] text-muted-foreground uppercase">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3.5 sm:p-4">
+                    <span className="block font-mono text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
                       Terrain Roughness
                     </span>
-                    <span className="font-mono text-xs font-bold text-foreground truncate mt-0.5 block">
+                    <span className="font-mono text-lg sm:text-xl font-bold text-foreground truncate block">
                       {terrainRoughness?.toFixed(2)} m
                     </span>
                   </div>
@@ -346,19 +379,22 @@ export function SiteReadiness({ aoi }: SiteReadinessProps) {
               </div>
 
               {/* Factual Interpretation Box */}
-              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
+              <div className="glass-panel flex flex-col justify-between rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:col-span-6">
                 <div>
-                  <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5 mb-2">
-                    <Info className="h-3.5 w-3.5 shrink-0" /> FACTUAL TERRAIN INTERPRETATION
-                  </span>
-                  <p className="text-xs text-foreground/90 font-light leading-relaxed">
+                  <div className="flex items-center gap-2 mb-3.5">
+                    <Info className="h-4 w-4 shrink-0 text-cyan-400" />
+                    <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-cyan-400">
+                      FACTUAL TERRAIN INTERPRETATION
+                    </span>
+                  </div>
+                  <p className="text-sm sm:text-base text-slate-100 font-normal leading-relaxed">
                     "{factualInterpretation}"
                   </p>
                 </div>
-                <div className="mt-4 pt-3 border-t border-primary/20 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span>Source: {terrain.dem_source}</span>
-                  <span className="text-primary flex items-center gap-1">
-                    Factual Analysis <ArrowUpRight className="h-3 w-3" />
+                <div className="mt-5 pt-3.5 border-t border-primary/25 flex items-center justify-between text-xs font-mono text-slate-400">
+                  <span>Source: <strong className="text-slate-300 font-medium">{demSource}</strong></span>
+                  <span className="text-cyan-400 flex items-center gap-1 font-semibold text-xs hover:text-cyan-300">
+                    Factual Analysis <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
               </div>

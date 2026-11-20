@@ -11,7 +11,7 @@ class InferenceCacheService:
     """File-based caching for inference results to avoid redundant model execution."""
     
     def __init__(self):
-        self.cache_dir = Path(settings.data_dir).parent / "cache" / "inference"
+        self.cache_dir = settings.analysis_dir.parent / "cache" / "inference"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
     
     def generate_cache_key(

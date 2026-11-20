@@ -13,7 +13,7 @@ class GeeTiffCacheService:
     """File-based caching for GEE-exported GeoTIFFs to avoid redundant exports and downloads."""
     
     def __init__(self):
-        self.cache_dir = Path(settings.data_dir).parent / "cache" / "gee"
+        self.cache_dir = settings.analysis_dir.parent / "cache" / "gee"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
     
     def generate_cache_key(

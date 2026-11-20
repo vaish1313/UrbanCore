@@ -63,7 +63,8 @@ const DEFAULT_YEAR_ITEM: YearHistoryItem = {
 };
 
 export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
+  const [isLoading, setIsLoading] = useState(isCanonicalAoi);
   const [error, setError] = useState<string | null>(null);
   const [backendData, setBackendData] = useState<BackendGrowthHistoryResponse | null>(null);
 
@@ -72,6 +73,12 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
 
   // Fetch multi-year satellite construction history when active AOI changes
   useEffect(() => {
+    if (!isCanonicalAoi) {
+      setIsLoading(false);
+      setBackendData(null);
+      return;
+    }
+
     let isMounted = true;
     setIsLoading(true);
     setError(null);
@@ -108,7 +115,7 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
     return () => {
       isMounted = false;
     };
-  }, [aoi.id]);
+  }, [aoi.id, isCanonicalAoi]);
 
   // Construct fallback history from AOI props if backend endpoint is unavailable
   const fallbackHistory: YearHistoryItem[] = aoi.constructionHistory.map((item) => ({
@@ -219,6 +226,21 @@ export function ConstructionHistory({ aoi }: ConstructionHistoryProps) {
                 Analyzing historical satellite construction data for {aoi.name}...
               </p>
             </div>
+          </motion.div>
+        ) : !isCanonicalAoi ? (
+          <motion.div
+            key="map-selected-history-unavailable"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-12 text-center"
+          >
+            <AlertTriangle className="mb-3 h-10 w-10 text-amber-400" />
+            <h4 className="font-mono text-sm font-semibold uppercase tracking-wider text-amber-400">
+              HISTORICAL SATELLITE MONITORING UNAVAILABLE
+            </h4>
+            <p className="mt-1 max-w-md text-xs text-muted-foreground">
+              Multi-year satellite built-up tracking and 5-year growth timelines are monitored exclusively for verified municipal AOIs. Arbitrary map coordinates do not have pre-computed satellite detection records.
+            </p>
           </motion.div>
         ) : error ? (
           /* Error State UI */

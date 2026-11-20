@@ -2,10 +2,33 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 
 from .builder_service import get_builder_aois, get_builder_aoi_by_id, get_aois_near
-from .terrain_service import get_builder_aoi_terrain
-from .suitability_service import calculate_builder_aoi_suitability
+from .terrain_service import get_builder_aoi_terrain, get_coordinate_terrain
+from .suitability_service import calculate_builder_aoi_suitability, get_detailed_constraints
 
 router = APIRouter(tags=["Builder AOIs"])
+
+
+@router.get("/terrain/coordinate")
+async def get_coordinate_terrain_endpoint(
+    lat: float = Query(..., ge=-90.0, le=90.0, description="Latitude in decimal degrees"),
+    lng: float = Query(..., ge=-180.0, le=180.0, description="Longitude in decimal degrees"),
+):
+    """
+    Return preliminary DEM-derived terrain metrics for an arbitrary coordinate.
+    Validates geographical bounds and samples the Copernicus GLO-30 DEM.
+    Does not invent parcel polygons or regulatory suitability.
+    """
+    return get_coordinate_terrain(lat, lng)
+
+
+
+@router.get("/violations/constraints/{aoi_id}")
+@router.get("/builder/violations/constraints/{aoi_id}")
+async def get_aoi_constraints_endpoint(aoi_id: str):
+    """Return live PostGIS geodesic constraint intersections and review status for an AOI."""
+    if get_builder_aoi_by_id(aoi_id) is None:
+        raise HTTPException(status_code=404, detail=f"AOI '{aoi_id}' not found")
+    return get_detailed_constraints(aoi_id)
 
 
 @router.get("/aois")

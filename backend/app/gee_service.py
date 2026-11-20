@@ -49,7 +49,8 @@ class EarthEngineService:
         radius_m: int,
         start_year: int,
         end_year: int,
-        analysis_id: str
+        analysis_id: str,
+        years: list[int] | None = None,
     ) -> list[dict]:
         """
         Export Sentinel-2 imagery to Google Cloud Storage for multiple years.
@@ -80,8 +81,10 @@ class EarthEngineService:
         exports = []
         bucket_name = settings.gcs_bucket_name
 
-        # Export one image per year to GCS
-        for year in range(start_year, end_year + 1):
+        # Export one image per requested year. A min/max range would also
+        # re-export years that are already cached when the gaps are not contiguous.
+        export_years = sorted({int(year) for year in years}) if years else list(range(start_year, end_year + 1))
+        for year in export_years:
             # Filter Sentinel-2 Surface Reflectance collection
             # Using harmonized dataset for consistency across years
             collection = (

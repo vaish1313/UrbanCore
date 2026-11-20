@@ -125,7 +125,7 @@ export function InteractiveMap({
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         const placeName = data[0].label;
-        const district = "OpenStreetMap";
+        const district = "Mapbox GL";
         const state = "Location search";
         const pincode = "";
 

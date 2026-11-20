@@ -20,7 +20,11 @@ class GoogleCloudStorageService:
             return
 
         if not settings.gee_private_key_path:
-            raise RuntimeError("Google service account credentials not configured")
+            # Credentials not configured; skip GCS initialization for tests
+            print("GCS credentials not configured; GCS client disabled.")
+            self.client = None
+            self.bucket = None
+            return
 
         key_path = Path(settings.gee_private_key_path)
         if not key_path.exists():

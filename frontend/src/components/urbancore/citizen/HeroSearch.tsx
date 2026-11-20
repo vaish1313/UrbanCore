@@ -6,7 +6,14 @@ import { SEARCH_SUGGESTIONS, POPULAR_SEARCHES, RECENT_SEARCHES_KEY } from "@/dat
 const ease = [0.16, 1, 0.3, 1] as const;
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
-type Suggestion = { label: string; type: string; lat: number; lng: number };
+export type Suggestion = {
+  id?: string;
+  label: string;
+  type: string;
+  lat: number;
+  lng: number;
+  selectionSource?: "canonical-aoi" | "map-selected";
+};
 
 export interface HeroSearchProps {
   onSearch: (suggestion: Suggestion) => void;
@@ -69,8 +76,39 @@ export function HeroSearch({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // OpenStreetMap geocoding is proxied through FastAPI so no provider key is exposed.
+  const [dbAois, setDbAois] = useState<Suggestion[]>([]);
+
+  // Fetch official database AOIs with valid lat/long for Builder search dropdown
   useEffect(() => {
+    if (!isBuilder) return;
+    const fetchDbAois = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/builder/aois`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && Array.isArray(data.aois)) {
+          const list = data.aois
+            .filter((a: any) => a.coords && a.coords.lat && a.coords.lng)
+            .map((a: any) => ({
+              id: a.id,
+              label: a.name,
+              type: a.category ? `${a.category.toUpperCase()} AOI` : "OFFICIAL AOI",
+              lat: a.coords.lat,
+              lng: a.coords.lng,
+              selectionSource: "canonical-aoi" as const,
+            }));
+          setDbAois(list);
+        }
+      } catch (err) {
+        console.error("Failed to fetch official database AOIs for dropdown", err);
+      }
+    };
+    fetchDbAois();
+  }, [isBuilder]);
+
+  // Mapbox GL geocoding fallback for non-builder mode
+  useEffect(() => {
+    if (isBuilder) return;
     const fetchPlaces = async () => {
       if (query.trim().length < 2) {
         setLiveSuggestions([]);
@@ -83,7 +121,7 @@ export function HeroSearch({
           const suggestions = data.map(
             (f: { label: string; latitude: number; longitude: number }) => ({
               label: f.label,
-              type: "OpenStreetMap",
+              type: "Mapbox GL",
               lat: f.latitude,
               lng: f.longitude,
             }),
@@ -97,7 +135,7 @@ export function HeroSearch({
 
     const debounceId = setTimeout(fetchPlaces, 300);
     return () => clearTimeout(debounceId);
-  }, [query]);
+  }, [query, isBuilder]);
 
   const staticFiltered =
     query.length > 0
@@ -108,11 +146,18 @@ export function HeroSearch({
         ).slice(0, 6)
       : [];
 
-  const filtered = liveSuggestions.length > 0 ? liveSuggestions : staticFiltered;
+  const builderFiltered =
+    isBuilder && query.length > 0
+      ? dbAois.filter((s) => s.label.toLowerCase().includes(query.toLowerCase())).slice(0, 8)
+      : [];
+
+  const filtered = isBuilder
+    ? (query.length > 0 ? builderFiltered : dbAois.slice(0, 8))
+    : (liveSuggestions.length > 0 ? liveSuggestions : staticFiltered);
 
   const showDropdown = focused && (filtered.length > 0 || query.length === 0);
   const showRecent = focused && query.length === 0 && recentSearches.length > 0;
-  const showPopular = focused && query.length === 0;
+  const showPopular = focused && query.length === 0 && !isBuilder;
 
   const handleSelect = useCallback(
     (s: Suggestion) => {

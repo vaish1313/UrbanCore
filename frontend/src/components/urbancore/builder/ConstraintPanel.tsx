@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ShieldAlert,
@@ -12,10 +12,10 @@ import {
   MapPin,
   FileCheck2,
   Info,
+  AlertCircle,
 } from "lucide-react";
 import type { AOI } from "@/types/urbancore";
-
-const API_BASE_URL = "http://localhost:8000/api/v1";
+import { useBuilderConstraints, type DetailedConstraintItem } from "@/hooks/use-builder";
 
 interface ConstraintPanelProps {
   aoi: AOI;
@@ -23,175 +23,60 @@ interface ConstraintPanelProps {
 
 export type ConstraintStatus = "CLEAR" | "OVERLAP" | "NO_DATA" | "UNKNOWN";
 
-export interface ConstraintItem {
-  type: "crz" | "river_buffer" | "forest" | "green_belt" | string;
-  name: string;
-  status: ConstraintStatus;
-  affected_area_ha: number | null;
-  affected_percentage: number | null;
-  description: string;
-}
-
-interface BackendConstraintsResponse {
-  aoi_id: string;
-  name: string;
-  location?: string;
-  layers_analyzed: number;
-  overlapping_layers: number;
-  clear_layers: number;
-  no_data_layers: number;
-  constraints: ConstraintItem[];
-  factual_summary: string;
-}
-
 export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [backendData, setBackendData] = useState<BackendConstraintsResponse | null>(null);
+  const isCanonicalAoi = aoi.selectionSource !== "map-selected" && !aoi.id.startsWith("aoi-");
+  const { data: backendData, isLoading, isError, refetch } = useBuilderConstraints(aoi.id, isCanonicalAoi);
 
-  // Map layer toggle state for active UI filtering
+  // Active layer toggles
   const [activeToggles, setActiveToggles] = useState<Record<string, boolean>>({
-    crz: false,
     river_buffer: true,
     forest: true,
-    green_belt: true,
+    highway: true,
+    waterbody: true,
   });
-
-  // Fetch GIS constraints analysis from backend when active AOI changes
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
-
-    const fetchConstraints = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/violations/constraints/${aoi.id}`);
-        if (response.ok) {
-          const data: BackendConstraintsResponse = await response.json();
-          if (isMounted) {
-            setBackendData(data);
-            setError(null);
-
-            // Set default toggles based on overlapping status
-            const initialToggles: Record<string, boolean> = {};
-            data.constraints.forEach((c) => {
-              initialToggles[c.type] = c.status === "OVERLAP";
-            });
-            setActiveToggles((prev) => ({ ...prev, ...initialToggles }));
-          }
-        } else {
-          if (isMounted) {
-            setBackendData(null);
-          }
-        }
-      } catch (err) {
-        console.warn("Backend constraints API unavailable. Using spatial AOI model fallback.", err);
-        if (isMounted) {
-          setBackendData(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchConstraints();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [aoi.id]);
 
   const toggleLayer = (type: string) => {
     setActiveToggles((prev) => ({ ...prev, [type]: !prev[type] }));
   };
 
-  // Fallback constraint data derived directly from AOI constraints props if backend offline
-  const fallbackConstraints: ConstraintItem[] = [
-    {
-      type: "crz",
-      name: "CRZ (Coastal Regulation Zone)",
-      status: "NO_DATA",
-      affected_area_ha: null,
-      affected_percentage: null,
-      description: "Coastal Regulation Zone data unavailable for inland region.",
-    },
-    {
-      type: "river_buffer",
-      name: "River Buffer Zone",
-      status: aoi.constraints.floodZoneOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha:
-        aoi.constraints.floodZoneOverlapPercent > 0
-          ? Math.round(aoi.constraints.floodZoneOverlapPercent * 0.2 * 10) / 10
-          : 0,
-      affected_percentage: aoi.constraints.floodZoneOverlapPercent,
-      description: "Godavari river tributary 100m blue line & flood return zone.",
-    },
-    {
-      type: "forest",
-      name: "Forest Boundary & Buffer",
-      status: aoi.constraints.forestBoundaryOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha:
-        aoi.constraints.forestBoundaryOverlapPercent > 0
-          ? Math.round(aoi.constraints.forestBoundaryOverlapPercent * 0.2 * 10) / 10
-          : 0,
-      affected_percentage: aoi.constraints.forestBoundaryOverlapPercent,
-      description: "Demarcated reserve forest boundary & eco-sensitive buffer.",
-    },
-    {
-      type: "green_belt",
-      name: "Agricultural Green Belt",
-      status: aoi.constraints.greenBeltOverlapPercent > 0 ? "OVERLAP" : "CLEAR",
-      affected_area_ha:
-        aoi.constraints.greenBeltOverlapPercent > 0
-          ? Math.round(aoi.constraints.greenBeltOverlapPercent * 0.2 * 10) / 10
-          : 0,
-      affected_percentage: aoi.constraints.greenBeltOverlapPercent,
-      description: "Zonal DP masterplan agricultural land-use restriction.",
-    },
-  ];
-
-  const constraintsList: ConstraintItem[] = backendData?.constraints || fallbackConstraints;
-
-  // Compute summary metrics dynamically
-  const layersAnalyzed = backendData?.layers_analyzed ?? constraintsList.length;
-  const overlappingLayers =
-    backendData?.overlapping_layers ?? constraintsList.filter((c) => c.status === "OVERLAP").length;
-  const clearLayers =
-    backendData?.clear_layers ?? constraintsList.filter((c) => c.status === "CLEAR").length;
-  const noDataLayers =
-    backendData?.no_data_layers ?? constraintsList.filter((c) => c.status === "NO_DATA").length;
-
-  // Construct dynamic factual summary text
-  const overlapNames = constraintsList.filter((c) => c.status === "OVERLAP").map((c) => c.name);
-  const clearNames = constraintsList.filter((c) => c.status === "CLEAR").map((c) => c.name);
-
-  let factualSummaryText = backendData?.factual_summary;
-  if (!factualSummaryText) {
-    if (overlapNames.length > 0) {
-      factualSummaryText = `The selected AOI intersects the ${overlapNames.join(" and ")}.`;
-    } else {
-      factualSummaryText = "No spatial overlap was detected with any active constraint layer.";
-    }
-    if (clearNames.length > 0) {
-      factualSummaryText += ` No spatial overlap was detected with ${clearNames.join(" or ")}.`;
-    }
-    if (noDataLayers > 0) {
-      factualSummaryText +=
-        " Coastal Regulation Zone (CRZ) data is unavailable for this inland region.";
-    }
+  if (!isCanonicalAoi) {
+    return (
+      <div className="relative flex flex-col gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-6 backdrop-blur-xl">
+        <div className="flex items-center gap-2 text-amber-400">
+          <AlertTriangle className="h-5 w-5 shrink-0" />
+          <h3 className="font-mono text-sm font-semibold uppercase tracking-wider">
+            ZONING AUDIT UNAVAILABLE FOR MAP-SELECTED POINT
+          </h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Zoning and environmental constraint assessments are computed using PostGIS polygonal
+          intersections with official surveyed boundaries. Arbitrary map coordinates without
+          registered polygon boundaries cannot be audited for zoning constraints.
+        </p>
+      </div>
+    );
   }
 
-  // Status helper styling
+  const isPolygonMissing = backendData?.status === "UNAVAILABLE";
+  const isApproximateBbox = backendData?.is_approximate_geometry || !aoi.geometry;
+  const constraintsList: DetailedConstraintItem[] = (backendData?.constraints || []).filter(
+    (c) => c.type !== "crz",
+  );
+
+  const layersAnalyzed = backendData?.layers_analyzed ?? 0;
+  const overlappingLayers = backendData?.overlapping_layers ?? 0;
+  const clearLayers = backendData?.clear_layers ?? 0;
+  const noDataLayers = backendData?.no_data_layers ?? 0;
+  const blockerStatus = backendData?.blocker_status || "UNAVAILABLE";
+
   const getStatusBadge = (status: ConstraintStatus) => {
     switch (status) {
       case "OVERLAP":
         return {
-          label: "OVERLAP",
+          label: "INTERSECTION",
           icon: AlertTriangle,
           className:
-            "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(251,113,133,0.2)]",
+            "text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-[0_0_15px_rgba(251,191,36,0.15)]",
         };
       case "CLEAR":
         return {
@@ -202,7 +87,7 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
         };
       case "NO_DATA":
         return {
-          label: "NO DATA",
+          label: "NOT APPLICABLE",
           icon: HelpCircle,
           className: "text-slate-400 bg-slate-400/10 border-slate-400/30",
         };
@@ -215,6 +100,35 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
     }
   };
 
+  const blockerBadge = (() => {
+    switch (blockerStatus) {
+      case "ASSESSED_NO_INTERSECTION":
+        return {
+          label: "CLEAR — NO RESTRICTION DETECTED",
+          icon: CheckCircle2,
+          className: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+        };
+      case "POTENTIAL_RESTRICTION_REVIEW":
+        return {
+          label: "POTENTIAL RESTRICTION REVIEW",
+          icon: AlertTriangle,
+          className: "text-amber-400 bg-amber-400/10 border-amber-400/30 shadow-[0_0_15px_rgba(251,191,36,0.2)]",
+        };
+      case "CONFIRMED_BLOCKER":
+        return {
+          label: "CONFIRMED STATUTORY BLOCKER",
+          icon: ShieldAlert,
+          className: "text-rose-400 bg-rose-400/10 border-rose-400/30 shadow-[0_0_15px_rgba(244,63,94,0.2)]",
+        };
+      default:
+        return {
+          label: "UNAVAILABLE — MISSING BOUNDARY",
+          icon: AlertCircle,
+          className: "text-slate-400 bg-slate-400/10 border-slate-400/30",
+        };
+    }
+  })();
+
   return (
     <div className="relative flex flex-col gap-6">
       {/* Dynamic Section Header */}
@@ -222,7 +136,7 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
-              ANALYZING SITE
+              GEODETIC SPATIAL INTERSECTIONS
             </span>
             <span className="h-1 w-1 rounded-full bg-primary/60" />
             <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -233,126 +147,166 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
             <MapPin className="h-4.5 w-4.5 text-primary shrink-0" />
             <span>{aoi.name}</span>
             <span className="text-muted-foreground font-normal text-base">
-              — Zoning & Environmental Constraints
+              — Environmental & Zoning Constraints
             </span>
+            {isApproximateBbox && (
+              <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-sky-400/40 bg-sky-400/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-300">
+                <Info className="h-3 w-3" /> 500m Approx Bbox
+              </span>
+            )}
           </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isApproximateBbox
+              ? "Calculated against a 500m screening bounding box around centroid coordinates. Official boundary survey required."
+              : "Geodesic PostGIS spatial queries across Survey of India, WRIS, and Highway corridors."}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-primary shadow-[0_0_15px_rgba(56,189,248,0.2)]">
-            <ShieldAlert className="h-3.5 w-3.5" /> GIS Polygon Audit
+          <span
+            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${blockerBadge.className}`}
+          >
+            <blockerBadge.icon className="h-3.5 w-3.5" /> {blockerBadge.label}
           </span>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         {isLoading ? (
-          /* Animated Skeleton Loading State */
           <motion.div
             key="loading"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
             className="flex flex-col gap-6 py-4"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-border/40 bg-foreground/[0.02] p-4 space-y-3 animate-pulse"
+                  className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl space-y-3 animate-pulse"
                 >
-                  <div className="flex justify-between items-center">
-                    <div className="h-4 w-36 rounded bg-border/50" />
-                    <div className="h-5 w-16 rounded-full bg-border/50" />
-                  </div>
-                  <div className="h-3 w-4/5 rounded bg-border/30" />
-                  <div className="h-3 w-2/3 rounded bg-border/30" />
+                  <div className="h-3 w-20 rounded bg-border/50" />
+                  <div className="h-7 w-12 rounded bg-border/60" />
+                  <div className="h-2.5 w-32 rounded bg-border/30" />
                 </div>
               ))}
             </div>
             <div className="flex items-center justify-center py-4 text-center">
               <p className="font-mono text-xs text-primary animate-pulse flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing GIS environmental constraint layers for {aoi.name}...
+                Computing PostGIS geodesic intersections for {aoi.name}...
               </p>
             </div>
           </motion.div>
-        ) : error ? (
-          /* Error State UI */
+        ) : isError ? (
           <motion.div
             key="error"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
             className="flex flex-col items-center justify-center py-12 text-center"
           >
             <AlertTriangle className="h-10 w-10 text-rose-400 mb-3" />
             <h4 className="font-mono text-sm font-semibold text-rose-400 uppercase tracking-wider">
-              Unable to analyze environmental constraints
+              CONSTRAINT SERVICE ERROR
             </h4>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              The GIS constraint analysis could not be completed for {aoi.name}. Please retry.
+              Failed to query PostGIS constraint layers for {aoi.name}.
             </p>
             <button
               type="button"
-              onClick={() => setIsLoading(true)}
-              className="mt-4 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/20 px-5 py-2.5 font-mono text-xs font-medium text-primary hover:bg-primary/30 transition-all shadow-[0_0_15px_rgba(56,189,248,0.2)]"
+              onClick={() => refetch()}
+              className="mt-4 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/20 px-5 py-2.5 font-mono text-xs font-medium text-primary hover:bg-primary/30"
             >
-              <RefreshCw className="h-4 w-4" /> Retry Analysis
+              <RefreshCw className="h-4 w-4" /> Retry Query
             </button>
           </motion.div>
-        ) : (
-          /* Main Constraints Content View */
+        ) : isPolygonMissing ? (
           <motion.div
-            key={`constraints-${aoi.id}`}
+            key={`polygon-missing-${aoi.id}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.4 }}
+            className="rounded-3xl border border-amber-400/30 bg-amber-400/5 p-8 text-center"
+          >
+            <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+            <h4 className="font-display text-lg font-bold text-foreground">
+              Constraint Screening Unavailable: No Registered Polygon Geometry
+            </h4>
+            <p className="text-xs text-muted-foreground mt-2 max-w-lg mx-auto">
+              This site has only centroid coordinates in the database. PostGIS cannot calculate
+              intersection areas, boundary overlaps, or setback distances without an authoritative
+              polygon boundary.
+            </p>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 font-mono text-xs font-semibold text-amber-300">
+              STATUS: UNAVAILABLE
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`content-${aoi.id}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
             className="flex flex-col gap-6"
           >
-            {/* Environmental Screening Summary Header Bar */}
-            <div className="rounded-2xl border border-white/15 bg-white/[0.065] p-4 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <FileCheck2 className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-mono text-xs font-semibold uppercase tracking-wider text-foreground">
-                  ENVIRONMENTAL SCREENING
+            {/* Top Stat Summary Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+                  Layers Analyzed
+                </span>
+                <span className="font-display text-2xl font-bold text-foreground">
+                  {layersAnalyzed}
+                </span>
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  Active GIS layers verified
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-1.5 backdrop-blur-md">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
-                    Layers Analyzed
-                  </span>
-                  <span className="font-mono text-xs font-bold text-foreground">
-                    {layersAnalyzed}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-1.5 backdrop-blur-md">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
-                    Overlapping
-                  </span>
-                  <span className="font-mono text-xs font-bold text-rose-400">
-                    {overlappingLayers}
-                  </span>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-1.5 backdrop-blur-md">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
-                    Clear
-                  </span>
-                  <span className="font-mono text-xs font-bold text-cyan-400">{clearLayers}</span>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-1.5 backdrop-blur-md">
-                  <span className="block font-mono text-[9px] text-muted-foreground uppercase">
-                    No Data
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-400">{noDataLayers}</span>
-                </div>
+
+              <div className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+                  Overlapping Layers
+                </span>
+                <span
+                  className={`font-display text-2xl font-bold ${
+                    overlappingLayers > 0 ? "text-amber-400" : "text-emerald-400"
+                  }`}
+                >
+                  {overlappingLayers}
+                </span>
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  {overlappingLayers > 0
+                    ? `${backendData?.overall_overlap_pct?.toFixed(2)}% total AOI overlap`
+                    : "Zero spatial conflicts"}
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+                  Clear Layers
+                </span>
+                <span className="font-display text-2xl font-bold text-cyan-400">
+                  {clearLayers}
+                </span>
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  No spatial intersection
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-white/15 bg-white/[0.065] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">
+                  Site Area Evaluated
+                </span>
+                <span className="font-display text-2xl font-bold text-foreground">
+                  {backendData?.aoi_area_ha ? `${backendData.aoi_area_ha.toFixed(2)} ha` : "N/A"}
+                </span>
+                <span className="text-[11px] text-muted-foreground block mt-1">
+                  True geodetic polygon area
+                </span>
               </div>
             </div>
 
-            {/* 4 Constraint Cards Grid */}
+            {/* Constraint Layer Breakdown Grid */}
             <div className="grid gap-4 sm:grid-cols-2">
               {constraintsList.map((c) => {
                 const badge = getStatusBadge(c.status);
@@ -363,33 +317,27 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
                   <div
                     key={c.type}
                     onClick={() => toggleLayer(c.type)}
-                    className={`cursor-pointer group relative overflow-hidden rounded-2xl border p-4.5 backdrop-blur-xl transition-all duration-300 ${
+                    className={`group cursor-pointer rounded-2xl border p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl transition-all duration-300 ${
                       isToggled
-                        ? "border-primary/50 bg-white/[0.1] shadow-[0_0_20px_rgba(56,189,248,0.14)]"
-                        : "border-white/15 bg-white/[0.065] hover:border-primary/40 hover:bg-white/[0.1]"
+                        ? "border-primary/50 bg-white/[0.09] shadow-[0_0_20px_rgba(56,189,248,0.12)]"
+                        : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <Eye
-                          className={`h-4 w-4 transition-colors ${
-                            isToggled ? "text-primary" : "text-muted-foreground/60"
-                          }`}
-                        />
-                        <span className="text-xs font-semibold text-foreground tracking-tight">
+                        <FileCheck2 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">
                           {c.name}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Status Badge */}
                         <span
                           className={`flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider ${badge.className}`}
                         >
                           <BadgeIcon className="h-3 w-3" /> {badge.label}
                         </span>
 
-                        {/* Checkbox indicator */}
                         <div
                           className={`flex h-4.5 w-4.5 items-center justify-center rounded-md border transition-all ${
                             isToggled
@@ -402,33 +350,31 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
                       </div>
                     </div>
 
-                    {/* Affected Metrics */}
                     <div className="mt-3.5 flex items-baseline justify-between border-t border-border/30 pt-2.5">
                       <span className="font-mono text-[11px] text-muted-foreground">
-                        Spatial Intersect:
+                        Geodesic Overlap:
                       </span>
                       {c.status === "NO_DATA" ? (
                         <span className="font-mono text-xs text-slate-400 italic">
-                          Data unavailable
+                          Not applicable (Inland)
                         </span>
                       ) : c.status === "CLEAR" ? (
                         <span className="font-mono text-xs font-bold text-cyan-400">
                           0% overlap (0 ha)
                         </span>
                       ) : (
-                        <span className="font-mono text-xs font-bold text-rose-400">
-                          {c.affected_percentage}% affected
+                        <span className="font-mono text-xs font-bold text-amber-400">
+                          {c.affected_percentage?.toFixed(2)}% overlap
                           {c.affected_area_ha !== null && (
                             <span className="text-[10px] text-muted-foreground font-normal ml-1">
-                              ({c.affected_area_ha} ha)
+                              ({c.affected_area_ha.toFixed(2)} ha)
                             </span>
                           )}
                         </span>
                       )}
                     </div>
 
-                    {/* Description */}
-                    <p className="mt-2 text-[11px] text-muted-foreground font-light leading-relaxed truncate">
+                    <p className="mt-2 text-[11px] text-muted-foreground font-light leading-relaxed">
                       {c.description}
                     </p>
                   </div>
@@ -437,25 +383,32 @@ export function ConstraintPanel({ aoi }: ConstraintPanelProps) {
             </div>
 
             {/* Factual Screening Summary Box */}
-            <div className="glass-panel rounded-2xl border border-primary/30 bg-primary/[0.06] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5 mb-2">
-                <Info className="h-3.5 w-3.5 shrink-0" /> ENVIRONMENTAL SCREENING SUMMARY
-              </span>
-              <p className="text-xs text-foreground/90 font-light leading-relaxed">
-                "{factualSummaryText}"
+            <div className="glass-panel rounded-2xl border border-cyan-500/30 bg-cyan-500/[0.06] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Info className="h-4 w-4 shrink-0 text-cyan-400" />
+                <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-cyan-400">
+                  POSTGIS SCREENING SUMMARY
+                </span>
+              </div>
+              <p className="text-sm sm:text-base text-slate-100 font-normal leading-relaxed">
+                "{backendData?.factual_summary}"
               </p>
             </div>
 
-            {/* Official Legal Disclaimer */}
-            <div className="glass-panel flex items-start gap-2.5 rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4 text-[11px] font-light leading-relaxed text-amber-200/80 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              <ShieldAlert className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
+            {/* Regulatory Review Notice */}
+            <div className="glass-panel flex items-start gap-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/[0.07] p-5 sm:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+              <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
               <div>
-                <span className="font-semibold text-amber-300 block mb-0.5">
-                  LEGAL & ZONING DISCLAIMER
+                <span className="font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-300 block mb-2">
+                  PRELIMINARY SPATIAL SCREENING DISCLAIMER
                 </span>
-                Spatial screening based on available GIS layers. This analysis does not constitute
-                legal, zoning, environmental, or construction approval. Verify applicable
-                regulations and permissions with the relevant authority before development.
+                <p className="text-xs sm:text-sm text-amber-100/90 font-normal leading-relaxed">
+                  Spatial intersection percentages indicate potential geographic overlaps with mapped
+                  datasets (e.g. Survey of India forest boundaries, WRIS water features, highway vectors).
+                  They represent preliminary screening alerts and do not by themselves constitute a
+                  confirmed statutory prohibition, stop-work order, or environmental clearance. Always
+                  consult authoritative revenue, municipal, and forest department records.
+                </p>
               </div>
             </div>
           </motion.div>
